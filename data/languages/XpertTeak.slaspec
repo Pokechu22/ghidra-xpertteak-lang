@@ -28,12 +28,16 @@ define register offset=0x14 size=2 [ x1 y1 ];
 
 # 33 bits?
 # p1 is Teak Lite 2?
-define register offset=0x20 size=5 [ p0 p1 ];
+define register offset=0x20 size=5 [ p0full p1full ];
+# This isn't clarified in the Operand Encoding section
+define register offset=0x22 size=2 [ p0 ];
+define register offset=0x27 size=2 [ p1 ];
 # Is this the same as p0?
 define register offset=0x2a size=2 [ p0h ];
 
 # 18-bit PC, not encoding this directly
-#define register offset=0x2c size=3 [ pc ];
+define register offset=0x2c size=3 [ pc_full ];
+define register offset=0x2d size=2 [ pc ];
 
 define register offset=0x30 size=2 [ sp sv mixp lc repc dvm ];
 @ifdef TEAK_LITE_2
@@ -135,53 +139,76 @@ define hack_register offset=0 size=1 [ SR_CARRY_ SR_OVERFLOW_ SR_ARITH_ZERO_ SR_
 @define SR_MUL_UNSIGNED "SR_MUL_UNSIGNED_[0,1]"
 @endif
 
-define token opbyte (16)
-	op0_4  = (0, 3)
-	op3_8  = (3, 7)
-	op4_8  = (4, 7)
-	op5_8  = (5, 7)
-	op6_8  = (6, 7)
-	op7_9  = (7, 8)
-	op8_16 = (8, 15)
-	op9_16 = (9, 15)
-	op10_16 = (10, 15)
-	op11_16 = (11, 15)
-	op12_16 = (12, 15)
-
-	op5 = (4, 4)
-
-	_ar0_2 = (0, 1)
-	_ix0_2 = (0, 1)
-
-	_ix2_4 = (2, 3)
-	op2_4 = (2, 3)
-
-	_reg0_5 = (0, 4)
-
-	_ar5_7 = (5, 6)
-	_ix5_7 = (5, 6)
-
-	_reg5_8 = (5, 7)
-	_reg5_10 = (5, 9)
-
-	cc0_4 = (0, 3)
-
-	_acm8 = (8, 8)
-	_acf8 = (8, 8)
-	_acs8 = (8, 8)
-	_ac8_11 = (8, 10)
-	_ac8_10 = (8, 9)
-	_ach8display = (8, 8)
-	_ach8 = (8, 8)
-
-	srbit = (0, 2)
-	imm6 = (0, 5)
-
-	imm8 = (0, 7)
-	simm8 = (0, 7) signed
+define token opcode (16)
+	full_opcode = (0, 15)
 ;
 
-:temp is op0_4=0 unimpl
+define token opcode_reg (16)
+	opcode_p0 = (5, 15)
+	register_0 = (0, 4)
+	register_p0 = (0, 4)
+;
+
+# TODO: the original info says a0 and a1 and also p0, but those aren't 16 bits?
+attach variables [ register_0 ] [
+	r0 r1 r2 r3
+	r4 r5 r7 y0 # NOTE: no r6
+	# 08
+@ifndef TEAK_LITE_2
+	st0 st1 st2
+@else
+	stt0 stt1 stt2
+@endif
+	p0h # NOTE: p0h
+	pc sp cfgi cfgj
+	# 10
+	b0h b1h b0l b1l
+	ext0 ext1 ext2 ext3
+	# 18
+	a0e a1e a0l a1l
+	a0h a1h lc sv
+];
+
+attach variables [ register_p0 ] [
+	r0 r1 r2 r3
+	r4 r5 r7 y0 # NOTE: no r6
+	# 08
+@ifndef TEAK_LITE_2
+	st0 st1 st2
+@else
+	stt0 stt1 stt2
+@endif
+	p0 # NOTE: p0
+	pc sp cfgi cfgj
+	# 10
+	b0h b1h b0l b1l
+	ext0 ext1 ext2 ext3
+	# 18
+	a0e a1e a0l a1l
+	a0h a1h lc sv
+];
+
+define token expanded (16)
+	expanded_imm = (0, 15)
+;
+
+
+# 5E60h TL  pop  Register@0
+:pop register_0 is opcode_p0=(0x5E60>>5) & register_0 unimpl
+
+# 5F40h TL  push Imm16@16
+:push expanded_imm is full_opcode=0x5F40; expanded_imm unimpl
+# 5E40h TL  push Register@0
+:push register_0 is opcode_p0=(0x5E40>>5) & register_0 unimpl
+# D7C8h TL2 push Abe@1, Unused1@0
+# D3D0h TL2 push ArArpSttMod@0
+# D7FCh TL2 push prpage, Unused2@0
+# D78Ch TL2 push Px@1, Unused1@0
+# D4D7h TL2 push r6, Unused1@5
+# D7F8h TL2 push repc, Unused2@0
+# D4D4h TL2 push x0, Unused1@5
+# D4D5h TL2 push x1, Unused1@5
+# D4D6h TL2 push y1, Unused1@5
 
 @ifdef OLD_GCDSP_JUNK
 # Note that if *[const]:2 is not used to use the value as a pointer in the constant address space, things break and the value will be treated as 0.
