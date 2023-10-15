@@ -2,13 +2,13 @@
 
 <language_definitions>
   <language processor="XpertTeak"
-            endian="little"
+            endian="big"
             size="16"
             variant="default"
             version="1.0"
             slafile="XpertTeak.sla"
             processorspec="XpertTeak.pspec"
-            id="XpertTeak:LE:16:default">
+            id="XpertTeak:BE:16:default">
     <description>XpertTeak</description>
     <compiler name="default" spec="XpertTeak.cspec" id="default"/>
   </language>

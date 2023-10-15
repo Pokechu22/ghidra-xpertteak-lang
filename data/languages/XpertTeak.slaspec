@@ -1,57 +1,75 @@
 # sleigh specification file for GameCube DSP
 
-# Adjust the formatting of BLOOP/BLOOPI; see Addr16After below
-@define BLOOP_ONE_AFTER
+@define TEAK_LITE_2
+
 # Directly mutate the sr register instead of a set of fake registers
 # The fake registers provide better decompilation
 #@define USE_REAL_SR_REGISTER
-# Simplify decompilation of the left+right shift instructions
-@define SIMPLIFY_SHIFTS
-# Assume CR is always set to 0x00ff - makes LRS and SRS disassemble better
-# This assumption is violated for Zelda uCode.
-@define SIMPLIFY_CR
-# Apply sign-extension to writes to $ac0.m and $ac1.m when the processor says it should happen
-# When disabled, 16-bit mode is always assumed.
-@define USE_40_BIT_SIGN_EXTENSION
-# Always apply sign-extension (needs the above to be not be defined)
-# This gets rid of a check on SR_40_MODE, which results in cleaner code,
-# but the results will be incorrect.
-#@define ALWAYS_USE_40_BIT_SIGN_EXTENSION
-# Apply saturation to reads from $ac0.m and $ac1.m when the processor says it should happen
-# When disabled, 16-bit mode is always assumed. Enabling results in much messier code.
-#@define USE_40_BIT_SATURATION
 
-define endian=little;
+define endian=big;
 define alignment=2;
 
 define space inst     type=ram_space      size=2 wordsize=2;
 define space data     type=ram_space      size=2 wordsize=2 default;
 define space register type=register_space size=1 wordsize=2;
 
-define register offset=0x00 size=2 [ ar0 ar1 ar2 ar3 ]; # Addressing registers
-define register offset=0x08 size=2 [ ix0 ix1 ix2 ix3 ]; # Indexing registers
-define register offset=0x10 size=2 [ wr0 wr1 wr2 wr3 ]; # Wrapping registers
-define register offset=0x18 size=2 [ st0 st1 st2 st3 ]; # Stack-related registers
-#define register offset=0x20 size=2 [ ac0.h ac1.h ]; # 40-bit accumulators
-define register offset=0x24 size=2 [ cr sr ];
-define register offset=0x28 size=2 [ prod.l prod.m1 prod.h prod.m2 ]; # Product
-#define register offset=0x30 size=2 [ ax0.l ax1.l ax0.h ax1.h ]; # 32-bit accumulators
-#define register offset=0x38 size=2 [ ac0.l ac1.l ac0.m ac1.m ]; # 40-bit accumulators
+# http://problemkaputt.de/gbatek.htm#dsiteakcpuregisters
 
-# Fake versions of the accumulator registers to make emulating them reasonable
-define register offset=0x80 size=2 [ ac0.h ac0.m ac0.l ];
-define register offset=0x81 size=1 [ ac0.hreal ];
-define register offset=0x81 size=5 [ acc0 ];
-define register offset=0x81 size=3 [ acs0 ]; # Short/mid accumulator, 24 bits
-define register offset=0x90 size=2 [ ac1.h ac1.m ac1.l ];
-define register offset=0x91 size=1 [ ac1.hreal ];
-define register offset=0x91 size=5 [ acc1 ];
-define register offset=0x91 size=3 [ acs1 ]; # Short/mid accumulator, 24 bits
-define register offset=0xA0 size=2 [ ax0.h ax0.l ];
-define register offset=0xA0 size=4 [ ax0 ];
-define register offset=0xB0 size=2 [ ax1.h ax1.l ];
-define register offset=0xB0 size=4 [ ax1 ];
-define register offset=0xC1 size=5 [ prod ];
+define register offset=0x00 size=2 [ r0 r1 r2 r3 r4 r5 ];
+@ifdef TEAK_LITE_2
+define register offset=0x0c size=2 [ r6 ];
+@endif
+define register offset=0x0e size=2 [ r7 ]; # AKA rb
+
+define register offset=0x10 size=2 [ x0 y0 ];
+@ifdef TEAK_LITE_2
+define register offset=0x14 size=2 [ x1 y1 ];
+@endif
+
+# 33 bits?
+# p1 is Teak Lite 2?
+define register offset=0x20 size=5 [ p0 p1 ];
+# Is this the same as p0?
+define register offset=0x2a size=2 [ p0h ];
+
+# 18-bit PC, not encoding this directly
+#define register offset=0x2c size=3 [ pc ];
+
+define register offset=0x30 size=2 [ sp sv mixp lc repc dvm ];
+@ifdef TEAK_LITE_2
+define register offset=0x3c size=2 [ vtr0 vtr1 ];
+# 4 bits; not meaningful on the DSi
+define register offset=0x40 size=2 [ prpage ];
+@endif
+
+# custom hardware extensions (e.g. I/O ports, not used here?)
+define register offset=0x42 size=2 [ ext0 ext1 ext2 ext3 ];
+
+@ifndef TEAK_LITE_2
+# Teak Lite 1
+define register offset=0x4a size=2 [ st0 st1 st2 ];
+define register offset=0x50 size=2 [ icr ];
+@else
+# Teak Lite 2
+define register offset=0x4a size=2 [ stt0 stt1 stt2 ];
+define register offset=0x50 size=2 [ mod0 mod1 mod2 mod3 ];
+define register offset=0x58 size=2 [ ar0 ar1 arp0 arp1 arp2 arp3 stepi stepj ];
+@endif
+define register offset=0x68 size=2 [ cfgi cfgj ];
+
+# a0e and a1e are 4-bit instead of 8-bit on teak lite 1, and b0e and b1e don't exist
+define register offset=0x80 size=2 [ a0e a0h a0l ];
+define register offset=0x81 size=1 [ a0ereal ];
+define register offset=0x81 size=5 [ a0 ];
+define register offset=0x90 size=2 [ a1e a1h a1l ];
+define register offset=0x91 size=1 [ a1ereal ];
+define register offset=0x91 size=5 [ a1 ];
+define register offset=0xa0 size=2 [ b0e b0h b0l ];
+define register offset=0xa1 size=1 [ b0ereal ];
+define register offset=0xa1 size=5 [ b0 ];
+define register offset=0xb0 size=2 [ b1e b1h b1l ];
+define register offset=0xb1 size=1 [ b1ereal ];
+define register offset=0xb1 size=5 [ b1 ];
 
 # Fake register for extra-fake purposes; hardware uses some of the stacks for this
 define register offset=0xF0 size=8 [ loopcontext ];
@@ -163,6 +181,9 @@ define token opbyte (16)
 	simm8 = (0, 7) signed
 ;
 
+:temp is op0_4=0 unimpl
+
+@ifdef OLD_GCDSP_JUNK
 # Note that if *[const]:2 is not used to use the value as a pointer in the constant address space, things break and the value will be treated as 0.
 # i.e. with just { export imm8; } setting a register to Imm8 apepars to set it to 0, while setting it to imm8 works fine.
 # There is a warning for this, though it's not obvious: "Table 'Imm8' exports size 0".
@@ -2190,3 +2211,4 @@ loopjumpback:LoopJumpBackAddrWrapper is hasloopjumpback=1 & LoopJumpBackAddrWrap
 	build opp;
 	build loopjumpback;
 }
+@endif
