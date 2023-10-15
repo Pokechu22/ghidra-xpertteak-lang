@@ -6,7 +6,7 @@
 # The fake registers provide better decompilation
 #@define USE_REAL_SR_REGISTER
 
-define endian=big;
+define endian=little;
 define alignment=2;
 
 define space inst     type=ram_space      size=2 wordsize=2;
