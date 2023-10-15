@@ -21,7 +21,7 @@
 # When disabled, 16-bit mode is always assumed. Enabling results in much messier code.
 #@define USE_40_BIT_SATURATION
 
-define endian=big;
+define endian=little;
 define alignment=2;
 
 define space inst     type=ram_space      size=2 wordsize=2;

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<language_definitions>
+  <language processor="XpertTeak"
+            endian="little"
+            size="16"
+            variant="default"
+            version="1.0"
+            slafile="XpertTeak.sla"
+            processorspec="XpertTeak.pspec"
+            id="XpertTeak:LE:16:default">
+    <description>XpertTeak</description>
+    <compiler name="default" spec="XpertTeak.cspec" id="default"/>
+  </language>
+</language_definitions>
