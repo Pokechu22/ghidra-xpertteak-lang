@@ -155,6 +155,7 @@ define token opcode (16)
 	opcode_4_15  = (4, 15)
 	opcode_5_15  = (5, 15)
 	opcode_6_15  = (6, 15)
+	opcode_7_7   = (7, 7)
 	opcode_9_15  = (9, 15)
 	opcode_12_15 = (12, 15)
 
@@ -521,7 +522,6 @@ MemImm16:[##expanded_imm] is expanded_imm
 	export *[data]:2 expanded_imm;
 }
 
-# TODO: is this supposed to be an 8-bit signed immediate, or 7 bits? add implies 8, but I'm not sure
 @ifdef NOCASH_SYNTAX
 MemR7Imm7s_0:[implied_r7+imm7s_0] is implied_r7 & imm7s_0
 @else
@@ -588,8 +588,7 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 # D4DBh TL  add  MemR7Imm16@16, Ax@8
 :add MemR7Imm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xDB; MemR7Imm16 { Ax_8 = Ax_8 + sext(MemR7Imm16); }
 # 4600h TL  add  MemR7Imm7s@0, Ax@8
-# TODO: is MemR7Imm7s_0 supposed to be an 8-bit signed immediate, or 7 bits? This looks like 8
-:add MemR7Imm7s_0, Ax_8 is opcode_9_15=(0x46>>1) & Ax_8 & MemR7Imm7s_0 { Ax_8 = Ax_8 + sext(MemR7Imm7s_0); }
+:add MemR7Imm7s_0, Ax_8 is opcode_9_15=(0x46>>1) & Ax_8 & opcode_7_7=0 & MemR7Imm7s_0 { Ax_8 = Ax_8 + sext(MemR7Imm7s_0); }
 # 8680h TL  add  MemRn@0, Ax@8 || Rn@0stepZIDS@3
 # TODO
 # 86A0h TL  add  RegisterP0@0, Ax@8
@@ -1284,6 +1283,7 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 # 0004h TL2 pop  y1, Unused1@0
 :pop implied_y1 is opcode_1_15=(4>>1) & unused_0_0 & implied_y1 unimpl
 # 47B0h TL2 popa Ab@0
+:popa Ab_0 is opcode_2_15=(0x47B0>>2) & Ab_0 unimpl
 @endif
 # 5F40h TL  push Imm16@16
 :push expanded_imm is opcode_0_15=0x5F40; expanded_imm unimpl
