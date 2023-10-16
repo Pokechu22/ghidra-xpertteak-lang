@@ -195,6 +195,8 @@ define token expanded (16)
 	expanded_imm = (0, 15)
 ;
 
+# Comments are from http://problemkaputt.de/gbatek.htm#dsiteakliteiiinstructionsetencoding
+# Base  Ver Opcode (with parameter bits located at @bitnumber and up)
 
 # D4FBh TL  add  MemImm16@16, Ax@8
 # A600h TL  add  MemImm8@0, Ax@8
@@ -204,6 +206,7 @@ define token expanded (16)
 # 4600h TL  add  MemR7Imm7s@0, Ax@8
 # 8680h TL  add  MemRn@0, Ax@8 || Rn@0stepZIDS@3
 # 86A0h TL  add  RegisterP0@0, Ax@8
+@ifdef TEAK_LITE_2
 # D2DAh TL2 add  Ab@10, Bx@0
 # 5DF0h TL2 add  Bx@1, Ax@0
 # 9070h TL2 add  MemR01@8, sv, Abh@2 || sub MemR01@8offsZI@0, sv, Abl@2
@@ -226,23 +229,30 @@ define token expanded (16)
 # 4592h TL2 add3a p0, p1, Ab@2
 # 4593h TL2 add3aa p0, p1, Ab@2
 # 5DC1h TL2 adda p0, p1, Ab@2
+@endif
 # B200h TL  addh MemImm8@0, Ax@8
 # 9280h TL  addh MemRn@0, Ax@8 || Rn@0stepZIDS@3
 # 92A0h TL  addh Register@0, Ax@8
+@ifdef TEAK_LITE_2
 # 9464h TL2 addh r6, Ax@0
 # 90E0h TL2 addhp MemR0425@2, Px@4, Ax@8 || R0425@2stepII2D2S@0 ;p=ProgMem? Px?
+@endif
 # B400h TL  addl MemImm8@0, Ax@8
 # 9480h TL  addl MemRn@0, Ax@8 || Rn@0stepZIDS@3
 # 94A0h TL  addl Register@0, Ax@8
+@ifdef TEAK_LITE_2
 # 9466h TL2 addl r6, Ax@0
 # 906Ch TL2 addsub  p0, p1, Ab@0
 # 49C2h TL2 addsub  p1, p0, Ab@4
 # 916Ch TL2 addsuba p0, p1, Ab@0
 # 49C3h TL2 addsuba p1, p0, Ab@4
+@endif
 # E700h TL  addv Imm16@16, MemImm8@0
 # 86E0h TL  addv Imm16@16, MemRn@0 || Rn@0stepZIDS@3
 # 87E0h TL  addv Imm16@16, Register@0
+@ifdef TEAK_LITE_2
 # 47BBh TL2 addv Imm16@16, r6
+@endif
 # D4F9h TL  and  MemImm16@16, Ax@8
 # A200h TL  and  MemImm8@0, Ax@8
 # 82C0h TL  and  Imm16@16, Ax@8
@@ -251,9 +261,12 @@ define token expanded (16)
 # 4200h TL  and  MemR7Imm7s@0, Ax@8
 # 8280h TL  and  MemRn@0, Ax@8 || Rn@0stepZIDS@3
 # 82A0h TL  and  RegisterP0@0, Ax@8
+@ifdef TEAK_LITE_2
 # 6770h TL2 and  Ab@2, Ab@0, Ax@12                ;TL2 only
 # D389h TL2 and  r6, Ax@4
+@endif
 # 4B80h TL  banke BankFlags6@0  ;{r0}{,r1}{,r4}{,cfgi}{,r7}{,cfgj}
+@ifdef TEAK_LITE_2
 # 8CDFh TL2 bankr       ;without operand ?
 # 8CDCh TL2 bankr Ar@0
 # 8CD0h TL2 bankr Ar@2, Arp@0
@@ -261,40 +274,53 @@ define token expanded (16)
 # 5EB8h TL2 bitrev Rn@0
 # D7E8h TL2 bitrev Rn@0, dbrv
 # D7E0h TL2 bitrev Rn@0, ebrv
+@endif
 # 5C00h TL  bkrep NoReverse, Imm8u@0, Address16@16
 # 5D00h TL  bkrep NoReverse, Register@0, Address18@16and5
+@ifdef TEAK_LITE_2
 # 8FDCh TL2 bkrep NoReverse, r6, Address18@16and0
 # DA9Ch TL2 bkreprst MemR0425@0
 # 5F48h TL2 bkreprst MemSp, Unused2@0
 # DADCh TL2 bkrepsto MemR0425@0, Unused1@10
 # 9468h TL2 bkrepsto MemSp, Unused3@0
+@endif
 # 4180h TL  br   Address18@16and4, Cond@0
 # D3C0h TL  break               ;break
 # 5000h TL  brr  RelAddr7@4, Cond@0
 # 41C0h TL  call Address18@16and4, Cond@0
 # D480h TL  calla Axl@8
+@ifdef TEAK_LITE_2
 # D381h TL2 calla Ax@4
+@endif
 # 1000h TL  callr RelAddr7@4, Cond@0
+@ifdef TEAK_LITE_2
 # 9068h TL2 cbs  Axh@0, Axh@not0, r0, ge
 # 9168h TL2 cbs  Axh@0, Axh@not0, r0, gt
 # D49Eh TL2 cbs  Axh@8, Bxh@5, r0, ge
 # D49Fh TL2 cbs  Axh@8, Bxh@5, r0, gt
 # D5C0h TL2 cbs  MemR01@2, MemR45@2, ge || R01@2stepII2@0, R45@2stepII2@1
 # D5C8h TL2 cbs  MemR01@2, MemR45@2, gt || R01@2stepII2@0, R45@2stepII2@1
+@endif
 # E500h TL  chng Imm16@16, MemImm8@0
 # 84E0h TL  chng Imm16@16, MemRn@0 || Rn@0stepZIDS@3
 # 85E0h TL  chng Imm16@16, Register@0
+@ifdef TEAK_LITE_2
 # 47BAh TL2 chng Imm16@16, r6
 # 0038h TL2 chng Imm16@16, SttMod@0
+@endif
 # 6760h TL  clr  Implied ConstZero, Ax@12, Cond@0  ;aX=0
 # 6F60h TL  clr  Implied ConstZero, Bx@12, Cond@0  ;bX=0
+@ifdef TEAK_LITE_2
 # 8ED0h TL2 clr  Implied ConstZero, Ab@2, Ab@0
 # 5DFEh TL2 clrp p0
 # 5DFFh TL2 clrp p0, p1
 # 5DFDh TL2 clrp p1
+@endif
 # 67C0h TL  clrr Implied Const8000h, Ax@12, Cond@0 ;aX=8000h
+@ifdef TEAK_LITE_2
 # 6F70h TL2 clrr Implied Const8000h, Bx@12, Cond@0 ;bX=8000h
 # 8DD0h TL2 clrr Implied Const8000h, Ab@2, Ab@0
+@endif
 # D4FEh TL  cmp  MemImm16@16, Ax@8
 # AC00h TL  cmp  MemImm8@0, Ax@8
 # 8CC0h TL  cmp  Imm16@16, Ax@8
@@ -303,20 +329,26 @@ define token expanded (16)
 # 4C00h TL  cmp  MemR7Imm7s@0, Ax@8
 # 8C80h TL  cmp  MemRn@0, Ax@8 || Rn@0stepZIDS@3
 # 8CA0h TL  cmp  RegisterP0@0, Ax@8
+@ifdef TEAK_LITE_2
 # 4D8Ch TL2 cmp  Ax@1, Bx@0
 # D483h TL2 cmp  b0, b1
 # D583h TL2 cmp  b1, b0
 # DA9Ah TL2 cmp  Bx@10, Ax@0
 # 8B63h TL2 cmp  p1, Ax@4
 # D38Eh TL2 cmp  r6, Ax@4
+@endif
 # BE00h TL  cmpu MemImm8@0, Ax@8
 # 9E80h TL  cmpu MemRn@0, Ax@8 || Rn@0stepZIDS@3
 # 9EA0h TL  cmpu Register@0, Ax@8
+@ifdef TEAK_LITE_2
 # 8A63h TL2 cmpu r6, Ax@3
+@endif
 # ED00h TL  cmpv Imm16@16, MemImm8@0
 # 8CE0h TL  cmpv Imm16@16, MemRn@0 || Rn@0stepZIDS@3
 # 8DE0h TL  cmpv Imm16@16, Register@0
+@ifdef TEAK_LITE_2
 # 47BEh TL2 cmpv Imm16@16, r6
+@endif
 # D390h TL  cntx r  ;restore shadows
 # D380h TL  cntx s  ;store shadows
 # 67F0h TL  copy Implied Ax@not12,   Ax@12, Cond@0 ;aX=aY
@@ -330,8 +362,10 @@ define token expanded (16)
 # 9840h TL  exp  MemRn@0, Implied sv, Ax@8 || Rn@0stepZIDS@3
 # 9040h TL  exp  RegisterP0@0, Implied sv, Ax@8
 # 9440h TL  exp  RegisterP0@0, Implied sv
+@ifdef TEAK_LITE_2
 # D7C1h TL2 exp  r6, Implied sv
 # D382h TL2 exp  r6, Implied sv, Ax@4
+@endif
 # 67D0h TL  inc  Implied Const1,     Ax@12, Cond@0 ;aX=aX+1
 # 49C0h TL  lim  a0     ;aka a0,a0
 # 49D0h TL  lim  a0, a1
@@ -343,53 +377,68 @@ define token expanded (16)
 # 0400h TL  load Imm8u@0, page             ;st1.LSBs=imm8 ;aka "lpg"
 # 0200h TL  load Imm9u@0, modi             ;cfgi.MSB=imm9
 # 0A00h TL  load Imm9u@0, modj             ;cfgj.MSB=imm9
+@ifdef TEAK_LITE_2
 # D7D8h TL2 load Imm2u@1, movpd, Unused1@0 ;stt2.bit6.7 (page for ProgMem)
 # 0010h TL2 load Imm4u@0, ps01             ;mod0.bit10-11,13-14 and st1.10-11 ?
+@endif
 # D400h TL  maa  MemR45@2, MemR0123@0, Ax@11
 #            || R0123@0stepZIDS@3, R45@2stepZIDS@5
 # 8400h TL  maa  MemRn@0, Imm16@16, Ax@11 || Rn@0stepZIDS@3
 # 8420h TL  maa  y0, MemRn@0, Ax@11 || Rn@0stepZIDS@3
 # 8440h TL  maa  y0, Register@0, Ax@11
 # E400h TL  maa  y0, MemImm8@0, Ax@11
+@ifdef TEAK_LITE_2
 # 5EA8h TL2 maa  y0, r6, Ax@0
+@endif
 # D700h TL  maasu MemR45@2, MemR0123@0, Ax@11
 #            || R0123@0stepZIDS@3, R45@2stepZIDS@5
 # 8700h TL  maasu MemRn@0, Imm16@16, Ax@11 || Rn@0stepZIDS@3
 # 8720h TL  maasu y0, MemRn@0, Ax@11 || Rn@0stepZIDS@3
 # 8740h TL  maasu y0, Register@0, Ax@11
+@ifdef TEAK_LITE_2
 # 5EAEh TL2 maasu y0, r6, Ax@0
+@endif
 # D200h TL  mac  MemR45@2, MemR0123@0, Ax@11
 #            || R0123@0stepZIDS@3, R45@2stepZIDS@5
 # 8200h TL  mac  MemRn@0, Imm16@16, Ax@11 || Rn@0stepZIDS@3
 # 8220h TL  mac  y0, MemRn@0, Ax@11 || Rn@0stepZIDS@3
 # 8240h TL  mac  y0, Register@0, Ax@11
 # E200h TL  mac  y0, MemImm8@0, Ax@11
+@ifdef TEAK_LITE_2
 # 5EA4h TL2 mac  y0, r6, Ax@0
 # 4D84h TL2 mac  y0, x1, Ax@1, Unused1@0
 # 5E28h TL2 mac1 MemR45@2, MemR01@2, Ax@8 || R01@2stepII2@0, R45@2stepII2@1
+@endif
 # D600h TL  macsu MemR45@2, MemR0123@0, Ax@11
 #            || R0123@0stepZIDS@3, R45@2stepZIDS@5
 # 8600h TL  macsu MemRn@0, Imm16@16, Ax@11 || Rn@0stepZIDS@3
 # E600h TL  macsu y0, MemImm8@0, Ax@11
 # 8620h TL  macsu y0, MemRn@0, Ax@11 || Rn@0stepZIDS@3
 # 8640h TL  macsu y0, Register@0, Ax@11
+@ifdef TEAK_LITE_2
 # 5EACh TL2 macsu y0, r6, Ax@0
+@endif
 # D300h TL  macus MemR45@2, MemR0123@0, Ax@11
 #            || R0123@0stepZIDS@3, R45@2stepZIDS@5
 # 8300h TL  macus MemRn@0, Imm16@16, Ax@11 || Rn@0stepZIDS@3
 # 8320h TL  macus y0, MemRn@0, Ax@11 || Rn@0stepZIDS@3
 # 8340h TL  macus y0, Register@0, Ax@11
+@ifdef TEAK_LITE_2
 # 5EA6h TL2 macus y0, r6, Ax@0
+@endif
 # D500h TL  macuu MemR45@2, MemR0123@0, Ax@11
 #            || R0123@0stepZIDS@3, R45@2stepZIDS@5
 # 8500h TL  macuu MemRn@0, Imm16@16, Ax@11 || Rn@0stepZIDS@3
 # 8520h TL  macuu y0, MemRn@0, Ax@11 || Rn@0stepZIDS@3
 # 8540h TL  macuu y0, Register@0, Ax@11
+@ifdef TEAK_LITE_2
 # 5EAAh TL2 macuu y0, r6, Ax@0
+@endif
 # 8460h TL  max  NoReverse, Ax@8, Implied Ax@not8, Bogus MemR0, ge,
 #            Implied mixp, Implied r0 || R0stepZIDS@3   ;when aY >= aX
 # 8660h TL  max  NoReverse, Ax@8, Implied Ax@not8, Bogus MemR0, gt,
 #            Implied mixp, Implied r0 || R0stepZIDS@3   ;when aY > aX
+@ifdef TEAK_LITE_2
 # 5E21h TL2 max  a0h, a1h || max a0l, a1l || vtrshr
 # 5F21h TL2 max  a1h, a0h || max a1l, a0l || vtrshr
 # D784h TL2 max  Axh@1, Bxh@0 || max Axl@1, Bxl@0 || vtrshr
@@ -407,6 +456,7 @@ define token expanded (16)
 #            || vtrshr || R04@1stepII2@0
 # 4A64h TL2 max  Bxh@4, Axh@3 || max Bxl@4, Axl@3 || mov Bxh@not4, MemR04@1
 #            || vtrshr || R04@1stepII2@0
+@endif
 # 8060h TL  maxd NoReverse, Ax@8, MemR0, ge, Implied mixp, Implied r0
 #            || R0stepZIDS@3   ;when (r0) >= aX
 # 8260h TL  maxd NoReverse, Ax@8, MemR0, gt, Implied mixp, Implied r0
@@ -415,6 +465,7 @@ define token expanded (16)
 #            Implied mixp, Implied r0 || R0stepZIDS@3   ;when aY <= aX
 # 8A60h TL  min  NoReverse, Ax@8, Implied Ax@not8, Bogus MemR0, lt,
 #            Implied mixp, Implied r0 || R0stepZIDS@3   ;when aY < aX
+@ifdef TEAK_LITE_2
 # 43C2h TL2 min  Axh@0, Axh@not0 || min Axl@0, Axl@not0 || vtrshr
 # D2B8h TL2 min  Axh@11, Bxh@10 || min Axl@11, Bxl@10
 #            || mov Axh@not11, MemR01@2 || mov Axl@not11, MemR45@2
@@ -435,8 +486,10 @@ define token expanded (16)
 #            || R0stepZIDS@0
 # 47A4h TL2 mind NoReverse, Ax@3, MemR0, lt, Implied mixp, Implied r0
 #            || R0stepZIDS@0
+@endif
 # 0080h TL  modr MemRn@0stepZIDS@3
 # 00A0h TL  modr MemRn@0stepZIDS@3, dmod  ;Disable modulo
+@ifdef TEAK_LITE_2
 # D294h TL2 modr MemR0123@10stepII2D2S0@0 || modr MemR4567@10stepII2D2S0@5
 # 0D80h TL2 modr MemR0123@5stepII2D2S0@1  || modr MemR4567@5stepII2D2S0@3, dmod
 # 0D81h TL2 modr MemR0123@5stepII2D2S0@1, dmod
@@ -446,6 +499,7 @@ define token expanded (16)
 # 5DA8h TL2 modr MemRn@0stepD2, dmod
 # 4990h TL2 modr MemRn@0stepI2
 # 4998h TL2 modr MemRn@0stepI2, dmod
+@endif
 # D290h TL  mov  Ab@10, Ab@5
 # D298h TL  mov  Abl@10, dvm
 # D2D8h TL  mov  Abl@10, x0
@@ -487,6 +541,7 @@ define token expanded (16)
 # D490h TL  mov  repc, Ab@5
 # 7D00h TL  mov  sv, MemImm8@0
 # D493h TL  mov  x0, Ab@5
+@ifdef TEAK_LITE_2
 # D49Bh TL2 mov  a0h, stepi0
 # D59Bh TL2 mov  a0h, stepj0
 # 4390h TL2 mov  a0h, MemR0425@2 || mov y0, MemR0425@2offsZIDZ@0
@@ -580,26 +635,36 @@ define token expanded (16)
 # 49A0h TL2 mov  SttMod@0, MemR04@4 || R04@4stepII2@3
 # 4DC0h TL2 mova Ab@4, MemR0425@2_MemR0425@2offsZIDZ@0 || R0425@2stepII2D2S@0
 # 4BC0h TL2 mova MemR0425@2_MemR0425@2offsZIDZ@0, Ab@4 || R0425@2stepII2D2S@0
+@endif
 # 5F80h TL  movd MemR0123@0,ProgMemR45@2 || R0123@0stepZIDS@3, R45@2stepZIDS@5
 # 0040h TL  movp ProgMemAxl@5, Register@0
+@ifdef TEAK_LITE_2
 # 0D40h TL2 movp ProgMemAx@5, Register@0
+@endif
 # 0600h TL  movp ProgMemRn@0, MemR0123@5 || R0123@5stepZIDS@7, Rn@0stepZIDS@3
+@ifdef TEAK_LITE_2
 # D499h TL2 movpdw ProgMemAx@8_ProgMemAx@8offsI, pc
+@endif
 # 8864h TL  movr MemR0425@3, Abh@8 || R0425@3stepII2D2S@0   ;op*10000h+8000h
 # 9CE0h TL  movr MemRn@0, Ax@8 || Rn@0stepZIDS@3
 # 9CC0h TL  movr RegisterP0@0, Ax@8
+@ifdef TEAK_LITE_2
 # 5DF4h TL2 movr Bx@1, Ax@0
 # 8961h TL2 movr r6, Ax@3
+@endif
 # 6300h TL  movs Implied sv, MemImm8@0, Ab@11
 # 0180h TL  movs Implied sv, MemRn@0, Ab@5 || Rn@0stepZIDS@3
 # 0100h TL  movs Implied sv, RegisterP0@0, Ab@5
+@ifdef TEAK_LITE_2
 # 5F42h TL2 movs Implied sv, r6, Ax@0
+@endif
 # 4080h TL  movsi Implied Imm5s@0, R0123457y0@9, Ab@5, Bogus Imm5s@0
 # D000h TL  mpy  MemR45@2, MemR0123@0 || R0123@0stepZIDS@3, R45@2stepZIDS@5
 # 8000h TL  mpy  MemRn@0, Imm16@16    || Rn@0stepZIDS@3
 # 8020h TL  mpy  y0, MemRn@0          || Rn@0stepZIDS@3
 # 8040h TL  mpy  y0, Register@0
 # E000h TL  mpy  y0, MemImm8@0
+@ifdef TEAK_LITE_2
 # 5EA0h TL2 mpy  y0, r6
 # CB00h TL2 mpy  MemR45@5, MemR01@5 || mpysu MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || sub3   p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
@@ -735,11 +800,13 @@ define token expanded (16)
 # D584h TL2 mpy  y0, x1 || mpyus y1, x0 || add3aa p0, p1, Ab@0
 # D59Dh TL2 mpy  y0, x1 || mpyus y1, x0 || sub p0, p1, Bx@5
 # D5A0h TL2 mpy  y0, x1 || mpyus y1, x0 || addsub p0, p1, Ab@0
+@endif
 # 0800h TL  mpyi NoReverse, Implied p0, y0, Imm8s@0   ;multiply  ;aka "mpys"
 # D100h TL  mpysu MemR45@2, MemR0123@0 || R0123@0stepZIDS@3, R45@2stepZIDS@5
 # 8100h TL  mpysu MemRn@0, Imm16@16    || Rn@0stepZIDS@3
 # 8120h TL  mpysu y0, MemRn@0          || Rn@0stepZIDS@3
 # 8140h TL  mpysu y0, Register@0
+@ifdef TEAK_LITE_2
 # CA00h TL2 mpysu MemR45@5, MemR01@5
 #            || mpysu MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || sub3a  p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
@@ -765,13 +832,16 @@ define token expanded (16)
 #            || mpyus MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || add3aa p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
 # 5EA2h TL2 mpysu y0, r6
+@endif
 # D080h TL  msu  MemR45@2,MemR0123@0,Ax@8 || R0123@0stepZIDS@3, R45@2stepZIDS@5
 # 90C0h TL  msu  MemRn@0, Imm16@16,  Ax@8 || Rn@0stepZIDS@3 ;multiply, subtract
 # 9080h TL  msu  y0, MemRn@0, Ax@8 || Rn@0stepZIDS@3
 # 90A0h TL  msu  y0, Register@0, Ax@8
 # B000h TL  msu  y0,MemImm8@0, Ax@8
+@ifdef TEAK_LITE_2
 # 9462h TL2 msu  y0, r6, Ax@0
 # 8264h TL2 msusu y0, MemR0425@3, Ax@8 || R0425@3stepII2D2S@0
+@endif
 # 6790h TL  neg  Ax@12, Cond@0 ;aX=0-aX
 # 0000h TL  nop
 # 94C0h TL  norm Ax@8, Bogus MemRn@0 || Rn@0stepZIDS@3  ;if N=0 (aX=aX*2,rN+/-)
@@ -784,15 +854,20 @@ define token expanded (16)
 # 4000h TL  or   MemR7Imm7s@0, Ax@8
 # 8080h TL  or   MemRn@0, Ax@8 || Rn@0stepZIDS@3
 # 80A0h TL  or   RegisterP0@0, Ax@8
+@ifdef TEAK_LITE_2
 # D291h TL2 or   Ab@10, Ax@6, Ax@5
 # D4A4h TL2 or   Ax@8, Bx@1, Ax@0
 # D3C4h TL2 or   b0, Bx@1, Ax@0
 # D7C4h TL2 or   b1, Bx@1, Ax@0
 # D388h TL2 or   r6, Ax@4
+@endif
 # 67B0h TL  pacr Implied Const8000h, Implied p0, Ax@12, Cond@0 ;aX=shfP+8000h
+@ifdef TEAK_LITE_2
 # D7C2h TL2 pacr1 Implied Const8000h, Implied p1, Ax@0
+@endif
 # 5E60h TL  pop  Register@0
 :pop register_0 is opcode_p0=(0x5E60>>5) & register_0 unimpl
+@ifdef TEAK_LITE_2
 # 47B4h TL2 pop  Abe@0
 # 80C7h TL2 pop  ArArpSttMod@8
 # 0006h TL2 pop  Bx@5, Unused1@0
@@ -805,10 +880,12 @@ define token expanded (16)
 # D495h TL2 pop  x1
 # 0004h TL2 pop  y1, Unused1@0
 # 47B0h TL2 popa Ab@0
+@endif
 # 5F40h TL  push Imm16@16
 :push expanded_imm is full_opcode=0x5F40; expanded_imm unimpl
 # 5E40h TL  push Register@0
 :push register_0 is opcode_p0=(0x5E40>>5) & register_0 unimpl
+@ifdef TEAK_LITE_2
 # D7C8h TL2 push Abe@1, Unused1@0
 # D3D0h TL2 push ArArpSttMod@0
 # D7FCh TL2 push prpage, Unused2@0
@@ -820,15 +897,20 @@ define token expanded (16)
 # D4D6h TL2 push y1, Unused1@5
 # 4384h TL2 pusha Ax@6, Unused2@0
 # D788h TL2 pusha Bx@1, Unused1@0
+@endif
 # 0C00h TL  rep  Imm8u@0    ;repeat next opcode N+1 times
 # 0D00h TL  rep  Register@0 ;repeat next opcode N+1 times
+@ifdef TEAK_LITE_2
 # 0002h TL2 rep  r6, Unused1@0
+@endif
 # 4580h TL  ret  Cond@0      ;=pop pc
 # D780h TL  retd    ;delayed return (after 2 clks)
 # 45C0h TL  reti Cond@0          ;Don't context switch
 # 45D0h TL  reti Cond@0, context ;Do context switch
 # D7C0h TL  retid   ;delayed, from interrupt
+@ifdef TEAK_LITE_2
 # D3C3h TL2 retid context
+@endif
 # 0900h TL  rets Imm8u@0          ;ret+dealloc sp (for INCOMING pushed params)
 # 67A0h TL  rnd  Implied Const8000h, Ax@12, Cond@0 ;aX=aX+8000h
 # 6750h TL  rol  Implied Const1,     Ax@12, Cond@0 ;aX=aX rcl 1 (37bit rotate)
@@ -838,13 +920,17 @@ define token expanded (16)
 # E300h TL  rst  Imm16@16, MemImm8@0
 # 82E0h TL  rst  Imm16@16, MemRn@0 || Rn@0stepZIDS@3
 # 83E0h TL  rst  Imm16@16, Register@0
+@ifdef TEAK_LITE_2
 # 47B9h TL2 rst  Imm16@16, r6
 # 4388h TL2 rst  Imm16@16, SttMod@0
+@endif
 # E100h TL  set  Imm16@16, MemImm8@0
 # 80E0h TL  set  Imm16@16, MemRn@0 || Rn@0stepZIDS@3
 # 81E0h TL  set  Imm16@16, Register@0
+@ifdef TEAK_LITE_2
 # 47B8h TL2 set  Imm16@16, r6
 # 43C8h TL2 set  Imm16@16, SttMod@0
+@endif
 # D280h TL  shfc Implied sv, Ab@10, Ab@5, Cond@0
 # 9240h TL  shfi Implied Imm6s@0, Ab@10, Ab@7, Bogus Imm6s@0
 # 6720h TL  shl  Implied Const1,     Ax@12, Cond@0 ;aX=aX*2
@@ -858,15 +944,19 @@ define token expanded (16)
 # BA00h TL  sqr  MemImm8@0
 # 9A80h TL  sqr  MemRn@0 || Rn@0stepZIDS@3
 # 9AA0h TL  sqr  Register@0
+@ifdef TEAK_LITE_2
 # D790h TL2 sqr  Abh@2 || sqr Abl@2 || add3 p0, p1, Ab@0
 # 49C4h TL2 sqr  Abh@4 || mpysu Abh@4, Abl@4 || add3a p0, p1, Ab@0
 # 4B00h TL2 sqr  MemR0425@4 || sqr MemR0425@4offsZIDZ@2 || add3 p0, p1, Ab@0
 #            || R0425@4stepII2D2S@2
 # 5F41h TL2 sqr  r6
+@endif
 # BC00h TL  sqra MemImm8@0, Ax@8
 # 9C80h TL  sqra MemRn@0, Ax@8 || Rn@0stepZIDS@3
 # 9CA0h TL  sqra Register@0, Ax@8
+@ifdef TEAK_LITE_2
 # 9062h TL2 sqra r6, Ax@8, Unused1@0
+@endif
 # D4FFh TL  sub  MemImm16@16, Ax@8
 # AE00h TL  sub  MemImm8@0, Ax@8
 # 8EC0h TL  sub  Imm16@16, Ax@8
@@ -875,6 +965,7 @@ define token expanded (16)
 # 4E00h TL  sub  MemR7Imm7s@0, Ax@8
 # 8E80h TL  sub  MemRn@0, Ax@8 || Rn@0stepZIDS@3
 # 8EA0h TL  sub  RegisterP0@0, Ax@8
+@ifdef TEAK_LITE_2
 # 8A61h TL2 sub  Ab@3, Bx@8
 # 8861h TL2 sub  Bx@4, Ax@3
 # 8064h TL2 sub  MemR01@8, sv, Abh@3 || add MemR01@8offsZI@0, sv, Abl@3
@@ -897,18 +988,25 @@ define token expanded (16)
 # 82C6h TL2 sub3a p0, p1, Ab@10
 # 83C6h TL2 sub3aa p0, p1, Ab@10
 # 5DC3h TL2 suba p0, p1, Ab@2
+@endif
 # B600h TL  subh MemImm8@0, Ax@8
 # 9680h TL  subh MemRn@0, Ax@8 || Rn@0stepZIDS@3
 # 96A0h TL  subh Register@0, Ax@8
+@ifdef TEAK_LITE_2
 # 5E23h TL2 subh r6, Ax@8
+@endif
 # B800h TL  subl MemImm8@0, Ax@8
 # 9880h TL  subl MemRn@0, Ax@8 || Rn@0stepZIDS@3
 # 98A0h TL  subl Register@0, Ax@8
+@ifdef TEAK_LITE_2
 # 5E22h TL2 subl r6, Ax@8
+@endif
 # EF00h TL  subv Imm16@16, MemImm8@0
 # 8EE0h TL  subv Imm16@16, MemRn@0 || Rn@0stepZIDS@3
 # 8FE0h TL  subv Imm16@16, Register@0
+@ifdef TEAK_LITE_2
 # 47BFh TL2 subv Imm16@16, r6
+@endif
 # 4980h TL  swap SwapTypes4@0
 # 0020h TL  trap                  ;software interrupt
 # A800h TL  tst0 Axl@8, MemImm8@0
@@ -917,23 +1015,28 @@ define token expanded (16)
 # E900h TL  tst0 Imm16@16, MemImm8@0
 # 88E0h TL  tst0 Imm16@16, MemRn@0 || Rn@0stepZIDS@3
 # 89E0h TL  tst0 Imm16@16, Register@0
+@ifdef TEAK_LITE_2
 # D38Ch TL2 tst0 Axl@4, r6
 # 47BCh TL2 tst0 Imm16@16, r6
 # 9470h TL2 tst0 Imm16@16, SttMod@0
+@endif
 # AA00h TL  tst1 Axl@8, MemImm8@0 Implied Not
 # 8A80h TL  tst1 Axl@8, MemRn@0 Implied Not || Rn@0stepZIDS@3
 # 8AA0h TL  tst1 Axl@8, Register@0 Implied Not
 # EB00h TL  tst1 Imm16@16, MemImm8@0 Implied Not
 # 8AE0h TL  tst1 Imm16@16, MemRn@0 Implied Not || Rn@0stepZIDS@3
 # 8BE0h TL  tst1 Imm16@16, Register@0 Implied Not
+@ifdef TEAK_LITE_2
 # D38Dh TL2 tst1 Axl@4, r6 Implied Not
 # 47BDh TL2 tst1 Imm16@16, r6 Implied Not
 # 9478h TL2 tst1 Imm16@16, SttMod@0 Implied Not
 # 80C1h TL2 tst4b a0l, MemR0425@10 || R0425@10stepII2D2S@8
 # 4780h TL2 tst4b a0l, MemR0425@2, Ax@4 || R0425@2stepII2D2S@0
+@endif
 # F000h TL  tstb NoReverse, Implied Not MemImm8@0, Imm4bitno@8
 # 9020h TL  tstb NoReverse, Implied Not MemRn@0, Imm4bitno@8 || Rn@0stepZIDS@3
 # 9000h TL  tstb NoReverse, Implied Not Register@0, Imm4bitno@8
+@ifdef TEAK_LITE_2
 # 9018h TL2 tstb NoReverse, Implied Not r6, Imm4bitno@8  ;override tstb a0,Imm4
 # 0028h TL2 tstb NoReverse, Implied Not SttMod@0, Imm4bitno@16, Unused12@20
 # 5F45h TL2 vtrclr vtr0         ;vtr0=0           ;for Viterbi decoding...
@@ -943,6 +1046,7 @@ define token expanded (16)
 # D29Ah TL2 vtrmov vtr0, Axl@0  ;Axl=vtr0
 # D69Ah TL2 vtrmov vtr1, Axl@0  ;Axl=vtr1
 # D781h TL2 vtrshr              ;vtr0=vtr0/2+C*8000h, vtr1=vtr1/2+C1*8000h
+@endif
 # D4FAh TL  xor  MemImm16@16, Ax@8
 # A400h TL  xor  MemImm8@0, Ax@8
 # 84C0h TL  xor  Imm16@16, Ax@8
@@ -951,7 +1055,9 @@ define token expanded (16)
 # 4400h TL  xor  MemR7Imm7s@0, Ax@8
 # 8480h TL  xor  MemRn@0, Ax@8 || Rn@0stepZIDS@3
 # 84A0h TL  xor  RegisterP0@0, Ax@8
+@ifdef TEAK_LITE_2
 # D38Ah TL2 xor  r6, Ax@4
+@endif
 # 8800h TL  undefined Unused5@0, Unused1@8 ;(mpy/mpys without A in bit11)
 # 8820h TL  undefined Unused5@0, Unused1@8 ;(mpy/mpys without A in bit11)
 # 8840h TL  undefined Unused5@0, Unused1@8 ;(mpy/mpys without A in bit11)
@@ -959,11 +1065,13 @@ define token expanded (16)
 # 9B80h TL  undefined Unused6@0  ;(sqr without A in bit8)
 # BB00h TL  undefined Unused8@0  ;(sqr without A in bit8)
 # E800h TL  undefined Unused8@0  ;(mpy without A in bit11)
+@ifdef TEAK_LITE_2
 # 5EA1h TL2 undefined Unused1@1  ;(mpy/mpys without A in bit11)
 # 5DFCh TL2 undefined
 # 8CDEh TL2 undefined
 # D3C1h TL2 undefined
 # 5EB4h TL2 undefined Unused2@0
+@endif
 
 @ifdef OLD_GCDSP_JUNK
 # Note that if *[const]:2 is not used to use the value as a pointer in the constant address space, things break and the value will be treated as 0.
