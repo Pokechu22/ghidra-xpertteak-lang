@@ -7,10 +7,12 @@
 # The fake registers provide better decompilation
 #@define USE_REAL_SR_REGISTER
 
+@define NOCASH_SYNTAX
+
 define endian=little;
 define alignment=2;
 
-define space inst     type=ram_space      size=2 wordsize=2;
+define space code     type=ram_space      size=2 wordsize=2;
 define space data     type=ram_space      size=2 wordsize=2 default;
 define space register type=register_space size=1 wordsize=2;
 
@@ -146,6 +148,10 @@ define token opcode (16)
 	opcode_5_15  = (5, 15)
 	opcode_0_7   = (0, 7)
 	opcode_12_15 = (12, 15)
+
+	imm8_0 = (0, 7)
+	imm7_0 = (0, 6)
+	imm7_4 = (4, 10)
 
 	register_0 = (0, 4)
 	register_5 = (5, 9)
@@ -312,7 +318,13 @@ define token opcode (16)
 
 	SwapTypes_0 = (0, 3)
 
+	address18_2bits_0 = (0, 1)
+	address18_2bits_4 = (4, 5)
+	address18_2bits_5 = (5, 6)
+
+	implied_sp = (0, 0)
 	implied_r6 = (0, 0)
+	implied_r7 = (0, 0)
 ;
 
 # http://problemkaputt.de/gbatek.htm#dsiteakliteiioperandencoding
@@ -396,11 +408,140 @@ attach variables [ SttMod_0 ] [ stt0 stt1 stt2 _ mod0 mod1 mod2 mod3 ];
 attach variables [ Ar_0 Ar_2 ] [ ar0 ar1 ];
 attach variables [ Arp_0 ] [ arp0 arp1 arp2 arp3 ];
 
+attach variables [ implied_sp ] [ sp sp ];
 attach variables [ implied_r6 ] [ r6 r6 ];
+attach variables [ implied_r7 ] [ r7 r7 ];
 
 define token expanded (16)
 	expanded_imm = (0, 15)
 ;
+
+@ifdef NOCASH_SYNTAX
+MemRn_0:[Rn_0] is Rn_0
+@else
+MemRn_0:(Rn_0) is Rn_0
+@endif
+{
+	export *[data]:2 Rn_0;
+}
+
+@ifdef NOCASH_SYNTAX
+MemSp:[implied_sp] is implied_sp
+@else
+MemSp:(implied_sp) is implied_sp
+@endif
+{
+	export *[data]:2 implied_sp;
+}
+
+@ifdef NOCASH_SYNTAX
+ProgMemRn_0:[^"code:movpd":Rn_0] is Rn_0
+@else
+ProgMemRn_0:(Rn_0) is Rn_0
+@endif
+{
+	export *[code]:2 Rn_0;
+}
+
+@ifdef NOCASH_SYNTAX
+ProgMemAxl_0:[^"code:movpd":Axl_0] is Axl_0
+@else
+ProgMemAxl_0:(Axl_0) is Axl_0
+@endif
+{
+	export *[code]:2 Axl_0;
+}
+
+@ifdef NOCASH_SYNTAX
+ProgMemAx_5:[^"code:movpd":Ax_5] is Ax_5
+@else
+ProgMemAx_5:(Ax_5) is Ax_5
+@endif
+{
+	export *[code]:2 Ax_5;
+}
+
+# TODO: this is actually ProgMemAx@8_ProgMemAx@8offsI which is two in one,
+# with the second offset by one?
+@ifdef NOCASH_SYNTAX
+ProgMemAx_8:[^"code:movpd":Ax_8] is Ax_8
+@else
+ProgMemAx_8:(Ax_8) is Ax_8
+@endif
+{
+	export *[code]:2 Ax_8;
+}
+
+@ifdef NOCASH_SYNTAX
+MemImm8_0:[^"page":imm8_0] is imm8_0
+@else
+MemImm8_0:imm8_0 is imm8_0
+@endif
+{
+	# TODO: handle page
+	addr:2 = imm8_0;
+	export *[data]:2 addr;
+}
+
+@ifdef NOCASH_SYNTAX
+MemImm16:[expanded_imm] is expanded_imm
+@else
+MemImm16:[##expanded_imm] is expanded_imm
+@endif
+{
+	export *[data]:2 expanded_imm;
+}
+
+@ifdef NOCASH_SYNTAX
+MemR7Imm7s_0:[implied_r7+/-imm7_0] is implied_r7 & imm7_0
+@else
+MemR7Imm7s_0:(implied_r7+#imm7_0), (implied_r7+#-imm7_0) is implied_r7 & imm7_0
+@endif
+{
+	plus_addr:2 = implied_r7 + imm7_0;
+	# minus_addr:2 = implied_r7 - imm7_0;
+	# TODO: how do multiple exports work?
+	export *[data]:2 plus_addr;
+}
+
+@ifdef NOCASH_SYNTAX
+MemR7Imm16:[r7+expanded_imm] is expanded_imm
+@else
+MemR7Imm16:(r7+##expanded_imm) is expanded_imm
+@endif
+{
+	addr:2 = r7 + expanded_imm;
+	export *[data]:2 expanded_imm;
+}
+
+Address18_16and0:full_addr is address18_2bits_0; expanded_imm
+[ full_addr = (expanded_imm << 2) + address18_2bits_0; ]
+{
+	export *[code]:2 full_addr;
+}
+Address18_16and4:full_addr is address18_2bits_4; expanded_imm
+[ full_addr = (expanded_imm << 2) + address18_2bits_4; ]
+{
+	export *[code]:2 full_addr;
+}
+Address18_16and5:full_addr is address18_2bits_5; expanded_imm
+[ full_addr = (expanded_imm << 2) + address18_2bits_5; ]
+{
+	export *[code]:2 full_addr;
+}
+
+Address16:expanded_imm is expanded_imm
+{
+	export *[data]:2 expanded_imm;
+}
+
+RelAddr7:full_addr is imm7_4
+[ full_addr = inst_next + imm7_4; ]  # TODO: inst_next or inst_start?
+{
+	export *[code]:2 full_addr;  # TODO: do we want to dereference this?
+}
+
+# TODO: ImmN, ImmNs, Imm16, Imm4bitno, and the constants
 
 # Comments are from http://problemkaputt.de/gbatek.htm#dsiteakliteiiinstructionsetencoding
 # Base  Ver Opcode (with parameter bits located at @bitnumber and up)

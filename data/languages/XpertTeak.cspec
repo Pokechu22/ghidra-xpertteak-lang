@@ -2,7 +2,7 @@
 
 <compiler_spec>
   <global>
-    <range space="inst"/>
+    <range space="code"/>
     <range space="data"/>
   </global>
   <stackpointer register="sp" space="inst" growth="negative"/>

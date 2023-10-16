@@ -17,14 +17,14 @@
   -->
   <default_symbols>
     <!-- Exception vectors -->
-    <symbol name="RST0" address="inst:0000" entry="true"/>
-    <symbol name="RST1" address="inst:0002" entry="true"/> <!-- Stack under/overflow -->
-    <symbol name="RST2" address="inst:0004" entry="true"/>
-    <symbol name="RST3" address="inst:0006" entry="true"/>
-    <symbol name="RST4" address="inst:0008" entry="true"/>
-    <symbol name="RST5" address="inst:000a" entry="true"/> <!-- Accelerator address overflow -->
-    <symbol name="RST6" address="inst:000c" entry="true"/>
-    <symbol name="RST7" address="inst:000e" entry="true"/> <!-- External interrupt (from CPU) -->
+    <symbol name="RST0" address="code:0000" entry="true"/>
+    <symbol name="RST1" address="code:0002" entry="true"/> <!-- Stack under/overflow -->
+    <symbol name="RST2" address="code:0004" entry="true"/>
+    <symbol name="RST3" address="code:0006" entry="true"/>
+    <symbol name="RST4" address="code:0008" entry="true"/>
+    <symbol name="RST5" address="code:000a" entry="true"/> <!-- Accelerator address overflow -->
+    <symbol name="RST6" address="code:000c" entry="true"/>
+    <symbol name="RST7" address="code:000e" entry="true"/> <!-- External interrupt (from CPU) -->
 
     <!-- Hardware registers - some from https://github.com/dolphin-emu/dolphin/blob/0b18f8ae55a21d8446083b92a6666199a478b0fe/Source/Core/Core/DSP/DSPCore.h#L136-L170 and https://github.com/dolphin-emu/dolphin/blob/ffdc8538a162b1ca56e3943c5a78c02358053b2a/Source/Core/Core/DSP/DSPTables.cpp#L333-L433 -->
     <!-- ADPCM coefficients -->
@@ -81,8 +81,8 @@
   </default_symbols>
   <default_memory_blocks>
     <!-- Length is in bytes, not processor words.  However, the address IS in processor words. -->
-    <memory_block name="iram" start_address="inst:0x0000" length="0x2000" mode="rwx" initialized="false" />
-    <memory_block name="irom" start_address="inst:0x8000" length="0x2000" mode="rx" initialized="false" /> <!-- dsp_rom.bin -->
+    <memory_block name="iram" start_address="code:0x0000" length="0x2000" mode="rwx" initialized="false" />
+    <memory_block name="irom" start_address="code:0x8000" length="0x2000" mode="rx" initialized="false" /> <!-- dsp_rom.bin -->
     <memory_block name="dram" start_address="data:0x0000" length="0x2000" mode="rw" initialized="false" />
     <memory_block name="coef" start_address="data:0x1000" length="0x1000" mode="rw" initialized="false" /> <!-- dsp_coef.bin -->
     <memory_block name="ifx" start_address="data:0xff00" length="0x200" mode="rwv" initialized="false" />
