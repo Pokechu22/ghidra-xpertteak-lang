@@ -144,13 +144,22 @@ define hack_register offset=0 size=1 [ SR_CARRY_ SR_OVERFLOW_ SR_ARITH_ZERO_ SR_
 
 define token opcode (16)
 	full_opcode  = (0, 15)
+	opcode_0_1   = (0, 1)
+	opcode_0_3   = (0, 3)
+	opcode_0_7   = (0, 7)
+	opcode_1_9   = (1, 9)
+	opcode_1_15  = (1, 15)
+	opcode_2_15  = (2, 15)
+	opcode_5_7   = (5, 7)
 	opcode_4_15  = (4, 15)
 	opcode_5_15  = (5, 15)
-	opcode_0_7   = (0, 7)
+	opcode_9_15  = (9, 15)
 	opcode_12_15 = (12, 15)
 
 	imm8_0 = (0, 7)
-	imm7_0 = (0, 6)
+	imm8s_0 = (0, 7) signed
+	imm8u_0 = (0, 7)
+	imm7s_0 = (0, 6) signed
 	imm7_4 = (4, 10)
 
 	register_0 = (0, 4)
@@ -325,6 +334,8 @@ define token opcode (16)
 	implied_sp = (0, 0)
 	implied_r6 = (0, 0)
 	implied_r7 = (0, 0)
+	implied_p0 = (0, 0)
+	implied_p1 = (0, 0)
 ;
 
 # http://problemkaputt.de/gbatek.htm#dsiteakliteiioperandencoding
@@ -357,6 +368,11 @@ attach variables [ register_p0 ] [
 	a0e a1e a0l a1l
 	a0h a1h lc sv
 ];
+
+define token expanded (16)
+	expanded_imm = (0, 15)
+	expanded_implied_r7 = (0, 0)
+;
 
 attach variables [ Ax_0 Ax_1 Ax_3 Ax_4 Ax_5 Ax_6 Ax_8 Ax_10 Ax_11 Ax_12 ] [ a0 a1 ];
 attach variables [ Ax_Not8 Ax_Not12 ] [ a1 a0 ];
@@ -410,11 +426,9 @@ attach variables [ Arp_0 ] [ arp0 arp1 arp2 arp3 ];
 
 attach variables [ implied_sp ] [ sp sp ];
 attach variables [ implied_r6 ] [ r6 r6 ];
-attach variables [ implied_r7 ] [ r7 r7 ];
-
-define token expanded (16)
-	expanded_imm = (0, 15)
-;
+attach variables [ implied_r7 expanded_implied_r7 ] [ r7 r7 ];
+attach variables [ implied_p0 ] [ p0 p0 ];
+attach variables [ implied_p1 ] [ p1 p1 ];
 
 @ifdef NOCASH_SYNTAX
 MemRn_0:[Rn_0] is Rn_0
@@ -492,26 +506,25 @@ MemImm16:[##expanded_imm] is expanded_imm
 	export *[data]:2 expanded_imm;
 }
 
+# TODO: is this supposed to be an 8-bit signed immediate, or 7 bits? add implies 8, but I'm not sure
 @ifdef NOCASH_SYNTAX
-MemR7Imm7s_0:[implied_r7+/-imm7_0] is implied_r7 & imm7_0
+MemR7Imm7s_0:[implied_r7+imm7s_0] is implied_r7 & imm7s_0
 @else
-MemR7Imm7s_0:(implied_r7+#imm7_0), (implied_r7+#-imm7_0) is implied_r7 & imm7_0
+MemR7Imm7s_0:(implied_r7+#imm7s_0) is implied_r7 & imm7s_0
 @endif
 {
-	plus_addr:2 = implied_r7 + imm7_0;
-	# minus_addr:2 = implied_r7 - imm7_0;
-	# TODO: how do multiple exports work?
-	export *[data]:2 plus_addr;
+	addr:2 = implied_r7 + imm7s_0;
+	export *[data]:2 addr;
 }
 
 @ifdef NOCASH_SYNTAX
-MemR7Imm16:[r7+expanded_imm] is expanded_imm
+MemR7Imm16:[expanded_implied_r7+expanded_imm] is expanded_imm & expanded_implied_r7
 @else
-MemR7Imm16:(r7+##expanded_imm) is expanded_imm
+MemR7Imm16:(expanded_implied_r7+##expanded_imm) is expanded_imm & expanded_implied_r7
 @endif
 {
-	addr:2 = r7 + expanded_imm;
-	export *[data]:2 expanded_imm;
+	addr:2 = expanded_implied_r7 + expanded_imm;
+	export *[data]:2 addr;
 }
 
 Address18_16and0:full_addr is address18_2bits_0; expanded_imm
@@ -541,24 +554,39 @@ RelAddr7:full_addr is imm7_4
 	export *[code]:2 full_addr;  # TODO: do we want to dereference this?
 }
 
-# TODO: ImmN, ImmNs, Imm16, Imm4bitno, and the constants
+# TODO: there are more of these
+Imm8s_0:imm8s_0 is imm8s_0 { local tmp:2 = imm8s_0; export tmp; }
+Imm8u_0:imm8u_0 is imm8u_0 { local tmp:2 = imm8u_0; export tmp; }
+Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 
 # Comments are from http://problemkaputt.de/gbatek.htm#dsiteakliteiiinstructionsetencoding
 # Base  Ver Opcode (with parameter bits located at @bitnumber and up)
 
 # D4FBh TL  add  MemImm16@16, Ax@8
+:add MemImm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xFB; MemImm16 { Ax_8 = Ax_8 + sext(MemImm16); }
 # A600h TL  add  MemImm8@0, Ax@8
+:add MemImm8_0, Ax_8 is opcode_9_15=(0xA6>>1) & Ax_8 & MemImm8_0 { Ax_8 = Ax_8 + sext(MemImm8_0); }
 # 86C0h TL  add  Imm16@16, Ax@8
+:add Imm16, Ax_8 is opcode_9_15=(0x86>>1) & Ax_8 & opcode_0_7=0xC0; Imm16 { Ax_8 = Ax_8 + sext(Imm16); }
 # C600h TL  add  Imm8u@0, Ax@8
+:add Imm8u_0, Ax_8 is opcode_9_15=(0xC6>>1) & Ax_8 & Imm8u_0 { Ax_8 = Ax_8 + zext(Imm8u_0); } # Assuming u is for unsigned
 # D4DBh TL  add  MemR7Imm16@16, Ax@8
+:add MemR7Imm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xDB; MemR7Imm16 { Ax_8 = Ax_8 + sext(MemR7Imm16); }
 # 4600h TL  add  MemR7Imm7s@0, Ax@8
+# TODO: is MemR7Imm7s_0 supposed to be an 8-bit signed immediate, or 7 bits? This looks like 8
+:add MemR7Imm7s_0, Ax_8 is opcode_9_15=(0x46>>1) & Ax_8 & MemR7Imm7s_0 { Ax_8 = Ax_8 + sext(MemR7Imm7s_0); }
 # 8680h TL  add  MemRn@0, Ax@8 || Rn@0stepZIDS@3
+# TODO
 # 86A0h TL  add  RegisterP0@0, Ax@8
+:add register_p0, Ax_8 is opcode_9_15=(0x86>>1) & Ax_8 & opcode_5_7=(0xA0>>5) & register_p0 { Ax_8 = Ax_8 + sext(register_p0); }
 @ifdef TEAK_LITE_2
 # D2DAh TL2 add  Ab@10, Bx@0
+:add Ab_10, Bx_0 is opcode_12_15=0xD & Ab_10 & opcode_1_9=(0x2DA>>1) & Bx_0 { Bx_0 = Bx_0 + Ab_10; }
 # 5DF0h TL2 add  Bx@1, Ax@0
+:add Bx_1, Ax_0 is opcode_2_15=(0x5DF0>>2) & Bx_1 & Ax_0 { Ax_0 = Ax_0 + Bx_1; }
 # 9070h TL2 add  MemR01@8, sv, Abh@2 || sub MemR01@8offsZI@0, sv, Abl@2
 #            || mov Abl@2, MemR45@8 || R01@8stepII2@0, R45@8stepII2@1
+# TODO: what gives with these ||s?
 # 5DB0h TL2 add  MemR04@1, sv, Abh@2 || sub MemR04@1offsZI@0, sv, Abl@2
 #            || R04@1stepII2@0
 # 6F80h TL2 add  MemR45@2, MemR01@2, Abh@3
@@ -570,9 +598,13 @@ RelAddr7:full_addr is imm7_4
 # 5E30h TL2 add  MemR45@8, sv, Abh@2 || sub MemR45@8offsZI@1, sv, Abl@2
 #            || mov Abl@2, MemR01@8 || R01@8stepII2@0, R45@8stepII2@1
 # 5DC0h TL2 add  p0, p1, Ab@2
+:add implied_p0, implied_p1, Ab_2 is opcode_4_15=0x5DC & Ab_2 & opcode_0_1=0 & implied_p0 & implied_p1 { Ab_2 = zext(implied_p0 + implied_p1); }  # TODO: truncation? and does this just add p0 and p1
 # D782h TL2 add  p1, Ax@0
+:add implied_p1, Ax_0 is opcode_1_15=(0xD782>>1) & Ax_0 & implied_p1 { Ax_0 = Ax_0 + zext(implied_p1); }
 # 5DF8h TL2 add  Px@1, Bx@0
+:add Px_1, Bx_0 is opcode_2_15=(0x5DF8>>2) & Px_1 & Bx_0 { Bx_0 = Bx_0 + zext(Px_1); }
 # D38Bh TL2 add  r6, Ax@4
+:add implied_r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=0xB & implied_r6 { Ax_4 = Ax_4 + sext(implied_r6); }
 # 4590h TL2 add3 p0, p1, Ab@2
 # 4592h TL2 add3a p0, p1, Ab@2
 # 4593h TL2 add3aa p0, p1, Ab@2
