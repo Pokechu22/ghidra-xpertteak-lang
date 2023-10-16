@@ -49,17 +49,17 @@ define register offset=0x40 size=2 [ prpage ];
 # custom hardware extensions (e.g. I/O ports, not used here?)
 define register offset=0x42 size=2 [ ext0 ext1 ext2 ext3 ];
 
-@ifndef TEAK_LITE_2
-# Teak Lite 1
 define register offset=0x4a size=2 [ st0 st1 st2 ];
 define register offset=0x50 size=2 [ icr ];
-@else
-# Teak Lite 2
-define register offset=0x4a size=2 [ stt0 stt1 stt2 ];
-define register offset=0x50 size=2 [ mod0 mod1 mod2 mod3 ];
-define register offset=0x58 size=2 [ ar0 ar1 arp0 arp1 arp2 arp3 stepi stepj ];
+@ifdef TEAK_LITE_2
+define register offset=0x52 size=2 [ stt0 stt1 stt2 ];
+define register offset=0x58 size=2 [ mod0 mod1 mod2 mod3 ];
+define register offset=0x60 size=2 [ ar0 ar1 arp0 arp1 arp2 arp3 ];
 @endif
-define register offset=0x68 size=2 [ cfgi cfgj ];
+define register offset=0x6c size=2 [ cfgi cfgj ];
+@ifdef TEAK_LITE_2
+define register offset=0x70 size=2 [ stepi stepj ];
+@endif
 
 # a0e and a1e are 4-bit instead of 8-bit on teak lite 1, and b0e and b1e don't exist
 define register offset=0x80 size=2 [ a0e a0h a0l ];
@@ -140,14 +140,19 @@ define hack_register offset=0 size=1 [ SR_CARRY_ SR_OVERFLOW_ SR_ARITH_ZERO_ SR_
 @endif
 
 define token opcode (16)
-	full_opcode = (0, 15)
-	r6_unused = (0, 0)
-;
+	full_opcode  = (0, 15)
+	opcode_4_15  = (4, 15)
+	opcode_5_15  = (5, 15)
+	opcode_0_7   = (0, 7)
+	opcode_12_15 = (12, 15)
 
-define token opcode_reg (16)
-	opcode_p0 = (5, 15)
 	register_0 = (0, 4)
 	register_p0 = (0, 4)
+
+	ArArpSttMod_0 = (0, 3)
+	ArArpSttMod_8 = (8, 11)
+
+	implied_r6 = (0, 0)
 ;
 
 # TODO: the original info says a0 and a1 and also p0, but those aren't 16 bits?
@@ -155,12 +160,7 @@ attach variables [ register_0 ] [
 	r0 r1 r2 r3
 	r4 r5 r7 y0 # NOTE: no r6
 	# 08
-@ifndef TEAK_LITE_2
-	st0 st1 st2
-@else
-	stt0 stt1 stt2
-@endif
-	p0h # NOTE: p0h
+	st0 st1 st2 p0h # NOTE: p0h
 	pc sp cfgi cfgj
 	# 10
 	b0h b1h b0l b1l
@@ -174,12 +174,7 @@ attach variables [ register_p0 ] [
 	r0 r1 r2 r3
 	r4 r5 r7 y0 # NOTE: no r6
 	# 08
-@ifndef TEAK_LITE_2
-	st0 st1 st2
-@else
-	stt0 stt1 stt2
-@endif
-	p0 # NOTE: p0
+	st0 st1 st2 p0 # NOTE: p0
 	pc sp cfgi cfgj
 	# 10
 	b0h b1h b0l b1l
@@ -189,7 +184,17 @@ attach variables [ register_p0 ] [
 	a0h a1h lc sv
 ];
 
-attach variables [ r6_unused ] [ r6 r6 ];
+@ifdef TEAK_LITE_2
+attach variables [ ArArpSttMod_0 ArArpSttMod_8 ] [
+	ar0 ar1
+	arp0 arp1 arp2 arp3
+	_ _
+	stt0 stt1 stt2 _
+	mod0 mod1 mod2 mod3
+];
+@endif
+
+attach variables [ implied_r6 ] [ r6 r6 ];
 
 define token expanded (16)
 	expanded_imm = (0, 15)
@@ -866,15 +871,16 @@ define token expanded (16)
 # D7C2h TL2 pacr1 Implied Const8000h, Implied p1, Ax@0
 @endif
 # 5E60h TL  pop  Register@0
-:pop register_0 is opcode_p0=(0x5E60>>5) & register_0 unimpl
+:pop register_0 is opcode_5_15=(0x5E60>>5) & register_0 unimpl
 @ifdef TEAK_LITE_2
 # 47B4h TL2 pop  Abe@0
 # 80C7h TL2 pop  ArArpSttMod@8
+:pop ArArpSttMod_8 is opcode_12_15=0x8 & ArArpSttMod_8 & opcode_0_7=0xc7 unimpl
 # 0006h TL2 pop  Bx@5, Unused1@0
 # D7F4h TL2 pop  prpage, Unused2@0
 # D496h TL2 pop  Px@0
 # 0024h TL2 pop  r6, Unused1@0
-:pop r6_unused is full_opcode=0x0024 & r6_unused unimpl
+:pop implied_r6 is full_opcode=0x0024 & implied_r6 unimpl
 # D7F0h TL2 pop  repc, Unused2@0
 # D494h TL2 pop  x0
 # D495h TL2 pop  x1
@@ -884,10 +890,11 @@ define token expanded (16)
 # 5F40h TL  push Imm16@16
 :push expanded_imm is full_opcode=0x5F40; expanded_imm unimpl
 # 5E40h TL  push Register@0
-:push register_0 is opcode_p0=(0x5E40>>5) & register_0 unimpl
+:push register_0 is opcode_5_15=(0x5E40>>5) & register_0 unimpl
 @ifdef TEAK_LITE_2
 # D7C8h TL2 push Abe@1, Unused1@0
 # D3D0h TL2 push ArArpSttMod@0
+:push ArArpSttMod_0 is opcode_4_15=0xD3D & ArArpSttMod_0 unimpl
 # D7FCh TL2 push prpage, Unused2@0
 # D78Ch TL2 push Px@1, Unused1@0
 # D4D7h TL2 push r6, Unused1@5
