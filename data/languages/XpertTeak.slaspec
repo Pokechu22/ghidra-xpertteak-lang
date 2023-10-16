@@ -143,18 +143,23 @@ define hack_register offset=0 size=1 [ SR_CARRY_ SR_OVERFLOW_ SR_ARITH_ZERO_ SR_
 @endif
 
 define token opcode (16)
-	full_opcode  = (0, 15)
+	opcode_0_15  = (0, 15)
 	opcode_0_1   = (0, 1)
 	opcode_0_3   = (0, 3)
 	opcode_0_7   = (0, 7)
+	opcode_1_4   = (1, 4)
 	opcode_1_9   = (1, 9)
 	opcode_1_15  = (1, 15)
 	opcode_2_15  = (2, 15)
 	opcode_5_7   = (5, 7)
 	opcode_4_15  = (4, 15)
 	opcode_5_15  = (5, 15)
+	opcode_6_15  = (6, 15)
 	opcode_9_15  = (9, 15)
 	opcode_12_15 = (12, 15)
+
+	unused_0_0   = (0, 0)
+	unused_0_1   = (0, 1)
 
 	imm8_0 = (0, 7)
 	imm8s_0 = (0, 7) signed
@@ -336,6 +341,11 @@ define token opcode (16)
 	implied_r7 = (0, 0)
 	implied_p0 = (0, 0)
 	implied_p1 = (0, 0)
+	implied_prpage = (0, 0)
+	implied_repc = (0, 0)
+	implied_x0 = (0, 0)
+	implied_x1 = (0, 0)
+	implied_y1 = (0, 0)
 ;
 
 # http://problemkaputt.de/gbatek.htm#dsiteakliteiioperandencoding
@@ -429,6 +439,11 @@ attach variables [ implied_r6 ] [ r6 r6 ];
 attach variables [ implied_r7 expanded_implied_r7 ] [ r7 r7 ];
 attach variables [ implied_p0 ] [ p0 p0 ];
 attach variables [ implied_p1 ] [ p1 p1 ];
+attach variables [ implied_prpage ] [ prpage prpage ];
+attach variables [ implied_repc ] [ repc repc ];
+attach variables [ implied_x0 ] [ x0 x0 ];
+attach variables [ implied_x1 ] [ x1 x1 ];
+attach variables [ implied_y1 ] [ y1 y1 ];
 
 @ifdef NOCASH_SYNTAX
 MemRn_0:[Rn_0] is Rn_0
@@ -1249,21 +1264,29 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 :pop register_0 is opcode_5_15=(0x5E60>>5) & register_0 unimpl
 @ifdef TEAK_LITE_2
 # 47B4h TL2 pop  Abe@0
+:pop Abe_0 is opcode_2_15=(0x47B4>>2) & Abe_0 unimpl
 # 80C7h TL2 pop  ArArpSttMod@8
 :pop ArArpSttMod_8 is opcode_12_15=0x8 & ArArpSttMod_8 & opcode_0_7=0xc7 unimpl
 # 0006h TL2 pop  Bx@5, Unused1@0
+:pop Bx_5 is opcode_6_15=0 & Bx_5 & opcode_1_4=0 & unused_0_0 unimpl
 # D7F4h TL2 pop  prpage, Unused2@0
+:pop implied_prpage is opcode_2_15=(0xD7F4>>2) & unused_0_1 & implied_prpage unimpl
 # D496h TL2 pop  Px@0
+:pop Px_0 is opcode_1_15=(0xD496>>1) & Px_0 unimpl
 # 0024h TL2 pop  r6, Unused1@0
-:pop implied_r6 is full_opcode=0x0024 & implied_r6 unimpl
+:pop implied_r6 is opcode_1_15=(0x0024>>1) & unused_0_0 & implied_r6 unimpl
 # D7F0h TL2 pop  repc, Unused2@0
+:pop implied_repc is opcode_2_15=(0xD7F0>>2) & unused_0_1 & implied_repc unimpl
 # D494h TL2 pop  x0
+:pop implied_x0 is opcode_0_15=0xD494 & implied_x0 unimpl
 # D495h TL2 pop  x1
+:pop implied_x1 is opcode_0_15=0xD495 & implied_x1 unimpl
 # 0004h TL2 pop  y1, Unused1@0
+:pop implied_y1 is opcode_1_15=(4>>1) & unused_0_0 & implied_y1 unimpl
 # 47B0h TL2 popa Ab@0
 @endif
 # 5F40h TL  push Imm16@16
-:push expanded_imm is full_opcode=0x5F40; expanded_imm unimpl
+:push expanded_imm is opcode_0_15=0x5F40; expanded_imm unimpl
 # 5E40h TL  push Register@0
 :push register_0 is opcode_5_15=(0x5E40>>5) & register_0 unimpl
 @ifdef TEAK_LITE_2
