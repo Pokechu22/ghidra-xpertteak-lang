@@ -1275,7 +1275,7 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 # 80C7h TL2 pop  ArArpSttMod@8
 :pop ArArpSttMod_8 is opcode_12_15=0x8 & ArArpSttMod_8 & opcode_0_7=0xc7 unimpl
 # 0006h TL2 pop  Bx@5, Unused1@0
-:pop Bx_5 is opcode_6_15=0 & Bx_5 & opcode_1_4=0 & unused_0_0 unimpl
+:pop Bx_5 is opcode_6_15=0 & Bx_5 & opcode_1_4=(6>>1) & unused_0_0 unimpl
 # D7F4h TL2 pop  prpage, Unused2@0
 :pop implied_prpage is opcode_2_15=(0xD7F4>>2) & unused_0_1 & implied_prpage unimpl
 # D496h TL2 pop  Px@0
