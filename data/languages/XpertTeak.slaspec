@@ -155,6 +155,7 @@ define token opcode (16)
 	opcode_2_15  = (2, 15)
 	opcode_3_15  = (3, 15)
 	opcode_5_7   = (5, 7)
+	opcode_4_11  = (4, 11)
 	opcode_4_15  = (4, 15)
 	opcode_5_15  = (5, 15)
 	opcode_6_15  = (6, 15)
@@ -163,6 +164,7 @@ define token opcode (16)
 	opcode_8_15  = (8, 15)
 	opcode_9_15  = (9, 15)
 	opcode_12_15 = (12, 15)
+	opcode_13_15 = (13, 15)
 
 	# Nocash documentation indicates these explicitly (as otherwise you can't tell just looking at
 	# the hex). Sleigh simply requires that no constraint act on those bits. So, these unused fields
@@ -683,16 +685,27 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 :addv Imm16, implied_r6 is opcode_0_15=0x47BB & implied_r6; Imm16 { implied_r6 = implied_r6 + Imm16; }
 @endif
 # D4F9h TL  and  MemImm16@16, Ax@8
+# TODO: what parts are affected by the and? As-is this zeros most of the accumulator
+:and MemImm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xF9; MemImm16 { Ax_8 = Ax_8 & zext(MemImm16); }
 # A200h TL  and  MemImm8@0, Ax@8
+:and MemImm8_0, Ax_8 is opcode_9_15=(0xA2>>1) & Ax_8 & MemImm8_0 { Ax_8 = Ax_8 & zext(MemImm8_0); }
 # 82C0h TL  and  Imm16@16, Ax@8
+:and Imm16, Ax_8 is opcode_9_15=(0x82>>1) & Ax_8 & opcode_0_7=0xC0; Imm16 { Ax_8 = Ax_8 & zext(Imm16); }
 # C200h TL  and  Imm8u@0, Ax@8
+:and Imm8u_0, Ax_8 is opcode_9_15=(0xC2>>1) & Ax_8 & Imm8u_0 { Ax_8 = Ax_8 & zext(Imm8u_0); }
 # D4D9h TL  and  MemR7Imm16@16, Ax@8
+:and MemR7Imm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xD9; MemR7Imm16 { Ax_8 = Ax_8 & zext(MemR7Imm16); }
 # 4200h TL  and  MemR7Imm7s@0, Ax@8
+:and MemR7Imm7s_0, Ax_8 is opcode_9_15=(0x42>>1) & Ax_8 & opcode_7_7=0 & MemR7Imm7s_0 { Ax_8 = Ax_8 & zext(MemR7Imm7s_0); }
 # 8280h TL  and  MemRn@0, Ax@8 || Rn@0stepZIDS@3
+# TODO
 # 82A0h TL  and  RegisterP0@0, Ax@8
+:and Register_P_0, Ax_8 is opcode_9_15=(0x82>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_P_0 { Ax_8 = Ax_8 & zext(Register_P_0); }
 @ifdef TEAK_LITE_2
 # 6770h TL2 and  Ab@2, Ab@0, Ax@12                ;TL2 only
+:and Ab_2, Ab_0, Ax_12 is opcode_13_15=(0x6>>1) & Ax_12 & opcode_4_11=0x77 & Ab_2 & Ab_0 { Ax_12 = Ab_2 & Ab_0; }
 # D389h TL2 and  r6, Ax@4
+:and implied_r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=9 & implied_r6 { Ax_4 = Ax_4 & zext(implied_r6); }
 @endif
 # 4B80h TL  banke BankFlags6@0  ;{r0}{,r1}{,r4}{,cfgi}{,r7}{,cfgj}
 @ifdef TEAK_LITE_2
