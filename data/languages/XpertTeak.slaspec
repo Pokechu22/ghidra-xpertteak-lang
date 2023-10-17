@@ -176,9 +176,9 @@ define token opcode (16)
 	imm7s_0 = (0, 6) signed
 	imm7_4 = (4, 10)
 
-	register_0 = (0, 4)
-	register_5 = (5, 9)
-	register_p0 = (0, 4)
+	Register_0 = (0, 4)
+	Register_5 = (5, 9)
+	Register_P_0 = (0, 4)
 
 	Ax_0  = (0, 0)
 	Ax_1  = (1, 1)
@@ -360,7 +360,7 @@ define token opcode (16)
 # http://problemkaputt.de/gbatek.htm#dsiteakliteiioperandencoding
 
 # TODO: the original info says a0 and a1 and also p0, but those aren't 16 bits?
-attach variables [ register_0 register_5 ] [
+attach variables [ Register_0 Register_5 ] [
 	r0 r1 r2 r3
 	r4 r5 r7 y0 # NOTE: no r6
 	# 08
@@ -374,7 +374,7 @@ attach variables [ register_0 register_5 ] [
 	a0h a1h lc sv
 ];
 
-attach variables [ register_p0 ] [
+attach variables [ Register_P_0 ] [
 	r0 r1 r2 r3
 	r4 r5 r7 y0 # NOTE: no r6
 	# 08
@@ -600,7 +600,7 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 # 8680h TL  add  MemRn@0, Ax@8 || Rn@0stepZIDS@3
 # TODO
 # 86A0h TL  add  RegisterP0@0, Ax@8
-:add register_p0, Ax_8 is opcode_9_15=(0x86>>1) & Ax_8 & opcode_5_7=(0xA0>>5) & register_p0 { Ax_8 = Ax_8 + sext(register_p0); }
+:add Register_P_0, Ax_8 is opcode_9_15=(0x86>>1) & Ax_8 & opcode_5_7=(0xA0>>5) & Register_P_0 { Ax_8 = Ax_8 + sext(Register_P_0); }
 @ifdef TEAK_LITE_2
 # D2DAh TL2 add  Ab@10, Bx@0
 :add Ab_10, Bx_0 is opcode_12_15=0xD & Ab_10 & opcode_1_9=(0x2DA>>1) & Bx_0 { Bx_0 = Bx_0 + Ab_10; }
@@ -1268,7 +1268,7 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 # D7C2h TL2 pacr1 Implied Const8000h, Implied p1, Ax@0
 @endif
 # 5E60h TL  pop  Register@0
-:pop register_0 is opcode_5_15=(0x5E60>>5) & register_0 unimpl
+:pop Register_0 is opcode_5_15=(0x5E60>>5) & Register_0 unimpl
 @ifdef TEAK_LITE_2
 # 47B4h TL2 pop  Abe@0
 :pop Abe_0 is opcode_2_15=(0x47B4>>2) & Abe_0 unimpl
@@ -1296,7 +1296,7 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 # 5F40h TL  push Imm16@16
 :push expanded_imm is opcode_0_15=0x5F40; expanded_imm unimpl
 # 5E40h TL  push Register@0
-:push register_0 is opcode_5_15=(0x5E40>>5) & register_0 unimpl
+:push Register_0 is opcode_5_15=(0x5E40>>5) & Register_0 unimpl
 @ifdef TEAK_LITE_2
 # D7C8h TL2 push Abe@1, Unused1@0
 :push Abe_1 is opcode_2_15=(0xD7C8>>2) & Abe_1 & unused_0_0 unimpl
