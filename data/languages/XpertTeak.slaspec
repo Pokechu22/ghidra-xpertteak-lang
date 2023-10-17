@@ -146,21 +146,29 @@ define token opcode (16)
 	opcode_0_15  = (0, 15)
 	opcode_0_1   = (0, 1)
 	opcode_0_3   = (0, 3)
+	opcode_0_4   = (0, 4)
 	opcode_0_7   = (0, 7)
 	opcode_1_4   = (1, 4)
 	opcode_1_9   = (1, 9)
 	opcode_1_15  = (1, 15)
+	opcode_2_5   = (2, 5)
 	opcode_2_15  = (2, 15)
 	opcode_5_7   = (5, 7)
 	opcode_4_15  = (4, 15)
 	opcode_5_15  = (5, 15)
 	opcode_6_15  = (6, 15)
 	opcode_7_7   = (7, 7)
+	opcode_7_15  = (7, 15)
 	opcode_9_15  = (9, 15)
 	opcode_12_15 = (12, 15)
 
+	# Nocash documentation indicates these explicitly (as otherwise you can't tell just looking at
+	# the hex). Sleigh simply requires that no constraint act on those bits. So, these unused fields
+	# aren't strictly needed, but are included in instruction constructors for completeness and to
+	# make it easier to compare with nocash.
 	unused_0_0   = (0, 0)
 	unused_0_1   = (0, 1)
+	unused_5_5   = (5, 5)
 
 	imm8_0 = (0, 7)
 	imm8s_0 = (0, 7) signed
@@ -1291,17 +1299,27 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 :push register_0 is opcode_5_15=(0x5E40>>5) & register_0 unimpl
 @ifdef TEAK_LITE_2
 # D7C8h TL2 push Abe@1, Unused1@0
+:push Abe_1 is opcode_2_15=(0xD7C8>>2) & Abe_1 & unused_0_0 unimpl
 # D3D0h TL2 push ArArpSttMod@0
 :push ArArpSttMod_0 is opcode_4_15=0xD3D & ArArpSttMod_0 unimpl
 # D7FCh TL2 push prpage, Unused2@0
+:push implied_prpage is opcode_2_15=(0xD7FC>>2) & unused_0_1 & implied_prpage unimpl
 # D78Ch TL2 push Px@1, Unused1@0
+:push Px_1 is opcode_2_15=(0xD78C>>2) & Px_1 & unused_0_0 unimpl
 # D4D7h TL2 push r6, Unused1@5
+:push implied_r6 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x17 & implied_r6 unimpl
 # D7F8h TL2 push repc, Unused2@0
+:push implied_repc is opcode_2_15=(0xD7F8>>2) & unused_0_1 & implied_repc unimpl
 # D4D4h TL2 push x0, Unused1@5
+:push implied_x0 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x14 & implied_x0 unimpl
 # D4D5h TL2 push x1, Unused1@5
+:push implied_x1 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x15 & implied_x1 unimpl
 # D4D6h TL2 push y1, Unused1@5
+:push implied_y1 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x16 & implied_y1 unimpl
 # 4384h TL2 pusha Ax@6, Unused2@0
+:pusha Ax_6 is opcode_7_15=(0x438>>3) & Ax_6 & opcode_2_5=(4>>2) & unused_0_1 unimpl
 # D788h TL2 pusha Bx@1, Unused1@0
+:pusha Bx_1 is opcode_2_15=(0xD788>>2) & Bx_1 & unused_0_0 unimpl
 @endif
 # 0C00h TL  rep  Imm8u@0    ;repeat next opcode N+1 times
 # 0D00h TL  rep  Register@0 ;repeat next opcode N+1 times
