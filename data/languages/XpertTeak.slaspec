@@ -153,12 +153,14 @@ define token opcode (16)
 	opcode_1_15  = (1, 15)
 	opcode_2_5   = (2, 5)
 	opcode_2_15  = (2, 15)
+	opcode_3_15  = (3, 15)
 	opcode_5_7   = (5, 7)
 	opcode_4_15  = (4, 15)
 	opcode_5_15  = (5, 15)
 	opcode_6_15  = (6, 15)
 	opcode_7_7   = (7, 7)
 	opcode_7_15  = (7, 15)
+	opcode_8_15  = (8, 15)
 	opcode_9_15  = (9, 15)
 	opcode_12_15 = (12, 15)
 
@@ -619,6 +621,7 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 #            || R01@2stepII2@0, R45@2stepII2@1
 # 5E30h TL2 add  MemR45@8, sv, Abh@2 || sub MemR45@8offsZI@1, sv, Abl@2
 #            || mov Abl@2, MemR01@8 || R01@8stepII2@0, R45@8stepII2@1
+# TODO: all of the above
 # 5DC0h TL2 add  p0, p1, Ab@2
 :add implied_p0, implied_p1, Ab_2 is opcode_4_15=0x5DC & Ab_2 & opcode_0_1=0 & implied_p0 & implied_p1 { Ab_2 = zext(implied_p0 + implied_p1); }  # TODO: truncation? and does this just add p0 and p1
 # D782h TL2 add  p1, Ax@0
@@ -628,32 +631,56 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 # D38Bh TL2 add  r6, Ax@4
 :add implied_r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=0xB & implied_r6 { Ax_4 = Ax_4 + sext(implied_r6); }
 # 4590h TL2 add3 p0, p1, Ab@2
+# TODO: what do these actually do?
+:add3 implied_p0, implied_p1, Ab_2 is opcode_3_15=(0x4590>>3) & Ab_2 & opcode_0_1=0 & implied_p0 & implied_p1 unimpl
 # 4592h TL2 add3a p0, p1, Ab@2
+:add3a implied_p0, implied_p1, Ab_2 is opcode_3_15=(0x4592>>3) & Ab_2 & opcode_0_1=2 & implied_p0 & implied_p1 unimpl
 # 4593h TL2 add3aa p0, p1, Ab@2
+:add3aa implied_p0, implied_p1, Ab_2 is opcode_3_15=(0x4593>>3) & Ab_2 & opcode_0_1=3 & implied_p0 & implied_p1 unimpl
 # 5DC1h TL2 adda p0, p1, Ab@2
+:adda implied_p0, implied_p1, Ab_2 is opcode_3_15=(0x5DC1>>3) & Ab_2 & opcode_0_1=1 & implied_p0 & implied_p1 unimpl
 @endif
+# TODO: how does addh differ from add? Does it target the high part of the accumulator?
 # B200h TL  addh MemImm8@0, Ax@8
+:addh MemImm8_0, Ax_8 is opcode_9_15=(0xB2>>1) & Ax_8 & MemImm8_0 { Ax_8 = Ax_8 + sext(MemImm8_0); }
 # 9280h TL  addh MemRn@0, Ax@8 || Rn@0stepZIDS@3
+# TODO
 # 92A0h TL  addh Register@0, Ax@8
+:addh Register_0, Ax_8 is opcode_9_15=(0x92>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0 { Ax_8 = Ax_8 + sext(Register_0); }
 @ifdef TEAK_LITE_2
 # 9464h TL2 addh r6, Ax@0
+:addh implied_r6, Ax_0 is opcode_1_15=(0x9464>>1) & Ax_0 & implied_r6 { Ax_0 = Ax_0 + sext(implied_r6); }
 # 90E0h TL2 addhp MemR0425@2, Px@4, Ax@8 || R0425@2stepII2D2S@0 ;p=ProgMem? Px?
+# TODO
 @endif
+# TODO: how does addl differ from add? Does it target the low part of the accumulator?
 # B400h TL  addl MemImm8@0, Ax@8
+:addl MemImm8_0, Ax_8 is opcode_9_15=(0xB4>>1) & Ax_8 & MemImm8_0 { Ax_8 = Ax_8 + sext(MemImm8_0); }
 # 9480h TL  addl MemRn@0, Ax@8 || Rn@0stepZIDS@3
+# TODO
 # 94A0h TL  addl Register@0, Ax@8
+:addl Register_0, Ax_8 is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0 { Ax_8 = Ax_8 + sext(Register_0); }
 @ifdef TEAK_LITE_2
 # 9466h TL2 addl r6, Ax@0
+:addl implied_r6, Ax_0 is opcode_1_15=(0x9466>>1) & Ax_0 & implied_r6 { Ax_0 = Ax_0 + sext(implied_r6); }
 # 906Ch TL2 addsub  p0, p1, Ab@0
+:addsub implied_p0, implied_p1, Ab_0 is opcode_2_15=(0x906C>>2) & Ab_0 & implied_p0 & implied_p1 unimpl
 # 49C2h TL2 addsub  p1, p0, Ab@4
+:addsub implied_p1, implied_p0, Ab_4 is opcode_6_15=(0x49C>>2) & Ab_4 & opcode_0_3=2 & implied_p1 & implied_p0 unimpl
 # 916Ch TL2 addsuba p0, p1, Ab@0
+:addsuba implied_p0, implied_p1, Ab_0 is opcode_2_15=(0x916C>>2) & Ab_0 & implied_p0 & implied_p1 unimpl
 # 49C3h TL2 addsuba p1, p0, Ab@4
+:addsub implied_p1, implied_p0, Ab_4 is opcode_6_15=(0x49C>>2) & Ab_4 & opcode_0_3=3 & implied_p1 & implied_p0 unimpl
 @endif
 # E700h TL  addv Imm16@16, MemImm8@0
+:addv Imm16, MemImm8_0 is opcode_8_15=0xE7 & MemImm8_0; Imm16 { MemImm8_0 = MemImm8_0 + Imm16; }
 # 86E0h TL  addv Imm16@16, MemRn@0 || Rn@0stepZIDS@3
+# TODO
 # 87E0h TL  addv Imm16@16, Register@0
+:addv Imm16, Register_0 is opcode_5_15=(0x87E>>1) & Register_0; Imm16 { Register_0 = Register_0 + Imm16; }
 @ifdef TEAK_LITE_2
 # 47BBh TL2 addv Imm16@16, r6
+:addv Imm16, implied_r6 is opcode_0_15=0x47BB & implied_r6; Imm16 { implied_r6 = implied_r6 + Imm16; }
 @endif
 # D4F9h TL  and  MemImm16@16, Ax@8
 # A200h TL  and  MemImm8@0, Ax@8
