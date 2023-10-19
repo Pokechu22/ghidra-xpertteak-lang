@@ -349,7 +349,16 @@ define token opcode (16)
 	address18_2bits_4 = (4, 5)
 	address18_2bits_5 = (5, 6)
 
+	stepZIDS_3 = (3, 4)
+
+	offsZI_0 = (0, 0)
+	offsZI_1 = (1, 1)
+	offsZI_2 = (2, 2)
+	offsZI_3 = (3, 3)
+	offsZI_8 = (8, 8)
+
 	implied_sp = (0, 0)
+	implied_sv = (0, 0)
 	implied_r6 = (0, 0)
 	implied_r7 = (0, 0)
 	implied_p0 = (0, 0)
@@ -359,6 +368,8 @@ define token opcode (16)
 	implied_x0 = (0, 0)
 	implied_x1 = (0, 0)
 	implied_y1 = (0, 0)
+
+	implied_step_Rn_0 = (2, 2)
 ;
 
 # http://problemkaputt.de/gbatek.htm#dsiteakliteiioperandencoding
@@ -448,6 +459,7 @@ attach variables [ Ar_0 Ar_2 ] [ ar0 ar1 ];
 attach variables [ Arp_0 ] [ arp0 arp1 arp2 arp3 ];
 
 attach variables [ implied_sp ] [ sp sp ];
+attach variables [ implied_sv ] [ sv sv ];
 attach variables [ implied_r6 ] [ r6 r6 ];
 attach variables [ implied_r7 expanded_implied_r7 ] [ r7 r7 ];
 attach variables [ implied_p0 ] [ p0 p0 ];
@@ -457,6 +469,13 @@ attach variables [ implied_repc ] [ repc repc ];
 attach variables [ implied_x0 ] [ x0 x0 ];
 attach variables [ implied_x1 ] [ x1 x1 ];
 attach variables [ implied_y1 ] [ y1 y1 ];
+
+# TODO: Nocash explicitly says it's unclear whether opcodes that use Rn_0 use
+# stepi or stepj in all cases, or if they use stepi for r0-r3 and stepj for r4-r7.
+# So unlike the others, there's a chance that this actually is implemented like this:
+# attach variables [ implied_step_Rn_0 ] [ stepi stepj ];
+# For now I've just used stepi in both cases though.
+attach variables [ implied_step_Rn_0 ] [ stepi stepi ];
 
 @ifdef NOCASH_SYNTAX
 MemRn_0:[Rn_0] is Rn_0
@@ -581,12 +600,41 @@ RelAddr7:full_addr is imm7_4
 	export *[code]:2 full_addr;  # TODO: do we want to dereference this?
 }
 
+# TODO: currently just always backets here
+MemR01_0:(R01_0) is R01_0 { export *[data]:2 R01_0; }
+MemR01_0offsZI_8:MemR01_0 is MemR01_0 & offsZI_8=0 { export MemR01_0; }
+MemR01_0offsZI_8:(R01_0+) is R01_0 & offsZI_8=1 { addr = R01_0 + 1; export *[data]:2 addr; }
+#MemR01_2:
+#MemR01_2offsZI_0
+#MemR01_3
+#MemR01_3offsZI_1
+#MemR01_4
+#MemR01_4offsZI_2
+#MemR01_5
+#MemR01_5offsZI_3
+#MemR01_8
+#MemR01_8offsZI_0
+MemR01_8:(R01_8) is R01_8 { export *[data]:2 R01_8; }
+MemR01_8offsZI_0:MemR01_8 is MemR01_8 & offsZI_0=0 { export MemR01_8; }
+MemR01_8offsZI_0:(R01_8+) is R01_8 & offsZI_0=1 { addr = R01_8 + 1; export *[data]:2 addr; }
+#MemR01_9:
+# no offsZI variant exists for MemR01_9
+
+Rn_0stepZIDS_3: is Rn_0 & stepZIDS_3=0 {}  # noop
+Rn_0stepZIDS_3:|| +1 is Rn_0 & stepZIDS_3=1 { Rn_0 = Rn_0 + 1; }  # increment
+Rn_0stepZIDS_3:|| -1 is Rn_0 & stepZIDS_3=2 { Rn_0 = Rn_0 - 1; }  # decrement
+Rn_0stepZIDS_3:|| +"s" is Rn_0 & stepZIDS_3=3 & implied_step_Rn_0 { Rn_0 = Rn_0 + implied_step_Rn_0; }  # add step
+
 # TODO: there are more of these
 Imm8s_0:imm8s_0 is imm8s_0 { local tmp:2 = imm8s_0; export tmp; }
 Imm8u_0:imm8u_0 is imm8u_0 { local tmp:2 = imm8u_0; export tmp; }
 Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 
 # Comments are from http://problemkaputt.de/gbatek.htm#dsiteakliteiiinstructionsetencoding
+# Note that "add  MemRn@0, Ax@8 || Rn@0stepZIDS@3" means two actions are performed by the instruction:
+# First, it adds; then it applies a step (which is optional). The || does NOT indicate a choice of
+# one action or the other; for instance 6FA0 always adds the high parts and subtracts the low parts.
+
 # Base  Ver Opcode (with parameter bits located at @bitnumber and up)
 
 # D4FBh TL  add  MemImm16@16, Ax@8
@@ -602,7 +650,7 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 # 4600h TL  add  MemR7Imm7s@0, Ax@8
 :add MemR7Imm7s_0, Ax_8 is opcode_9_15=(0x46>>1) & Ax_8 & opcode_7_7=0 & MemR7Imm7s_0 { Ax_8 = Ax_8 + sext(MemR7Imm7s_0); }
 # 8680h TL  add  MemRn@0, Ax@8 || Rn@0stepZIDS@3
-# TODO
+:add MemRn_0, Ax_8 Rn_0stepZIDS_3 is opcode_9_15=(0x86>>1) & Ax_8 & opcode_5_7=(0x80>>5) & Rn_0stepZIDS_3 & MemRn_0 { Ax_8 = Ax_8 + sext(MemRn_0); build Rn_0stepZIDS_3; }
 # 86A0h TL  add  RegisterP0@0, Ax@8
 :add Register_P_0, Ax_8 is opcode_9_15=(0x86>>1) & Ax_8 & opcode_5_7=(0xA0>>5) & Register_P_0 { Ax_8 = Ax_8 + sext(Register_P_0); }
 @ifdef TEAK_LITE_2
@@ -612,7 +660,7 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 :add Bx_1, Ax_0 is opcode_2_15=(0x5DF0>>2) & Bx_1 & Ax_0 { Ax_0 = Ax_0 + Bx_1; }
 # 9070h TL2 add  MemR01@8, sv, Abh@2 || sub MemR01@8offsZI@0, sv, Abl@2
 #            || mov Abl@2, MemR45@8 || R01@8stepII2@0, R45@8stepII2@1
-# TODO: what gives with these ||s?
+#:add MemR01_8, implied_sv, Abh_2 || sub MemR01_8offsZI_0, implied_sv, Abl_2 || mov Abl_2, MemR45_8 ||
 # 5DB0h TL2 add  MemR04@1, sv, Abh@2 || sub MemR04@1offsZI@0, sv, Abl@2
 #            || R04@1stepII2@0
 # 6F80h TL2 add  MemR45@2, MemR01@2, Abh@3
