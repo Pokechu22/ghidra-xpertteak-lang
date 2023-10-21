@@ -279,7 +279,6 @@ define token opcode (16)
 
 	Abl_0  = (0, 1)
 	Abl_2  = (2, 3)
-	Abl_2c = (2, 3) # identical copy
 	Abl_3  = (3, 4)
 	Abl_4  = (4, 5)
 	Abl_10 = (10, 11)
@@ -375,7 +374,6 @@ define token opcode (16)
 
 	implied_sp = (0, 0)
 	implied_sv = (0, 0)
-	implied_svc = (0, 0) # identical copy
 	implied_r6 = (0, 0)
 	implied_r7 = (0, 0)
 	implied_p0 = (0, 0)
@@ -387,6 +385,13 @@ define token opcode (16)
 	implied_y1 = (0, 0)
 
 	implied_step_Rn_0 = (2, 2)
+
+	# Fields can only appear in the display section once, or else the errors
+	# "Duplicate symbol name" and "Redefining operand" will appear. Unfortunately,
+	# we have actual duplicate symbols. The workaround is to copy them here, and
+	# then the extra uses can appear in the display section.
+	Abl_2_copy = (2, 3)
+	implied_sv_copy = (0, 0)
 ;
 
 # http://problemkaputt.de/gbatek.htm#dsiteakliteiioperandencoding
@@ -445,7 +450,7 @@ attach variables [ Bxh_0 Bxh_2 Bxh_3 Bxh_4 Bxh_5 Bxh_8 Bxh_10 ] [ b0h b1h ];
 attach variables [ Bxh_not4 ] [ b1h b0h ];
 
 attach variables [ Ab_0 Ab_2 Ab_3 Ab_4 Ab_5 Ab_6 Ab_7 Ab_8 Ab_10 Ab_11 ] [ b0 b1 a0 a1 ];
-attach variables [ Abl_0 Abl_2 Abl_3 Abl_4 Abl_10 ] [ b0l b1l a0l a1l ];
+attach variables [ Abl_0 Abl_2 Abl_2_copy Abl_3 Abl_4 Abl_10 ] [ b0l b1l a0l a1l ];
 attach variables [ Abh_2 Abh_3 Abh_4 Abh_8 Abh_10 ] [ b0h b1h a0h a1h ];
 attach variables [ Abe_0 Abe_1 ] [ b0e b1e a0e a1e ];
 attach variables [ Ablh_9 Ablh_10 ] [ b0l b0h b1l b1h a0l a0h a1l a1h ];
@@ -476,7 +481,7 @@ attach variables [ Ar_0 Ar_2 ] [ ar0 ar1 ];
 attach variables [ Arp_0 ] [ arp0 arp1 arp2 arp3 ];
 
 attach variables [ implied_sp ] [ sp sp ];
-attach variables [ implied_sv implied_svc ] [ sv sv ];
+attach variables [ implied_sv implied_sv_copy ] [ sv sv ];
 attach variables [ implied_r6 ] [ r6 r6 ];
 attach variables [ implied_r7 expanded_implied_r7 ] [ r7 r7 ];
 attach variables [ implied_p0 ] [ p0 p0 ];
@@ -708,9 +713,9 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 :add Bx_1, Ax_0 is opcode_2_15=(0x5DF0>>2) & Bx_1 & Ax_0 { Ax_0 = Ax_0 + Bx_1; }
 # 9070h TL2 add  MemR01@8, sv, Abh@2 || sub MemR01@8offsZI@0, sv, Abl@2
 #            || mov Abl@2, MemR45@8 || R01@8stepII2@0, R45@8stepII2@1
-:add MemR01_8, implied_sv, Abh_2 || "sub" MemR01_8offsZI_0, implied_svc, Abl_2 || "mov" Abl_2c, MemR45_8 || R01_8_stepII2_0, R45_8_stepII2_1
+:add MemR01_8, implied_sv, Abh_2 || "sub" MemR01_8offsZI_0, implied_sv_copy, Abl_2 || "mov" Abl_2_copy, MemR45_8 || R01_8_stepII2_0, R45_8_stepII2_1
 	is opcode_9_15=(0x90>>1) & MemR01_8 & opcode_3_7=(0x70>>3) & Abh_2 & R45_8_stepII2_1 & R01_8_stepII2_0
-	& MemR45_8 & Abl_2 & MemR01_8offsZI_0 & implied_sv & implied_svc & Abl_2c
+	& MemR45_8 & Abl_2 & MemR01_8offsZI_0 & implied_sv & implied_sv_copy & Abl_2_copy
 {
 	Abh_2 = Abh_2 + MemR01_8; # TODO: sv?
 	Abl_2 = Abl_2 - MemR01_8offsZI_0; # TODO: sv?
