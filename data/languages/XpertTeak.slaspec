@@ -609,24 +609,46 @@ RelAddr7:full_addr is imm7_4
 }
 
 # TODO: currently just always backets here
-MemR01_0:(R01_0) is R01_0 { export *[data]:2 R01_0; }
-MemR01_0offsZI_8:MemR01_0 is MemR01_0 & offsZI_8=0 { export MemR01_0; }
-MemR01_0offsZI_8:(R01_0+) is R01_0 & offsZI_8=1 { addr = R01_0 + 1; export *[data]:2 addr; }
-#MemR01_2:
-#MemR01_2offsZI_0
-#MemR01_3
-#MemR01_3offsZI_1
-#MemR01_4
-#MemR01_4offsZI_2
-#MemR01_5
-#MemR01_5offsZI_3
-#MemR01_8
-#MemR01_8offsZI_0
-MemR01_8:(R01_8) is R01_8 { export *[data]:2 R01_8; }
-MemR01_8offsZI_0:MemR01_8 is MemR01_8 & offsZI_0=0 { export MemR01_8; }
-MemR01_8offsZI_0:(R01_8+) is R01_8 & offsZI_0=1 { addr = R01_8 + 1; export *[data]:2 addr; }
-#MemR01_9:
+@ifdef NOCASH_SYNTAX
+MemR01_0:[R01_0] is R01_0 { export *[data]:2 R01_0; }
+MemR01_0offsZI_8:[R01_0+] is R01_0 & offsZI_8=1 { addr = R01_0 + 1; export *[data]:2 addr; }
+MemR01_2:[R01_2] is R01_2 { export *[data]:2 R01_2; }
+MemR01_2offsZI_0:[R01_2+] is R01_2 & offsZI_0=1 { addr = R01_2 + 1; export *[data]:2 addr; }
+MemR01_3:[R01_3] is R01_3 { export *[data]:2 R01_3; }
+MemR01_3offsZI_1:[R01_3+] is R01_3 & offsZI_1=1 { addr = R01_3 + 1; export *[data]:2 addr; }
+MemR01_4:[R01_4] is R01_4 { export *[data]:2 R01_4; }
+MemR01_4offsZI_2:[R01_4+] is R01_4 & offsZI_2=1 { addr = R01_4 + 1; export *[data]:2 addr; }
+MemR01_5:[R01_5] is R01_5 { export *[data]:2 R01_5; }
+MemR01_5offsZI_3:[R01_5+] is R01_5 & offsZI_3=1 { addr = R01_5 + 1; export *[data]:2 addr; }
+MemR01_8:[R01_8] is R01_8 { export *[data]:2 R01_8; }
+MemR01_8offsZI_0:[R01_8+] is R01_8 & offsZI_0=1 { addr = R01_8 + 1; export *[data]:2 addr; }
+MemR01_9:[R01_9] is R01_9 { export *[data]:2 R01_9; }
 # no offsZI variant exists for MemR01_9
+@else
+MemR01_0:(R01_0) is R01_0 { export *[data]:2 R01_0; }
+MemR01_0offsZI_8:(R01_0+) is R01_0 & offsZI_8=1 { addr = R01_0 + 1; export *[data]:2 addr; }
+MemR01_2:(R01_2) is R01_2 { export *[data]:2 R01_2; }
+MemR01_2offsZI_0:(R01_2+) is R01_2 & offsZI_0=1 { addr = R01_2 + 1; export *[data]:2 addr; }
+MemR01_3:(R01_3) is R01_3 { export *[data]:2 R01_3; }
+MemR01_3offsZI_1:(R01_3+) is R01_3 & offsZI_1=1 { addr = R01_3 + 1; export *[data]:2 addr; }
+MemR01_4:(R01_4) is R01_4 { export *[data]:2 R01_4; }
+MemR01_4offsZI_2:(R01_4+) is R01_4 & offsZI_2=1 { addr = R01_4 + 1; export *[data]:2 addr; }
+MemR01_5:(R01_5) is R01_5 { export *[data]:2 R01_5; }
+MemR01_5offsZI_3:(R01_5+) is R01_5 & offsZI_3=1 { addr = R01_5 + 1; export *[data]:2 addr; }
+MemR01_8:(R01_8) is R01_8 { export *[data]:2 R01_8; }
+MemR01_8offsZI_0:(R01_8+) is R01_8 & offsZI_0=1 { addr = R01_8 + 1; export *[data]:2 addr; }
+MemR01_9:(R01_9) is R01_9 { export *[data]:2 R01_9; }
+# no offsZI variant exists for MemR01_9
+@endif
+
+# If the offsZI bit is 0 then it behaves identically to the non-offsetted MemR01 or similar
+# so just re-use that table instead of duplicating the bracket logic again
+MemR01_0offsZI_8:MemR01_0 is MemR01_0 & offsZI_8=0 { export MemR01_0; }
+MemR01_2offsZI_0:MemR01_2 is MemR01_2 & offsZI_0=0 { export MemR01_2; }
+MemR01_3offsZI_1:MemR01_3 is MemR01_3 & offsZI_1=0 { export MemR01_3; }
+MemR01_4offsZI_2:MemR01_4 is MemR01_4 & offsZI_2=0 { export MemR01_4; }
+MemR01_5offsZI_3:MemR01_5 is MemR01_5 & offsZI_3=0 { export MemR01_5; }
+MemR01_8offsZI_0:MemR01_8 is MemR01_8 & offsZI_0=0 { export MemR01_8; }
 
 MemR45_8:(R45_8) is R45_8 { export *[data]:2 R45_8; }
 
