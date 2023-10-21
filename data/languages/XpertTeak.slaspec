@@ -761,15 +761,50 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 }
 # 5DB0h TL2 add  MemR04@1, sv, Abh@2 || sub MemR04@1offsZI@0, sv, Abl@2
 #            || R04@1stepII2@0
+:add MemR04_1, implied_sv, Abh_2 || "sub" MemR04_1_offsZI_0, implied_sv_copy, Abl_2 || R04_1_stepII2_0
+	is opcode_3_15=(0x5DB0>>3) & Abh_2 & MemR04_1 & MemR04_1_offsZI_0
+	& Abl_2 & R04_1_stepII2_0 & implied_sv & implied_sv_copy
+{
+	Abh_2 = Abh_2 + MemR04_1; # TODO: sv?
+	Abl_2 = Abl_2 - MemR04_1_offsZI_0; # TODO: sv?
+	build R04_1_stepII2_0;
+}
 # 6F80h TL2 add  MemR45@2, MemR01@2, Abh@3
 #            || add MemR45@2offsZI@1, MemR01@2offsZI@0, Abl@3
 #            || R01@2stepII2@0, R45@2stepII2@1
+:add MemR45_2, MemR01_2, Abh_3 || "add" MemR45_2_offsZI_1, MemR01_2_offsZI_0, Abl_3 || R01_2_stepII2_0, R45_2_stepII2_1
+	is opcode_4_15=0x6F8 & Abh_3 & MemR45_2 & MemR45_2_offsZI_1 & MemR01_2_offsZI_0
+	& Abl_3 & MemR01_2 & R45_2_stepII2_1 & R01_2_stepII2_0
+{
+	Abh_3 = MemR45_2 + MemR01_2;
+	Abl_3 = MemR45_2_offsZI_1 + MemR01_2_offsZI_0;
+	build R01_2_stepII2_0;
+	build R45_2_stepII2_1;
+}
 # 6FA0h TL2 add  MemR45@2, MemR01@2, Abh@3
 #            || sub MemR45@2offsZI@1, MemR01@2offsZI@0, Abl@3
 #            || R01@2stepII2@0, R45@2stepII2@1
+:add MemR45_2, MemR01_2, Abh_3 || "sub" MemR45_2_offsZI_1, MemR01_2_offsZI_0, Abl_3 || R01_2_stepII2_0, R45_2_stepII2_1
+	is opcode_4_15=0x6FA & Abh_3 & MemR45_2 & MemR45_2_offsZI_1 & MemR01_2_offsZI_0
+	& Abl_3 & MemR01_2 & R01_2_stepII2_0 & R45_2_stepII2_1
+{
+	Abh_3 = MemR45_2 + MemR01_2;
+	Abl_3 = MemR45_2_offsZI_1 - MemR01_2_offsZI_0;
+	build R01_2_stepII2_0;
+	build R45_2_stepII2_1;
+}
 # 5E30h TL2 add  MemR45@8, sv, Abh@2 || sub MemR45@8offsZI@1, sv, Abl@2
 #            || mov Abl@2, MemR01@8 || R01@8stepII2@0, R45@8stepII2@1
-# TODO: all of the above
+:add MemR45_8, implied_sv, Abh_2 || "sub" MemR45_8_offsZI_1, implied_sv_copy, Abl_2 || "mov" Abl_2_copy, MemR01_8 || R01_8_stepII2_0, R45_8_stepII2_1
+	is opcode_9_15=(0x5E >> 1) & MemR45_8 & opcode_3_7=(0x30>>3) & Abh_2 & R01_8_stepII2_0 & R45_8_stepII2_1
+	& MemR45_8_offsZI_1 & MemR01_8 & Abl_2 & Abl_2_copy & implied_sv & implied_sv_copy
+{
+	Abh_2 = Abh_2 + MemR45_8; # TODO: sv?
+	Abl_2 = Abl_2 - MemR45_8_offsZI_1; # TODO: sv?
+	MemR01_8 = Abl_2;
+	build R01_8_stepII2_0;
+	build R45_8_stepII2_1;
+}
 # 5DC0h TL2 add  p0, p1, Ab@2
 :add implied_p0, implied_p1, Ab_2 is opcode_4_15=0x5DC & Ab_2 & opcode_0_1=0 & implied_p0 & implied_p1 { Ab_2 = zext(implied_p0 + implied_p1); }  # TODO: truncation? and does this just add p0 and p1
 # D782h TL2 add  p1, Ax@0
