@@ -363,6 +363,13 @@ define token opcode (16)
 
 	stepII2_0 = (0, 0)
 	stepII2_1 = (1, 1)
+	stepII2_2 = (2, 2)
+	stepII2_3 = (3, 3)
+	stepII2_4 = (4, 4)
+	stepII2_5 = (5, 5)
+	stepII2_6 = (6, 6)
+	stepII2_8 = (8, 8)
+	stepII2_9 = (9, 9)
 
 	offsZI_0 = (0, 0)
 	offsZI_1 = (1, 1)
@@ -492,7 +499,7 @@ attach variables [ implied_y1 ] [ y1 y1 ];
 # For now I've just used stepi in both cases though.
 attach variables [ implied_step_Rn_0 ] [ stepi stepi ];
 
-attach values [ stepII2_0 stepII2_1 ] [ 1 2 ]; # Increment either once or twice
+attach values [ stepII2_0 stepII2_1 stepII2_2 stepII2_3 stepII2_4 stepII2_5 stepII2_6 stepII2_8 stepII2_9 ] [ 1 2 ]; # Increment either once or twice
 
 # Fields can only appear in the display section once, or else the errors
 # "Duplicate symbol name" and "Redefining operand" will appear. Unfortunately,
@@ -677,9 +684,35 @@ Rn_0stepZIDS_3:|| +1 is Rn_0 & stepZIDS_3=1 { Rn_0 = Rn_0 + 1; }  # increment
 Rn_0stepZIDS_3:|| -1 is Rn_0 & stepZIDS_3=2 { Rn_0 = Rn_0 - 1; }  # decrement
 Rn_0stepZIDS_3:|| +"s" is Rn_0 & stepZIDS_3=3 & implied_step_Rn_0 { Rn_0 = Rn_0 + implied_step_Rn_0; }  # add step
 
-# Note: we attach values 1 and 2 to stepII2_0/stepII2_1 above
+# Note: we attach values 1 and 2 to stepII2 above
+
+# ^R(\d+)@(\d+)stepII2@(\d+)$
+# R\1_\2_stepII2_\3:R\1_\2+stepII2_\3 is R\1_\2 & stepII2_\3 { R\1_\2 = R\1_\2 + stepII2_\3; }
+R01_2_stepII2_0:R01_2+stepII2_0 is R01_2 & stepII2_0 { R01_2 = R01_2 + stepII2_0; }
+R01_5_stepII2_0:R01_5+stepII2_0 is R01_5 & stepII2_0 { R01_5 = R01_5 + stepII2_0; }
 R01_8_stepII2_0:R01_8+stepII2_0 is R01_8 & stepII2_0 { R01_8 = R01_8 + stepII2_0; }
+R01_9_stepII2_0:R01_9+stepII2_0 is R01_9 & stepII2_0 { R01_9 = R01_9 + stepII2_0; }
+R01_3_stepII2_1:R01_3+stepII2_1 is R01_3 & stepII2_1 { R01_3 = R01_3 + stepII2_1; }
+R01_4_stepII2_2:R01_4+stepII2_2 is R01_4 & stepII2_2 { R01_4 = R01_4 + stepII2_2; }
+R01_5_stepII2_3:R01_5+stepII2_3 is R01_5 & stepII2_3 { R01_5 = R01_5 + stepII2_3; }
+R01_0_stepII2_8:R01_0+stepII2_8 is R01_0 & stepII2_8 { R01_0 = R01_0 + stepII2_8; }
+
+R45_2_stepII2_1:R45_2+stepII2_1 is R45_2 & stepII2_1 { R45_2 = R45_2 + stepII2_1; }
+R45_5_stepII2_1:R45_5+stepII2_1 is R45_5 & stepII2_1 { R45_5 = R45_5 + stepII2_1; }
 R45_8_stepII2_1:R45_8+stepII2_1 is R45_8 & stepII2_1 { R45_8 = R45_8 + stepII2_1; }
+R45_3_stepII2_2:R45_3+stepII2_2 is R45_3 & stepII2_2 { R45_3 = R45_3 + stepII2_2; }
+R45_4_stepII2_3:R45_4+stepII2_3 is R45_4 & stepII2_3 { R45_4 = R45_4 + stepII2_3; }
+R45_5_stepII2_4:R45_5+stepII2_4 is R45_5 & stepII2_4 { R45_5 = R45_5 + stepII2_4; }
+R45_9_stepII2_8:R45_9+stepII2_8 is R45_9 & stepII2_8 { R45_9 = R45_9 + stepII2_8; }
+R45_0_stepII2_9:R45_0+stepII2_9 is R45_0 & stepII2_9 { R45_0 = R45_0 + stepII2_9; }
+
+R04_1_stepII2_0:R04_1+stepII2_0 is R04_1 & stepII2_0 { R04_1 = R04_1 + stepII2_0; }
+R04_3_stepII2_2:R04_3+stepII2_2 is R04_3 & stepII2_2 { R04_3 = R04_3 + stepII2_2; }
+R04_4_stepII2_3:R04_4+stepII2_3 is R04_4 & stepII2_3 { R04_4 = R04_4 + stepII2_3; }
+R04_8_stepII2_3:R04_8+stepII2_3 is R04_8 & stepII2_3 { R04_8 = R04_8 + stepII2_3; }
+R04_8_stepII2_5:R04_8+stepII2_5 is R04_8 & stepII2_5 { R04_8 = R04_8 + stepII2_5; }
+
+R0425_7_stepII2_6:R0425_7+stepII2_6 is R0425_7 & stepII2_6 { R0425_7 = R0425_7 + stepII2_6; }
 
 # TODO: there are more of these
 Imm8s_0:imm8s_0 is imm8s_0 { local tmp:2 = imm8s_0; export tmp; }
