@@ -382,22 +382,7 @@ define token opcode (16)
 	offsZI_8 = (8, 8)
 	offsZI_9 = (8, 8)
 
-	implied_sp = (0, 0)
-	implied_sv = (0, 0)
-	implied_r0 = (0, 0)
-	implied_r6 = (0, 0)
-	implied_r7 = (0, 0)
-	implied_p0 = (0, 0)
-	implied_p1 = (0, 0)
-	implied_prpage = (0, 0)
-	implied_repc = (0, 0)
-	implied_x0 = (0, 0)
-	implied_x1 = (0, 0)
-	implied_y1 = (0, 0)
-	implied_stepi = (0, 0)
-	implied_stepj = (0, 0)
-
-	implied_step_Rn_0 = (2, 2)
+	step_Rn_0 = (2, 2)
 ;
 
 # http://problemkaputt.de/gbatek.htm#dsiteakliteiioperandencoding
@@ -433,7 +418,6 @@ attach variables [ Register_P_0 ] [
 
 define token expanded (16)
 	expanded_imm = (0, 15)
-	expanded_implied_r7 = (0, 0)
 ;
 
 attach variables [ Ax_0 Ax_1 Ax_3 Ax_4 Ax_5 Ax_6 Ax_8 Ax_10 Ax_11 Ax_12 ] [ a0 a1 ];
@@ -486,43 +470,28 @@ attach variables [ SttMod_0 ] [ stt0 stt1 stt2 _ mod0 mod1 mod2 mod3 ];
 attach variables [ Ar_0 Ar_2 ] [ ar0 ar1 ];
 attach variables [ Arp_0 ] [ arp0 arp1 arp2 arp3 ];
 
-attach variables [ implied_sp ] [ sp sp ];
-attach variables [ implied_sv ] [ sv sv ];
-attach variables [ implied_r0 ] [ r0 r0 ];
-attach variables [ implied_r6 ] [ r6 r6 ];
-attach variables [ implied_r7 expanded_implied_r7 ] [ r7 r7 ];
-attach variables [ implied_p0 ] [ p0 p0 ];
-attach variables [ implied_p1 ] [ p1 p1 ];
-attach variables [ implied_prpage ] [ prpage prpage ];
-attach variables [ implied_repc ] [ repc repc ];
-attach variables [ implied_x0 ] [ x0 x0 ];
-attach variables [ implied_x1 ] [ x1 x1 ];
-attach variables [ implied_y1 ] [ y1 y1 ];
-attach variables [ implied_stepi ] [ stepi stepi ];
-attach variables [ implied_stepj ] [ stepj stepj ];
-
 # TODO: Nocash explicitly says it's unclear whether opcodes that use Rn_0 use
 # stepi or stepj in all cases, or if they use stepi for r0-r3 and stepj for r4-r7.
 # So unlike the others, there's a chance that this actually is implemented like this:
-# attach variables [ implied_step_Rn_0 ] [ stepi stepj ];
+# attach variables [ step_Rn_0 ] [ stepi stepj ];
 # For now I've just used stepi in both cases though.
 # See http://problemkaputt.de/gbatek-dsi-teaklite-ii-operand-encoding.htm
-attach variables [ implied_step_Rn_0 ] [ stepi stepi ];
+attach variables [ step_Rn_0 ] [ stepi stepi ];
 
 attach values [ stepII2_0 stepII2_1 stepII2_2 stepII2_3 stepII2_4 stepII2_5 stepII2_6 stepII2_8 stepII2_9 ] [ 1 2 ]; # Increment either once or twice
 
-# Fields can only appear in the display section once, or else the errors
+# Operands can only appear in the display section once, or else the errors
 # "Duplicate symbol name" and "Redefining operand" will appear. Unfortunately,
 # we have actual duplicate symbols because many instructions are horrible messes.
-# This can be worked around either by providing copies of the fields in the token
+# This can be worked around either by providing copies of the operands in the token
 # section, or by creating tables for those copies. Tables are nicer because then
 # there's no need to worry about forgetting to attach variables to the copy.
 # These should not appear in the semantic section.
 Abl_2_copy:Abl_2 is Abl_2 {}
-implied_sv_copy:implied_sv is implied_sv {}
+sv_copy:sv is sv {}
 
 MemRn_0:$(OB)Rn_0$(CB) is Rn_0 { export *[data]:2 Rn_0; }
-MemSp:$(OB)implied_sp$(CB) is implied_sp { export *[data]:2 implied_sp; }
+MemSp:$(OB)sp$(CB) is sp { export *[data]:2 sp; }
 
 @ifdef NOCASH_SYNTAX
 ProgMemRn_0:[^"code:movpd":Rn_0] is Rn_0
@@ -583,22 +552,22 @@ MemImm16:[##expanded_imm] is expanded_imm
 }
 
 @ifdef NOCASH_SYNTAX
-MemR7Imm7s_0:[implied_r7+imm7s_0] is implied_r7 & imm7s_0
+MemR7Imm7s_0:[r7+imm7s_0] is r7 & imm7s_0
 @else
-MemR7Imm7s_0:(implied_r7+#imm7s_0) is implied_r7 & imm7s_0
+MemR7Imm7s_0:(r7+#imm7s_0) is r7 & imm7s_0
 @endif
 {
-	addr:2 = implied_r7 + imm7s_0;
+	addr:2 = r7 + imm7s_0;
 	export *[data]:2 addr;
 }
 
 @ifdef NOCASH_SYNTAX
-MemR7Imm16:[expanded_implied_r7+expanded_imm] is expanded_imm & expanded_implied_r7
+MemR7Imm16:[r7+expanded_imm] is expanded_imm & r7
 @else
-MemR7Imm16:(expanded_implied_r7+##expanded_imm) is expanded_imm & expanded_implied_r7
+MemR7Imm16:(r7+##expanded_imm) is expanded_imm & r7
 @endif
 {
-	addr:2 = expanded_implied_r7 + expanded_imm;
+	addr:2 = r7 + expanded_imm;
 	export *[data]:2 addr;
 }
 
@@ -697,32 +666,32 @@ MemR04_8:         $(OB)R04_8$(CB)  is R04_8              { export *[data]:2 R04_
 # in which case the comma would need to be handled intelligently. It's easier to
 # just always show it.
 
-R0_stepZIDS_0:implied_r0   is stepZIDS_0=0 & implied_r0 {}
-R0_stepZIDS_0:implied_r0+1 is stepZIDS_0=1 & implied_r0 { implied_r0 = implied_r0 + 1; }
-R0_stepZIDS_0:implied_r0-1 is stepZIDS_0=2 & implied_r0 { implied_r0 = implied_r0 - 1; }
-R0_stepZIDS_0:implied_r0+implied_stepi is stepZIDS_0=3 & implied_r0 & implied_stepi { implied_r0 = implied_r0 + implied_stepi; }
+R0_stepZIDS_0:r0       is stepZIDS_0=0 & r0         {}
+R0_stepZIDS_0:r0+1     is stepZIDS_0=1 & r0         { r0 = r0 + 1; }
+R0_stepZIDS_0:r0-1     is stepZIDS_0=2 & r0         { r0 = r0 - 1; }
+R0_stepZIDS_0:r0+stepi is stepZIDS_0=3 & r0 & stepi { r0 = r0 + stepi; }
 
 # Note: R0123@0stepZIDS@3 is always combined with R45@2stepZIDS@5, so bits 0-6 are always used (there's no gap).
-R0123_0_stepZIDS_3:R0123_0   is stepZIDS_3=0 & R0123_0 {}
-R0123_0_stepZIDS_3:R0123_0+1 is stepZIDS_3=1 & R0123_0 { R0123_0 = R0123_0 + 1; }
-R0123_0_stepZIDS_3:R0123_0-1 is stepZIDS_3=2 & R0123_0 { R0123_0 = R0123_0 - 1; }
-R0123_0_stepZIDS_3:R0123_0+implied_stepi is stepZIDS_3=3 & R0123_0 & implied_stepi { R0123_0 = R0123_0 + implied_stepi; }
+R0123_0_stepZIDS_3:R0123_0       is stepZIDS_3=0 & R0123_0         {}
+R0123_0_stepZIDS_3:R0123_0+1     is stepZIDS_3=1 & R0123_0         { R0123_0 = R0123_0 + 1; }
+R0123_0_stepZIDS_3:R0123_0-1     is stepZIDS_3=2 & R0123_0         { R0123_0 = R0123_0 - 1; }
+R0123_0_stepZIDS_3:R0123_0+stepi is stepZIDS_3=3 & R0123_0 & stepi { R0123_0 = R0123_0 + stepi; }
 
-R0123_5_stepZIDS_7:R0123_5   is stepZIDS_7=0 & R0123_5 {}
-R0123_5_stepZIDS_7:R0123_5+1 is stepZIDS_7=1 & R0123_5 { R0123_5 = R0123_5 + 1; }
-R0123_5_stepZIDS_7:R0123_5-1 is stepZIDS_7=2 & R0123_5 { R0123_5 = R0123_5 - 1; }
-R0123_5_stepZIDS_7:R0123_5+implied_stepi is stepZIDS_7=3 & R0123_5 & implied_stepi { R0123_5 = R0123_5 + implied_stepi; }
+R0123_5_stepZIDS_7:R0123_5       is stepZIDS_7=0 & R0123_5         {}
+R0123_5_stepZIDS_7:R0123_5+1     is stepZIDS_7=1 & R0123_5         { R0123_5 = R0123_5 + 1; }
+R0123_5_stepZIDS_7:R0123_5-1     is stepZIDS_7=2 & R0123_5         { R0123_5 = R0123_5 - 1; }
+R0123_5_stepZIDS_7:R0123_5+stepi is stepZIDS_7=3 & R0123_5 & stepi { R0123_5 = R0123_5 + stepi; }
 
-R45_2_stepZIDS_5:R45_2   is stepZIDS_5=0 & R45_2 {}
-R45_2_stepZIDS_5:R45_2+1 is stepZIDS_5=1 & R45_2 { R45_2 = R45_2 + 1; }
-R45_2_stepZIDS_5:R45_2-1 is stepZIDS_5=2 & R45_2 { R45_2 = R45_2 - 1; }
-R45_2_stepZIDS_5:R45_2+implied_stepi is stepZIDS_5=3 & R45_2 & implied_stepi { R45_2 = R45_2 + implied_stepi; }
+R45_2_stepZIDS_5:R45_2       is stepZIDS_5=0 & R45_2         {}
+R45_2_stepZIDS_5:R45_2+1     is stepZIDS_5=1 & R45_2         { R45_2 = R45_2 + 1; }
+R45_2_stepZIDS_5:R45_2-1     is stepZIDS_5=2 & R45_2         { R45_2 = R45_2 - 1; }
+R45_2_stepZIDS_5:R45_2+stepi is stepZIDS_5=3 & R45_2 & stepi { R45_2 = R45_2 + stepi; }
 
-Rn_0_stepZIDS_3:Rn_0   is stepZIDS_3=0 & Rn_0 {}
-Rn_0_stepZIDS_3:Rn_0+1 is stepZIDS_3=1 & Rn_0 { Rn_0 = Rn_0 + 1; }
-Rn_0_stepZIDS_3:Rn_0-1 is stepZIDS_3=2 & Rn_0 { Rn_0 = Rn_0 - 1; }
-# See note on implied_step_Rn_0
-Rn_0_stepZIDS_3:Rn_0+implied_step_Rn_0 is stepZIDS_3=3 & Rn_0 & implied_step_Rn_0 { Rn_0 = Rn_0 + implied_step_Rn_0; }
+Rn_0_stepZIDS_3:Rn_0           is stepZIDS_3=0 & Rn_0             {}
+Rn_0_stepZIDS_3:Rn_0+1         is stepZIDS_3=1 & Rn_0             { Rn_0 = Rn_0 + 1; }
+Rn_0_stepZIDS_3:Rn_0-1         is stepZIDS_3=2 & Rn_0             { Rn_0 = Rn_0 - 1; }
+# See note on step_Rn_0
+Rn_0_stepZIDS_3:Rn_0+step_Rn_0 is stepZIDS_3=3 & Rn_0 & step_Rn_0 { Rn_0 = Rn_0 + step_Rn_0; }
 
 # Nocash says modr seems to be just increment/decrement with optional modulo,
 # though the official documentation has syntax as if they are memory accesses.
@@ -730,7 +699,7 @@ Rn_0_stepZIDS_3:Rn_0+implied_step_Rn_0 is stepZIDS_3=3 & Rn_0 & implied_step_Rn_
 MemRn_0_stepZIDS_3:$(OB)Rn_0$(CB)   is stepZIDS_3=0 & Rn_0 {}
 MemRn_0_stepZIDS_3:$(OB)Rn_0+1$(CB) is stepZIDS_3=1 & Rn_0 { Rn_0 = Rn_0 + 1; }
 MemRn_0_stepZIDS_3:$(OB)Rn_0-1$(CB) is stepZIDS_3=2 & Rn_0 { Rn_0 = Rn_0 - 1; }
-MemRn_0_stepZIDS_3:$(OB)Rn_0+implied_step_Rn_0$(CB) is stepZIDS_3=3 & Rn_0 & implied_step_Rn_0 { Rn_0 = Rn_0 + implied_step_Rn_0; }
+MemRn_0_stepZIDS_3:$(OB)Rn_0+step_Rn_0$(CB) is stepZIDS_3=3 & Rn_0 & step_Rn_0 { Rn_0 = Rn_0 + step_Rn_0; }
 
 # Note: we attach values 1 and 2 to stepII2 above
 
@@ -797,9 +766,9 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 :add Bx_1, Ax_0 is opcode_2_15=(0x5DF0>>2) & Bx_1 & Ax_0 { Ax_0 = Ax_0 + Bx_1; }
 # 9070h TL2 add  MemR01@8, sv, Abh@2 || sub MemR01@8offsZI@0, sv, Abl@2
 #            || mov Abl@2, MemR45@8 || R01@8stepII2@0, R45@8stepII2@1
-:add MemR01_8, implied_sv, Abh_2 || "sub" MemR01_8_offsZI_0, implied_sv_copy, Abl_2 || "mov" Abl_2_copy, MemR45_8 || R01_8_stepII2_0, R45_8_stepII2_1
+:add MemR01_8, sv, Abh_2 || "sub" MemR01_8_offsZI_0, sv_copy, Abl_2 || "mov" Abl_2_copy, MemR45_8 || R01_8_stepII2_0, R45_8_stepII2_1
 	is opcode_9_15=(0x90>>1) & MemR01_8 & opcode_3_7=(0x70>>3) & Abh_2 & R45_8_stepII2_1 & R01_8_stepII2_0
-	& MemR45_8 & Abl_2 & MemR01_8_offsZI_0 & implied_sv & implied_sv_copy & Abl_2_copy
+	& MemR45_8 & Abl_2 & MemR01_8_offsZI_0 & sv & sv_copy & Abl_2_copy
 {
 	Abh_2 = Abh_2 + MemR01_8; # TODO: sv?
 	Abl_2 = Abl_2 - MemR01_8_offsZI_0; # TODO: sv?
@@ -809,9 +778,9 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 }
 # 5DB0h TL2 add  MemR04@1, sv, Abh@2 || sub MemR04@1offsZI@0, sv, Abl@2
 #            || R04@1stepII2@0
-:add MemR04_1, implied_sv, Abh_2 || "sub" MemR04_1_offsZI_0, implied_sv_copy, Abl_2 || R04_1_stepII2_0
+:add MemR04_1, sv, Abh_2 || "sub" MemR04_1_offsZI_0, sv_copy, Abl_2 || R04_1_stepII2_0
 	is opcode_3_15=(0x5DB0>>3) & Abh_2 & MemR04_1 & MemR04_1_offsZI_0
-	& Abl_2 & R04_1_stepII2_0 & implied_sv & implied_sv_copy
+	& Abl_2 & R04_1_stepII2_0 & sv & sv_copy
 {
 	Abh_2 = Abh_2 + MemR04_1; # TODO: sv?
 	Abl_2 = Abl_2 - MemR04_1_offsZI_0; # TODO: sv?
@@ -843,9 +812,9 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 }
 # 5E30h TL2 add  MemR45@8, sv, Abh@2 || sub MemR45@8offsZI@1, sv, Abl@2
 #            || mov Abl@2, MemR01@8 || R01@8stepII2@0, R45@8stepII2@1
-:add MemR45_8, implied_sv, Abh_2 || "sub" MemR45_8_offsZI_1, implied_sv_copy, Abl_2 || "mov" Abl_2_copy, MemR01_8 || R01_8_stepII2_0, R45_8_stepII2_1
+:add MemR45_8, sv, Abh_2 || "sub" MemR45_8_offsZI_1, sv_copy, Abl_2 || "mov" Abl_2_copy, MemR01_8 || R01_8_stepII2_0, R45_8_stepII2_1
 	is opcode_9_15=(0x5E >> 1) & MemR45_8 & opcode_3_7=(0x30>>3) & Abh_2 & R01_8_stepII2_0 & R45_8_stepII2_1
-	& MemR45_8_offsZI_1 & MemR01_8 & Abl_2 & Abl_2_copy & implied_sv & implied_sv_copy
+	& MemR45_8_offsZI_1 & MemR01_8 & Abl_2 & Abl_2_copy & sv & sv_copy
 {
 	Abh_2 = Abh_2 + MemR45_8; # TODO: sv?
 	Abl_2 = Abl_2 - MemR45_8_offsZI_1; # TODO: sv?
@@ -854,22 +823,22 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 	build R45_8_stepII2_1;
 }
 # 5DC0h TL2 add  p0, p1, Ab@2
-:add implied_p0, implied_p1, Ab_2 is opcode_4_15=0x5DC & Ab_2 & opcode_0_1=0 & implied_p0 & implied_p1 { Ab_2 = zext(implied_p0 + implied_p1); }  # TODO: truncation? and does this just add p0 and p1
+:add p0, p1, Ab_2 is opcode_4_15=0x5DC & Ab_2 & opcode_0_1=0 & p0 & p1 { Ab_2 = zext(p0 + p1); }  # TODO: truncation? and does this just add p0 and p1
 # D782h TL2 add  p1, Ax@0
-:add implied_p1, Ax_0 is opcode_1_15=(0xD782>>1) & Ax_0 & implied_p1 { Ax_0 = Ax_0 + zext(implied_p1); }
+:add p1, Ax_0 is opcode_1_15=(0xD782>>1) & Ax_0 & p1 { Ax_0 = Ax_0 + zext(p1); }
 # 5DF8h TL2 add  Px@1, Bx@0
 :add Px_1, Bx_0 is opcode_2_15=(0x5DF8>>2) & Px_1 & Bx_0 { Bx_0 = Bx_0 + zext(Px_1); }
 # D38Bh TL2 add  r6, Ax@4
-:add implied_r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=0xB & implied_r6 { Ax_4 = Ax_4 + sext(implied_r6); }
+:add r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=0xB & r6 { Ax_4 = Ax_4 + sext(r6); }
 # 4590h TL2 add3 p0, p1, Ab@2
 # TODO: what do these actually do?
-:add3 implied_p0, implied_p1, Ab_2 is opcode_3_15=(0x4590>>3) & Ab_2 & opcode_0_1=0 & implied_p0 & implied_p1 unimpl
+:add3 p0, p1, Ab_2 is opcode_3_15=(0x4590>>3) & Ab_2 & opcode_0_1=0 & p0 & p1 unimpl
 # 4592h TL2 add3a p0, p1, Ab@2
-:add3a implied_p0, implied_p1, Ab_2 is opcode_3_15=(0x4592>>3) & Ab_2 & opcode_0_1=2 & implied_p0 & implied_p1 unimpl
+:add3a p0, p1, Ab_2 is opcode_3_15=(0x4592>>3) & Ab_2 & opcode_0_1=2 & p0 & p1 unimpl
 # 4593h TL2 add3aa p0, p1, Ab@2
-:add3aa implied_p0, implied_p1, Ab_2 is opcode_3_15=(0x4593>>3) & Ab_2 & opcode_0_1=3 & implied_p0 & implied_p1 unimpl
+:add3aa p0, p1, Ab_2 is opcode_3_15=(0x4593>>3) & Ab_2 & opcode_0_1=3 & p0 & p1 unimpl
 # 5DC1h TL2 adda p0, p1, Ab@2
-:adda implied_p0, implied_p1, Ab_2 is opcode_3_15=(0x5DC1>>3) & Ab_2 & opcode_0_1=1 & implied_p0 & implied_p1 unimpl
+:adda p0, p1, Ab_2 is opcode_3_15=(0x5DC1>>3) & Ab_2 & opcode_0_1=1 & p0 & p1 unimpl
 @endif
 # TODO: how does addh differ from add? Does it target the high part of the accumulator?
 # B200h TL  addh MemImm8@0, Ax@8
@@ -880,7 +849,7 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 :addh Register_0, Ax_8 is opcode_9_15=(0x92>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0 { Ax_8 = Ax_8 + sext(Register_0); }
 @ifdef TEAK_LITE_2
 # 9464h TL2 addh r6, Ax@0
-:addh implied_r6, Ax_0 is opcode_1_15=(0x9464>>1) & Ax_0 & implied_r6 { Ax_0 = Ax_0 + sext(implied_r6); }
+:addh r6, Ax_0 is opcode_1_15=(0x9464>>1) & Ax_0 & r6 { Ax_0 = Ax_0 + sext(r6); }
 # 90E0h TL2 addhp MemR0425@2, Px@4, Ax@8 || R0425@2stepII2D2S@0 ;p=ProgMem? Px?
 # TODO
 @endif
@@ -893,15 +862,15 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 :addl Register_0, Ax_8 is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0 { Ax_8 = Ax_8 + sext(Register_0); }
 @ifdef TEAK_LITE_2
 # 9466h TL2 addl r6, Ax@0
-:addl implied_r6, Ax_0 is opcode_1_15=(0x9466>>1) & Ax_0 & implied_r6 { Ax_0 = Ax_0 + sext(implied_r6); }
+:addl r6, Ax_0 is opcode_1_15=(0x9466>>1) & Ax_0 & r6 { Ax_0 = Ax_0 + sext(r6); }
 # 906Ch TL2 addsub  p0, p1, Ab@0
-:addsub implied_p0, implied_p1, Ab_0 is opcode_2_15=(0x906C>>2) & Ab_0 & implied_p0 & implied_p1 unimpl
+:addsub p0, p1, Ab_0 is opcode_2_15=(0x906C>>2) & Ab_0 & p0 & p1 unimpl
 # 49C2h TL2 addsub  p1, p0, Ab@4
-:addsub implied_p1, implied_p0, Ab_4 is opcode_6_15=(0x49C>>2) & Ab_4 & opcode_0_3=2 & implied_p1 & implied_p0 unimpl
+:addsub p1, p0, Ab_4 is opcode_6_15=(0x49C>>2) & Ab_4 & opcode_0_3=2 & p1 & p0 unimpl
 # 916Ch TL2 addsuba p0, p1, Ab@0
-:addsuba implied_p0, implied_p1, Ab_0 is opcode_2_15=(0x916C>>2) & Ab_0 & implied_p0 & implied_p1 unimpl
+:addsuba p0, p1, Ab_0 is opcode_2_15=(0x916C>>2) & Ab_0 & p0 & p1 unimpl
 # 49C3h TL2 addsuba p1, p0, Ab@4
-:addsub implied_p1, implied_p0, Ab_4 is opcode_6_15=(0x49C>>2) & Ab_4 & opcode_0_3=3 & implied_p1 & implied_p0 unimpl
+:addsub p1, p0, Ab_4 is opcode_6_15=(0x49C>>2) & Ab_4 & opcode_0_3=3 & p1 & p0 unimpl
 @endif
 # E700h TL  addv Imm16@16, MemImm8@0
 :addv Imm16, MemImm8_0 is opcode_8_15=0xE7 & MemImm8_0; Imm16 { MemImm8_0 = MemImm8_0 + Imm16; }
@@ -911,7 +880,7 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 :addv Imm16, Register_0 is opcode_5_15=(0x87E>>1) & Register_0; Imm16 { Register_0 = Register_0 + Imm16; }
 @ifdef TEAK_LITE_2
 # 47BBh TL2 addv Imm16@16, r6
-:addv Imm16, implied_r6 is opcode_0_15=0x47BB & implied_r6; Imm16 { implied_r6 = implied_r6 + Imm16; }
+:addv Imm16, r6 is opcode_0_15=0x47BB & r6; Imm16 { r6 = r6 + Imm16; }
 @endif
 # D4F9h TL  and  MemImm16@16, Ax@8
 # TODO: what parts are affected by the and? As-is this zeros most of the accumulator
@@ -934,7 +903,7 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 # 6770h TL2 and  Ab@2, Ab@0, Ax@12                ;TL2 only
 :and Ab_2, Ab_0, Ax_12 is opcode_13_15=(0x6>>1) & Ax_12 & opcode_4_11=0x77 & Ab_2 & Ab_0 { Ax_12 = Ab_2 & Ab_0; }
 # D389h TL2 and  r6, Ax@4
-:and implied_r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=9 & implied_r6 { Ax_4 = Ax_4 & zext(implied_r6); }
+:and r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=9 & r6 { Ax_4 = Ax_4 & zext(r6); }
 @endif
 # 4B80h TL  banke BankFlags6@0  ;{r0}{,r1}{,r4}{,cfgi}{,r7}{,cfgj}
 @ifdef TEAK_LITE_2
@@ -1546,19 +1515,19 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 # 0006h TL2 pop  Bx@5, Unused1@0
 :pop Bx_5 is opcode_6_15=0 & Bx_5 & opcode_1_4=(6>>1) & unused_0_0 unimpl
 # D7F4h TL2 pop  prpage, Unused2@0
-:pop implied_prpage is opcode_2_15=(0xD7F4>>2) & unused_0_1 & implied_prpage unimpl
+:pop prpage is opcode_2_15=(0xD7F4>>2) & unused_0_1 & prpage unimpl
 # D496h TL2 pop  Px@0
 :pop Px_0 is opcode_1_15=(0xD496>>1) & Px_0 unimpl
 # 0024h TL2 pop  r6, Unused1@0
-:pop implied_r6 is opcode_1_15=(0x0024>>1) & unused_0_0 & implied_r6 unimpl
+:pop r6 is opcode_1_15=(0x0024>>1) & unused_0_0 & r6 unimpl
 # D7F0h TL2 pop  repc, Unused2@0
-:pop implied_repc is opcode_2_15=(0xD7F0>>2) & unused_0_1 & implied_repc unimpl
+:pop repc is opcode_2_15=(0xD7F0>>2) & unused_0_1 & repc unimpl
 # D494h TL2 pop  x0
-:pop implied_x0 is opcode_0_15=0xD494 & implied_x0 unimpl
+:pop x0 is opcode_0_15=0xD494 & x0 unimpl
 # D495h TL2 pop  x1
-:pop implied_x1 is opcode_0_15=0xD495 & implied_x1 unimpl
+:pop x1 is opcode_0_15=0xD495 & x1 unimpl
 # 0004h TL2 pop  y1, Unused1@0
-:pop implied_y1 is opcode_1_15=(4>>1) & unused_0_0 & implied_y1 unimpl
+:pop y1 is opcode_1_15=(4>>1) & unused_0_0 & y1 unimpl
 # 47B0h TL2 popa Ab@0
 :popa Ab_0 is opcode_2_15=(0x47B0>>2) & Ab_0 unimpl
 @endif
@@ -1572,19 +1541,19 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 # D3D0h TL2 push ArArpSttMod@0
 :push ArArpSttMod_0 is opcode_4_15=0xD3D & ArArpSttMod_0 unimpl
 # D7FCh TL2 push prpage, Unused2@0
-:push implied_prpage is opcode_2_15=(0xD7FC>>2) & unused_0_1 & implied_prpage unimpl
+:push prpage is opcode_2_15=(0xD7FC>>2) & unused_0_1 & prpage unimpl
 # D78Ch TL2 push Px@1, Unused1@0
 :push Px_1 is opcode_2_15=(0xD78C>>2) & Px_1 & unused_0_0 unimpl
 # D4D7h TL2 push r6, Unused1@5
-:push implied_r6 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x17 & implied_r6 unimpl
+:push r6 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x17 & r6 unimpl
 # D7F8h TL2 push repc, Unused2@0
-:push implied_repc is opcode_2_15=(0xD7F8>>2) & unused_0_1 & implied_repc unimpl
+:push repc is opcode_2_15=(0xD7F8>>2) & unused_0_1 & repc unimpl
 # D4D4h TL2 push x0, Unused1@5
-:push implied_x0 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x14 & implied_x0 unimpl
+:push x0 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x14 & x0 unimpl
 # D4D5h TL2 push x1, Unused1@5
-:push implied_x1 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x15 & implied_x1 unimpl
+:push x1 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x15 & x1 unimpl
 # D4D6h TL2 push y1, Unused1@5
-:push implied_y1 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x16 & implied_y1 unimpl
+:push y1 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x16 & y1 unimpl
 # 4384h TL2 pusha Ax@6, Unused2@0
 :pusha Ax_6 is opcode_7_15=(0x438>>3) & Ax_6 & opcode_2_5=(4>>2) & unused_0_1 unimpl
 # D788h TL2 pusha Bx@1, Unused1@0
