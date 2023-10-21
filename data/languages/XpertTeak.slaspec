@@ -359,7 +359,10 @@ define token opcode (16)
 	address18_2bits_4 = (4, 5)
 	address18_2bits_5 = (5, 6)
 
+	stepZIDS_0 = (0, 1)
 	stepZIDS_3 = (3, 4)
+	stepZIDS_5 = (5, 6)
+	stepZIDS_7 = (7, 8)
 
 	stepII2_0 = (0, 0)
 	stepII2_1 = (1, 1)
@@ -381,6 +384,7 @@ define token opcode (16)
 
 	implied_sp = (0, 0)
 	implied_sv = (0, 0)
+	implied_r0 = (0, 0)
 	implied_r6 = (0, 0)
 	implied_r7 = (0, 0)
 	implied_p0 = (0, 0)
@@ -390,6 +394,8 @@ define token opcode (16)
 	implied_x0 = (0, 0)
 	implied_x1 = (0, 0)
 	implied_y1 = (0, 0)
+	implied_stepi = (0, 0)
+	implied_stepj = (0, 0)
 
 	implied_step_Rn_0 = (2, 2)
 ;
@@ -482,6 +488,7 @@ attach variables [ Arp_0 ] [ arp0 arp1 arp2 arp3 ];
 
 attach variables [ implied_sp ] [ sp sp ];
 attach variables [ implied_sv ] [ sv sv ];
+attach variables [ implied_r0 ] [ r0 r0 ];
 attach variables [ implied_r6 ] [ r6 r6 ];
 attach variables [ implied_r7 expanded_implied_r7 ] [ r7 r7 ];
 attach variables [ implied_p0 ] [ p0 p0 ];
@@ -491,12 +498,15 @@ attach variables [ implied_repc ] [ repc repc ];
 attach variables [ implied_x0 ] [ x0 x0 ];
 attach variables [ implied_x1 ] [ x1 x1 ];
 attach variables [ implied_y1 ] [ y1 y1 ];
+attach variables [ implied_stepi ] [ stepi stepi ];
+attach variables [ implied_stepj ] [ stepj stepj ];
 
 # TODO: Nocash explicitly says it's unclear whether opcodes that use Rn_0 use
 # stepi or stepj in all cases, or if they use stepi for r0-r3 and stepj for r4-r7.
 # So unlike the others, there's a chance that this actually is implemented like this:
 # attach variables [ implied_step_Rn_0 ] [ stepi stepj ];
 # For now I've just used stepi in both cases though.
+# See http://problemkaputt.de/gbatek-dsi-teaklite-ii-operand-encoding.htm
 attach variables [ implied_step_Rn_0 ] [ stepi stepi ];
 
 attach values [ stepII2_0 stepII2_1 stepII2_2 stepII2_3 stepII2_4 stepII2_5 stepII2_6 stepII2_8 stepII2_9 ] [ 1 2 ]; # Increment either once or twice
@@ -679,10 +689,48 @@ MemR04_4_offsZI_3:$(OB)R04_4+$(CB) is R04_4 & offsZI_3=1 { addr = R04_4 + 1; exp
 MemR04_8:         $(OB)R04_8$(CB)  is R04_8              { export *[data]:2 R04_8; }
 # no offsZI variant exists for MemR04_8
 
-Rn_0stepZIDS_3: is Rn_0 & stepZIDS_3=0 {}  # noop
-Rn_0stepZIDS_3:|| +1 is Rn_0 & stepZIDS_3=1 { Rn_0 = Rn_0 + 1; }  # increment
-Rn_0stepZIDS_3:|| -1 is Rn_0 & stepZIDS_3=2 { Rn_0 = Rn_0 - 1; }  # decrement
-Rn_0stepZIDS_3:|| +"s" is Rn_0 & stepZIDS_3=3 & implied_step_Rn_0 { Rn_0 = Rn_0 + implied_step_Rn_0; }  # add step
+# Note: original formatting for these uses +s for stepZIDS=3;
+# I've replaced it with +stepi (or +stepj when applicable).
+# Also, when stepZIDS=0, these can be omitted, but doing that is difficult since
+# there are cases where there are two of them (for instance,
+# movd MemR0123@0,ProgMemR45@2 || R0123@0stepZIDS@3, R45@2stepZIDS@5),
+# in which case the comma would need to be handled intelligently. It's easier to
+# just always show it.
+
+R0_stepZIDS_0:implied_r0   is stepZIDS_0=0 & implied_r0 {}
+R0_stepZIDS_0:implied_r0+1 is stepZIDS_0=1 & implied_r0 { implied_r0 = implied_r0 + 1; }
+R0_stepZIDS_0:implied_r0-1 is stepZIDS_0=2 & implied_r0 { implied_r0 = implied_r0 - 1; }
+R0_stepZIDS_0:implied_r0+implied_stepi is stepZIDS_0=3 & implied_r0 & implied_stepi { implied_r0 = implied_r0 + implied_stepi; }
+
+# Note: R0123@0stepZIDS@3 is always combined with R45@2stepZIDS@5, so bits 0-6 are always used (there's no gap).
+R0123_0_stepZIDS_3:R0123_0   is stepZIDS_3=0 & R0123_0 {}
+R0123_0_stepZIDS_3:R0123_0+1 is stepZIDS_3=1 & R0123_0 { R0123_0 = R0123_0 + 1; }
+R0123_0_stepZIDS_3:R0123_0-1 is stepZIDS_3=2 & R0123_0 { R0123_0 = R0123_0 - 1; }
+R0123_0_stepZIDS_3:R0123_0+implied_stepi is stepZIDS_3=3 & R0123_0 & implied_stepi { R0123_0 = R0123_0 + implied_stepi; }
+
+R0123_5_stepZIDS_7:R0123_5   is stepZIDS_7=0 & R0123_5 {}
+R0123_5_stepZIDS_7:R0123_5+1 is stepZIDS_7=1 & R0123_5 { R0123_5 = R0123_5 + 1; }
+R0123_5_stepZIDS_7:R0123_5-1 is stepZIDS_7=2 & R0123_5 { R0123_5 = R0123_5 - 1; }
+R0123_5_stepZIDS_7:R0123_5+implied_stepi is stepZIDS_7=3 & R0123_5 & implied_stepi { R0123_5 = R0123_5 + implied_stepi; }
+
+R45_2_stepZIDS_5:R45_2   is stepZIDS_5=0 & R45_2 {}
+R45_2_stepZIDS_5:R45_2+1 is stepZIDS_5=1 & R45_2 { R45_2 = R45_2 + 1; }
+R45_2_stepZIDS_5:R45_2-1 is stepZIDS_5=2 & R45_2 { R45_2 = R45_2 - 1; }
+R45_2_stepZIDS_5:R45_2+implied_stepi is stepZIDS_5=3 & R45_2 & implied_stepi { R45_2 = R45_2 + implied_stepi; }
+
+Rn_0_stepZIDS_3:Rn_0   is stepZIDS_3=0 & Rn_0 {}
+Rn_0_stepZIDS_3:Rn_0+1 is stepZIDS_3=1 & Rn_0 { Rn_0 = Rn_0 + 1; }
+Rn_0_stepZIDS_3:Rn_0-1 is stepZIDS_3=2 & Rn_0 { Rn_0 = Rn_0 - 1; }
+# See note on implied_step_Rn_0
+Rn_0_stepZIDS_3:Rn_0+implied_step_Rn_0 is stepZIDS_3=3 & Rn_0 & implied_step_Rn_0 { Rn_0 = Rn_0 + implied_step_Rn_0; }
+
+# Nocash says modr seems to be just increment/decrement with optional modulo,
+# though the official documentation has syntax as if they are memory accesses.
+# http://problemkaputt.de/gbatek-dsi-teaklite-ii-operand-encoding.htm
+MemRn_0_stepZIDS_3:$(OB)Rn_0$(CB)   is stepZIDS_3=0 & Rn_0 {}
+MemRn_0_stepZIDS_3:$(OB)Rn_0+1$(CB) is stepZIDS_3=1 & Rn_0 { Rn_0 = Rn_0 + 1; }
+MemRn_0_stepZIDS_3:$(OB)Rn_0-1$(CB) is stepZIDS_3=2 & Rn_0 { Rn_0 = Rn_0 - 1; }
+MemRn_0_stepZIDS_3:$(OB)Rn_0+implied_step_Rn_0$(CB) is stepZIDS_3=3 & Rn_0 & implied_step_Rn_0 { Rn_0 = Rn_0 + implied_step_Rn_0; }
 
 # Note: we attach values 1 and 2 to stepII2 above
 
@@ -739,7 +787,7 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 # 4600h TL  add  MemR7Imm7s@0, Ax@8
 :add MemR7Imm7s_0, Ax_8 is opcode_9_15=(0x46>>1) & Ax_8 & opcode_7_7=0 & MemR7Imm7s_0 { Ax_8 = Ax_8 + sext(MemR7Imm7s_0); }
 # 8680h TL  add  MemRn@0, Ax@8 || Rn@0stepZIDS@3
-:add MemRn_0, Ax_8 Rn_0stepZIDS_3 is opcode_9_15=(0x86>>1) & Ax_8 & opcode_5_7=(0x80>>5) & Rn_0stepZIDS_3 & MemRn_0 { Ax_8 = Ax_8 + sext(MemRn_0); build Rn_0stepZIDS_3; }
+:add MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x86>>1) & Ax_8 & opcode_5_7=(0x80>>5) & Rn_0_stepZIDS_3 & MemRn_0 { Ax_8 = Ax_8 + sext(MemRn_0); build Rn_0_stepZIDS_3; }
 # 86A0h TL  add  RegisterP0@0, Ax@8
 :add Register_P_0, Ax_8 is opcode_9_15=(0x86>>1) & Ax_8 & opcode_5_7=(0xA0>>5) & Register_P_0 { Ax_8 = Ax_8 + sext(Register_P_0); }
 @ifdef TEAK_LITE_2
