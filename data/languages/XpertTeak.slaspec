@@ -369,7 +369,9 @@ define token opcode (16)
 	offsZI_1 = (1, 1)
 	offsZI_2 = (2, 2)
 	offsZI_3 = (3, 3)
+	offsZI_4 = (8, 8)
 	offsZI_8 = (8, 8)
+	offsZI_9 = (8, 8)
 
 	implied_sp = (0, 0)
 	implied_sv = (0, 0)
@@ -602,6 +604,12 @@ RelAddr7:full_addr is imm7_4
 	export *[code]:2 full_addr;  # TODO: do we want to dereference this?
 }
 
+# Notepad++ regexes for these:
+# ^MemR(\d+)@(\d+)$
+# MemR\1_\2:        $\(OB\)R\1_\2$\(CB\)  is R\1_\2              { export *[data]:2 R\1_\2; }
+# ^MemR(\d+)@(\d+)offsZI@(\d+)$
+# MemR\1_\2offsZI_\3:$\(OB\)R\1_\2$\(CB\)  is R\1_\2 & offsZI_\3=0 { export *[data]:2 R\1_\2; }\r\nMemR\1_\2offsZI_\3:$\(OB\)R\1_\2+$\(CB\) is R\1_\2 & offsZI_\3=1 { addr = R\1_\2 + 1; export *[data]:2 addr; }
+
 MemR01_0:        $(OB)R01_0$(CB)  is R01_0              { export *[data]:2 R01_0; }
 MemR01_0offsZI_8:$(OB)R01_0$(CB)  is R01_0 & offsZI_8=0 { export *[data]:2 R01_0; }
 MemR01_0offsZI_8:$(OB)R01_0+$(CB) is R01_0 & offsZI_8=1 { addr = R01_0 + 1; export *[data]:2 addr; }
@@ -623,7 +631,38 @@ MemR01_8offsZI_0:$(OB)R01_8+$(CB) is R01_8 & offsZI_0=1 { addr = R01_8 + 1; expo
 MemR01_9:        $(OB)R01_9$(CB)  is R01_9              { export *[data]:2 R01_9; }
 # no offsZI variant exists for MemR01_9
 
-MemR45_8:(R45_8) is R45_8 { export *[data]:2 R45_8; }
+MemR45_0:        $(OB)R45_0$(CB)  is R45_0              { export *[data]:2 R45_0; }
+MemR45_0offsZI_9:$(OB)R45_0$(CB)  is R45_0 & offsZI_9=0 { export *[data]:2 R45_0; }
+MemR45_0offsZI_9:$(OB)R45_0+$(CB) is R45_0 & offsZI_9=1 { addr = R45_0 + 1; export *[data]:2 addr; }
+MemR45_2:        $(OB)R45_2$(CB)  is R45_2              { export *[data]:2 R45_2; }
+MemR45_2offsZI_1:$(OB)R45_2$(CB)  is R45_2 & offsZI_1=0 { export *[data]:2 R45_2; }
+MemR45_2offsZI_1:$(OB)R45_2+$(CB) is R45_2 & offsZI_1=1 { addr = R45_2 + 1; export *[data]:2 addr; }
+MemR45_3:        $(OB)R45_3$(CB)  is R45_3              { export *[data]:2 R45_3; }
+MemR45_3offsZI_2:$(OB)R45_3$(CB)  is R45_3 & offsZI_2=0 { export *[data]:2 R45_3; }
+MemR45_3offsZI_2:$(OB)R45_3+$(CB) is R45_3 & offsZI_2=1 { addr = R45_3 + 1; export *[data]:2 addr; }
+MemR45_4:        $(OB)R45_4$(CB)  is R45_4              { export *[data]:2 R45_4; }
+MemR45_4offsZI_3:$(OB)R45_4$(CB)  is R45_4 & offsZI_3=0 { export *[data]:2 R45_4; }
+MemR45_4offsZI_3:$(OB)R45_4+$(CB) is R45_4 & offsZI_3=1 { addr = R45_4 + 1; export *[data]:2 addr; }
+MemR45_5:        $(OB)R45_5$(CB)  is R45_5              { export *[data]:2 R45_5; }
+MemR45_5offsZI_4:$(OB)R45_5$(CB)  is R45_5 & offsZI_4=0 { export *[data]:2 R45_5; }
+MemR45_5offsZI_4:$(OB)R45_5+$(CB) is R45_5 & offsZI_4=1 { addr = R45_5 + 1; export *[data]:2 addr; }
+MemR45_8:        $(OB)R45_8$(CB)  is R45_8              { export *[data]:2 R45_8; }
+MemR45_8offsZI_1:$(OB)R45_8$(CB)  is R45_8 & offsZI_1=0 { export *[data]:2 R45_8; }
+MemR45_8offsZI_1:$(OB)R45_8+$(CB) is R45_8 & offsZI_1=1 { addr = R45_8 + 1; export *[data]:2 addr; }
+MemR45_9:        $(OB)R45_9$(CB)  is R45_9              { export *[data]:2 R45_9; }
+# no offsZI variant exists for MemR45_9
+
+MemR04_1:        $(OB)R04_1$(CB)  is R04_1              { export *[data]:2 R04_1; }
+MemR04_1offsZI_0:$(OB)R04_1$(CB)  is R04_1 & offsZI_0=0 { export *[data]:2 R04_1; }
+MemR04_1offsZI_0:$(OB)R04_1+$(CB) is R04_1 & offsZI_0=1 { addr = R04_1 + 1; export *[data]:2 addr; }
+MemR04_3:        $(OB)R04_3$(CB)  is R04_3              { export *[data]:2 R04_3; }
+MemR04_3offsZI_2:$(OB)R04_3$(CB)  is R04_3 & offsZI_2=0 { export *[data]:2 R04_3; }
+MemR04_3offsZI_2:$(OB)R04_3+$(CB) is R04_3 & offsZI_2=1 { addr = R04_3 + 1; export *[data]:2 addr; }
+MemR04_4:        $(OB)R04_4$(CB)  is R04_4              { export *[data]:2 R04_4; }
+MemR04_4offsZI_3:$(OB)R04_4$(CB)  is R04_4 & offsZI_3=0 { export *[data]:2 R04_4; }
+MemR04_4offsZI_3:$(OB)R04_4+$(CB) is R04_4 & offsZI_3=1 { addr = R04_4 + 1; export *[data]:2 addr; }
+MemR04_8:        $(OB)R04_8$(CB)  is R04_8              { export *[data]:2 R04_8; }
+# no offsZI variant exists for MemR04_8
 
 Rn_0stepZIDS_3: is Rn_0 & stepZIDS_3=0 {}  # noop
 Rn_0stepZIDS_3:|| +1 is Rn_0 & stepZIDS_3=1 { Rn_0 = Rn_0 + 1; }  # increment
