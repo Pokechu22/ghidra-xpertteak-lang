@@ -38,6 +38,12 @@ define register offset=0x10 size=2 [ x0 y0 ];
 define register offset=0x14 size=2 [ x1 y1 ];
 @endif
 
+# Swapped by banke
+define register offset=0x18 size=2 [ r0b r1b r4b ];
+@ifdef TEAK_LITE_2
+define register offset=0x1e size=2 [ r7b ];
+@endif
+
 # 33 bits?
 # p1 is Teak Lite 2?
 define register offset=0x20 size=5 [ p0full p1full ];
@@ -70,7 +76,7 @@ define register offset=0x60 size=2 [ ar0 ar1 arp0 arp1 arp2 arp3 ];
 @endif
 define register offset=0x6c size=2 [ cfgi cfgj ];
 @ifdef TEAK_LITE_2
-define register offset=0x70 size=2 [ stepi stepj ];
+define register offset=0x70 size=2 [ stepi stepj cfgib cfgjb ];
 @endif
 
 # a0e and a1e are 4-bit instead of 8-bit on teak lite 1, and b0e and b1e don't exist
@@ -352,6 +358,13 @@ define token opcode (16)
 	Ar_2 = (2, 2)
 
 	Arp_0 = (0, 1)
+
+	BankFlags_cfgi = (0, 0)
+	BankFlags_r4 = (1, 1)
+	BankFlags_r1 = (2, 2)
+	BankFlags_r0 = (3, 3)
+	BankFlags_r7 = (4, 4)
+	BankFlags_cfgj = (5, 5)
 
 	SwapTypes_0 = (0, 3)
 
@@ -906,11 +919,37 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 :and r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=9 & r6 { Ax_4 = Ax_4 & zext(r6); }
 @endif
 # 4B80h TL  banke BankFlags6@0  ;{r0}{,r1}{,r4}{,cfgi}{,r7}{,cfgj}
+# Simplified to joining with spaces instead of commas, as that'd require extra checking.
+# Perhaps we should show r0b etc here, but eh.
+BankFlag_r0:   is BankFlags_r0=0 {}
+BankFlag_r0:r0 is BankFlags_r0=1 & r0 { local tmp = r0; r0 = r0b; r0b = tmp; }
+BankFlag_r1:   is BankFlags_r1=0 {}
+BankFlag_r1:r1 is BankFlags_r1=1 & r1 { local tmp = r1; r1 = r1b; r1b = tmp; }
+BankFlag_r4:   is BankFlags_r4=0 {}
+BankFlag_r4:r4 is BankFlags_r4=1 & r4 { local tmp = r4; r4 = r4b; r4b = tmp; }
+BankFlag_cfgi:     is BankFlags_cfgi=0 {}
+BankFlag_cfgi:cfgi is BankFlags_cfgi=1 & cfgi { local tmp = cfgi; cfgi = cfgib; cfgib = tmp; }
+BankFlag_r7:   is BankFlags_r7=0 {}
+BankFlag_r7:r7 is BankFlags_r7=1 & r7 { local tmp = r7; r7 = r7b; r7b = tmp; }
+BankFlag_cfgj:     is BankFlags_cfgj=0 {}
+BankFlag_cfgj:cfgj is BankFlags_cfgj=1 & cfgj { local tmp = cfgj; cfgj = cfgjb; cfgjb = tmp; }
+:banke BankFlag_r0 BankFlag_r1 BankFlag_r4 BankFlag_cfgi BankFlag_r7 BankFlag_cfgj is opcode_6_15=(0x4B8>>2) & BankFlag_r0 & BankFlag_r1 & BankFlag_r4 & BankFlag_cfgi & BankFlag_r7 & BankFlag_cfgj {
+	build BankFlag_r0;
+	build BankFlag_r1;
+	build BankFlag_r4;
+	build BankFlag_cfgi;
+	build BankFlag_r7;
+	build BankFlag_cfgj;
+}
 @ifdef TEAK_LITE_2
 # 8CDFh TL2 bankr       ;without operand ?
+:bankr is opcode_0_15=0x8CDF unimpl # Note: 8CDE is undefined
 # 8CDCh TL2 bankr Ar@0
+:bankr Ar_0 is opcode_1_15=(0x8CDC>>1) & Ar_0 unimpl
 # 8CD0h TL2 bankr Ar@2, Arp@0
+:bankr Ar_2, Arp_0 is opcode_3_15=(0x8CD0>>3) & Ar_2 & Arp_0 unimpl
 # 8CD8h TL2 bankr Arp@0
+:bankr Arp_0 is opcode_2_15=(0x8CD8>>2) & Arp_0 unimpl
 # 5EB8h TL2 bitrev Rn@0
 # D7E8h TL2 bitrev Rn@0, dbrv
 # D7E0h TL2 bitrev Rn@0, ebrv
