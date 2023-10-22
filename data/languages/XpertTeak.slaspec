@@ -98,24 +98,27 @@ define register offset=0xF0 size=8 [ loopcontext ];
 
 # Magic to make loops work
 define context loopcontext
-	loopskipaddr = (0,15) noflow
-	hasloopcheck = (16,16) noflow
-	loopstackdepth = (17,18)
+	loopstackdepth = (16,19)
 	loopjumpbackaddr = (32,47) noflow
 	hasloopjumpback = (48,48) noflow
 ;
 
-# Loop stack for the current loop counter. We don't currently have st3 directly reflect this value,
+# Loop stack for the current loop counter. We don't currently have lc directly reflect this value,
 # because doing so would be a bit difficult.
-define register offset=0xD0 size=2 [ st3_0 st3_1 st3_2 st3_3 ];
+# Real hardware has a depth of 4, but more is used here to avoid emulating bkrepsto and to
+# allow rep to use the same registers as bkrep.
+define register offset=0xD0 size=2 [ lc_0 lc_1 lc_2 lc_3 lc_4 lc_5 lc_6 lc_7 ];
 # Note: The outermost loop increments loopstackdepth and then uses CurSt3, so index 1 is the first.
 # Although we could reset loopstackdepth for the loop instruction, it needs to be changed for
-# the next instruction for flowing to work, and that instruction is also loopcheck, so it needs to
-# read the stack. Thus, we have this off-by-1 indexing.
-CurSt3: is loopstackdepth=1 { export st3_0; }
-CurSt3: is loopstackdepth=2 { export st3_1; }
-CurSt3: is loopstackdepth=3 { export st3_2; }
-CurSt3: is loopstackdepth=0 { export st3_3; }
+# the next instruction for flowing to work, and that instruction might need to check looping.
+CurLC: is loopstackdepth=1 { export lc_0; }
+CurLC: is loopstackdepth=2 { export lc_1; }
+CurLC: is loopstackdepth=3 { export lc_2; }
+CurLC: is loopstackdepth=4 { export lc_3; }
+CurLC: is loopstackdepth=5 { export lc_4; }
+CurLC: is loopstackdepth=6 { export lc_5; }
+CurLC: is loopstackdepth=7 { export lc_6; }
+CurLC: is loopstackdepth=8 { export lc_7; }
 
 # Regular and hacky implementation of status register
 @ifdef USE_REAL_SR_REGISTER
@@ -167,6 +170,7 @@ define token opcode (16)
 	opcode_1_9   = (1, 9)
 	opcode_1_15  = (1, 15)
 	opcode_2_5   = (2, 5)
+	opcode_2_9   = (2, 9)
 	opcode_2_15  = (2, 15)
 	opcode_3_7   = (3, 7)
 	opcode_3_15  = (3, 15)
@@ -179,6 +183,7 @@ define token opcode (16)
 	opcode_7_15  = (7, 15)
 	opcode_8_15  = (8, 15)
 	opcode_9_15  = (9, 15)
+	opcode_11_15 = (11, 15)
 	opcode_12_15 = (12, 15)
 	opcode_13_15 = (13, 15)
 
@@ -188,7 +193,9 @@ define token opcode (16)
 	# make it easier to compare with nocash.
 	unused_0_0   = (0, 0)
 	unused_0_1   = (0, 1)
+	unused_0_2   = (0, 2)
 	unused_5_5   = (5, 5)
+	unused_10_10 = (10, 10)
 
 	imm8_0 = (0, 7)
 	imm8s_0 = (0, 7) signed
@@ -600,7 +607,24 @@ Address18_16and5:full_addr is address18_2bits_5; expanded_imm
 	export *[code]:2 full_addr;
 }
 
+Address18_16and0After:full_addr is address18_2bits_0; expanded_imm
+[ full_addr = (expanded_imm << 2) + address18_2bits_0 + 1; ]
+{
+	export *[code]:2 full_addr;
+}
+
+Address18_16and5After:full_addr is address18_2bits_5; expanded_imm
+[ full_addr = (expanded_imm << 2) + address18_2bits_5 + 1; ]
+{
+	export *[code]:2 full_addr;
+}
+
 Address16:expanded_imm is expanded_imm
+{
+	export *[data]:2 expanded_imm;
+}
+
+Address16After:new_imm is expanded_imm [ new_imm = expanded_imm + 1; ]
 {
 	export *[data]:2 expanded_imm;
 }
@@ -670,6 +694,8 @@ MemR04_4_offsZI_3:$(OB)R04_4$(CB)  is R04_4 & offsZI_3=0 { export *[data]:2 R04_
 MemR04_4_offsZI_3:$(OB)R04_4+$(CB) is R04_4 & offsZI_3=1 { addr = R04_4 + 1; export *[data]:2 addr; }
 MemR04_8:         $(OB)R04_8$(CB)  is R04_8              { export *[data]:2 R04_8; }
 # no offsZI variant exists for MemR04_8
+
+MemR0425_0: $(OB)R0425_0$(CB) is R0425_0 { export *[data]:2 R0425_0; }
 
 # Note: original formatting for these uses +s for stepZIDS=3;
 # I've replaced it with +stepi (or +stepj when applicable).
@@ -757,29 +783,29 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 # Base  Ver Opcode (with parameter bits located at @bitnumber and up)
 
 # D4FBh TL  add  MemImm16@16, Ax@8
-:add MemImm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xFB; MemImm16 { Ax_8 = Ax_8 + sext(MemImm16); }
+op:"add" MemImm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xFB; MemImm16 { Ax_8 = Ax_8 + sext(MemImm16); }
 # A600h TL  add  MemImm8@0, Ax@8
-:add MemImm8_0, Ax_8 is opcode_9_15=(0xA6>>1) & Ax_8 & MemImm8_0 { Ax_8 = Ax_8 + sext(MemImm8_0); }
+op:"add" MemImm8_0, Ax_8 is opcode_9_15=(0xA6>>1) & Ax_8 & MemImm8_0 { Ax_8 = Ax_8 + sext(MemImm8_0); }
 # 86C0h TL  add  Imm16@16, Ax@8
-:add Imm16, Ax_8 is opcode_9_15=(0x86>>1) & Ax_8 & opcode_0_7=0xC0; Imm16 { Ax_8 = Ax_8 + sext(Imm16); }
+op:"add" Imm16, Ax_8 is opcode_9_15=(0x86>>1) & Ax_8 & opcode_0_7=0xC0; Imm16 { Ax_8 = Ax_8 + sext(Imm16); }
 # C600h TL  add  Imm8u@0, Ax@8
-:add Imm8u_0, Ax_8 is opcode_9_15=(0xC6>>1) & Ax_8 & Imm8u_0 { Ax_8 = Ax_8 + zext(Imm8u_0); } # Assuming u is for unsigned
+op:"add" Imm8u_0, Ax_8 is opcode_9_15=(0xC6>>1) & Ax_8 & Imm8u_0 { Ax_8 = Ax_8 + zext(Imm8u_0); } # Assuming u is for unsigned
 # D4DBh TL  add  MemR7Imm16@16, Ax@8
-:add MemR7Imm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xDB; MemR7Imm16 { Ax_8 = Ax_8 + sext(MemR7Imm16); }
+op:"add" MemR7Imm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xDB; MemR7Imm16 { Ax_8 = Ax_8 + sext(MemR7Imm16); }
 # 4600h TL  add  MemR7Imm7s@0, Ax@8
-:add MemR7Imm7s_0, Ax_8 is opcode_9_15=(0x46>>1) & Ax_8 & opcode_7_7=0 & MemR7Imm7s_0 { Ax_8 = Ax_8 + sext(MemR7Imm7s_0); }
+op:"add" MemR7Imm7s_0, Ax_8 is opcode_9_15=(0x46>>1) & Ax_8 & opcode_7_7=0 & MemR7Imm7s_0 { Ax_8 = Ax_8 + sext(MemR7Imm7s_0); }
 # 8680h TL  add  MemRn@0, Ax@8 || Rn@0stepZIDS@3
-:add MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x86>>1) & Ax_8 & opcode_5_7=(0x80>>5) & Rn_0_stepZIDS_3 & MemRn_0 { Ax_8 = Ax_8 + sext(MemRn_0); build Rn_0_stepZIDS_3; }
+op:"add" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x86>>1) & Ax_8 & opcode_5_7=(0x80>>5) & Rn_0_stepZIDS_3 & MemRn_0 { Ax_8 = Ax_8 + sext(MemRn_0); build Rn_0_stepZIDS_3; }
 # 86A0h TL  add  RegisterP0@0, Ax@8
-:add Register_P_0, Ax_8 is opcode_9_15=(0x86>>1) & Ax_8 & opcode_5_7=(0xA0>>5) & Register_P_0 { Ax_8 = Ax_8 + sext(Register_P_0); }
+op:"add" Register_P_0, Ax_8 is opcode_9_15=(0x86>>1) & Ax_8 & opcode_5_7=(0xA0>>5) & Register_P_0 { Ax_8 = Ax_8 + sext(Register_P_0); }
 @ifdef TEAK_LITE_2
 # D2DAh TL2 add  Ab@10, Bx@0
-:add Ab_10, Bx_0 is opcode_12_15=0xD & Ab_10 & opcode_1_9=(0x2DA>>1) & Bx_0 { Bx_0 = Bx_0 + Ab_10; }
+op:"add" Ab_10, Bx_0 is opcode_12_15=0xD & Ab_10 & opcode_1_9=(0x2DA>>1) & Bx_0 { Bx_0 = Bx_0 + Ab_10; }
 # 5DF0h TL2 add  Bx@1, Ax@0
-:add Bx_1, Ax_0 is opcode_2_15=(0x5DF0>>2) & Bx_1 & Ax_0 { Ax_0 = Ax_0 + Bx_1; }
+op:"add" Bx_1, Ax_0 is opcode_2_15=(0x5DF0>>2) & Bx_1 & Ax_0 { Ax_0 = Ax_0 + Bx_1; }
 # 9070h TL2 add  MemR01@8, sv, Abh@2 || sub MemR01@8offsZI@0, sv, Abl@2
 #            || mov Abl@2, MemR45@8 || R01@8stepII2@0, R45@8stepII2@1
-:add MemR01_8, sv, Abh_2 || "sub" MemR01_8_offsZI_0, sv_copy, Abl_2 || "mov" Abl_2_copy, MemR45_8 || R01_8_stepII2_0, R45_8_stepII2_1
+op:"add" MemR01_8, sv, Abh_2 || "sub" MemR01_8_offsZI_0, sv_copy, Abl_2 || "mov" Abl_2_copy, MemR45_8 || R01_8_stepII2_0, R45_8_stepII2_1
 	is opcode_9_15=(0x90>>1) & MemR01_8 & opcode_3_7=(0x70>>3) & Abh_2 & R45_8_stepII2_1 & R01_8_stepII2_0
 	& MemR45_8 & Abl_2 & MemR01_8_offsZI_0 & sv & sv_copy & Abl_2_copy
 {
@@ -791,7 +817,7 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 }
 # 5DB0h TL2 add  MemR04@1, sv, Abh@2 || sub MemR04@1offsZI@0, sv, Abl@2
 #            || R04@1stepII2@0
-:add MemR04_1, sv, Abh_2 || "sub" MemR04_1_offsZI_0, sv_copy, Abl_2 || R04_1_stepII2_0
+op:"add" MemR04_1, sv, Abh_2 || "sub" MemR04_1_offsZI_0, sv_copy, Abl_2 || R04_1_stepII2_0
 	is opcode_3_15=(0x5DB0>>3) & Abh_2 & MemR04_1 & MemR04_1_offsZI_0
 	& Abl_2 & R04_1_stepII2_0 & sv & sv_copy
 {
@@ -802,7 +828,7 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 # 6F80h TL2 add  MemR45@2, MemR01@2, Abh@3
 #            || add MemR45@2offsZI@1, MemR01@2offsZI@0, Abl@3
 #            || R01@2stepII2@0, R45@2stepII2@1
-:add MemR45_2, MemR01_2, Abh_3 || "add" MemR45_2_offsZI_1, MemR01_2_offsZI_0, Abl_3 || R01_2_stepII2_0, R45_2_stepII2_1
+op:"add" MemR45_2, MemR01_2, Abh_3 || "add" MemR45_2_offsZI_1, MemR01_2_offsZI_0, Abl_3 || R01_2_stepII2_0, R45_2_stepII2_1
 	is opcode_4_15=0x6F8 & Abh_3 & MemR45_2 & MemR45_2_offsZI_1 & MemR01_2_offsZI_0
 	& Abl_3 & MemR01_2 & R45_2_stepII2_1 & R01_2_stepII2_0
 {
@@ -814,7 +840,7 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 # 6FA0h TL2 add  MemR45@2, MemR01@2, Abh@3
 #            || sub MemR45@2offsZI@1, MemR01@2offsZI@0, Abl@3
 #            || R01@2stepII2@0, R45@2stepII2@1
-:add MemR45_2, MemR01_2, Abh_3 || "sub" MemR45_2_offsZI_1, MemR01_2_offsZI_0, Abl_3 || R01_2_stepII2_0, R45_2_stepII2_1
+op:"add" MemR45_2, MemR01_2, Abh_3 || "sub" MemR45_2_offsZI_1, MemR01_2_offsZI_0, Abl_3 || R01_2_stepII2_0, R45_2_stepII2_1
 	is opcode_4_15=0x6FA & Abh_3 & MemR45_2 & MemR45_2_offsZI_1 & MemR01_2_offsZI_0
 	& Abl_3 & MemR01_2 & R01_2_stepII2_0 & R45_2_stepII2_1
 {
@@ -825,7 +851,7 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 }
 # 5E30h TL2 add  MemR45@8, sv, Abh@2 || sub MemR45@8offsZI@1, sv, Abl@2
 #            || mov Abl@2, MemR01@8 || R01@8stepII2@0, R45@8stepII2@1
-:add MemR45_8, sv, Abh_2 || "sub" MemR45_8_offsZI_1, sv_copy, Abl_2 || "mov" Abl_2_copy, MemR01_8 || R01_8_stepII2_0, R45_8_stepII2_1
+op:"add" MemR45_8, sv, Abh_2 || "sub" MemR45_8_offsZI_1, sv_copy, Abl_2 || "mov" Abl_2_copy, MemR01_8 || R01_8_stepII2_0, R45_8_stepII2_1
 	is opcode_9_15=(0x5E >> 1) & MemR45_8 & opcode_3_7=(0x30>>3) & Abh_2 & R01_8_stepII2_0 & R45_8_stepII2_1
 	& MemR45_8_offsZI_1 & MemR01_8 & Abl_2 & Abl_2_copy & sv & sv_copy
 {
@@ -836,87 +862,87 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 	build R45_8_stepII2_1;
 }
 # 5DC0h TL2 add  p0, p1, Ab@2
-:add p0, p1, Ab_2 is opcode_4_15=0x5DC & Ab_2 & opcode_0_1=0 & p0 & p1 { Ab_2 = zext(p0 + p1); }  # TODO: truncation? and does this just add p0 and p1
+op:"add" p0, p1, Ab_2 is opcode_4_15=0x5DC & Ab_2 & opcode_0_1=0 & p0 & p1 { Ab_2 = zext(p0 + p1); }  # TODO: truncation? and does this just add p0 and p1
 # D782h TL2 add  p1, Ax@0
-:add p1, Ax_0 is opcode_1_15=(0xD782>>1) & Ax_0 & p1 { Ax_0 = Ax_0 + zext(p1); }
+op:"add" p1, Ax_0 is opcode_1_15=(0xD782>>1) & Ax_0 & p1 { Ax_0 = Ax_0 + zext(p1); }
 # 5DF8h TL2 add  Px@1, Bx@0
-:add Px_1, Bx_0 is opcode_2_15=(0x5DF8>>2) & Px_1 & Bx_0 { Bx_0 = Bx_0 + zext(Px_1); }
+op:"add" Px_1, Bx_0 is opcode_2_15=(0x5DF8>>2) & Px_1 & Bx_0 { Bx_0 = Bx_0 + zext(Px_1); }
 # D38Bh TL2 add  r6, Ax@4
-:add r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=0xB & r6 { Ax_4 = Ax_4 + sext(r6); }
+op:"add" r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=0xB & r6 { Ax_4 = Ax_4 + sext(r6); }
 # 4590h TL2 add3 p0, p1, Ab@2
 # TODO: what do these actually do?
-:add3 p0, p1, Ab_2 is opcode_3_15=(0x4590>>3) & Ab_2 & opcode_0_1=0 & p0 & p1 unimpl
+op:"add3" p0, p1, Ab_2 is opcode_3_15=(0x4590>>3) & Ab_2 & opcode_0_1=0 & p0 & p1 unimpl
 # 4592h TL2 add3a p0, p1, Ab@2
-:add3a p0, p1, Ab_2 is opcode_3_15=(0x4592>>3) & Ab_2 & opcode_0_1=2 & p0 & p1 unimpl
+op:"add3a" p0, p1, Ab_2 is opcode_3_15=(0x4592>>3) & Ab_2 & opcode_0_1=2 & p0 & p1 unimpl
 # 4593h TL2 add3aa p0, p1, Ab@2
-:add3aa p0, p1, Ab_2 is opcode_3_15=(0x4593>>3) & Ab_2 & opcode_0_1=3 & p0 & p1 unimpl
+op:"add3aa" p0, p1, Ab_2 is opcode_3_15=(0x4593>>3) & Ab_2 & opcode_0_1=3 & p0 & p1 unimpl
 # 5DC1h TL2 adda p0, p1, Ab@2
-:adda p0, p1, Ab_2 is opcode_3_15=(0x5DC1>>3) & Ab_2 & opcode_0_1=1 & p0 & p1 unimpl
+op:"adda" p0, p1, Ab_2 is opcode_3_15=(0x5DC1>>3) & Ab_2 & opcode_0_1=1 & p0 & p1 unimpl
 @endif
 # TODO: how does addh differ from add? Does it target the high part of the accumulator?
 # B200h TL  addh MemImm8@0, Ax@8
-:addh MemImm8_0, Ax_8 is opcode_9_15=(0xB2>>1) & Ax_8 & MemImm8_0 { Ax_8 = Ax_8 + sext(MemImm8_0); }
+op:"addh" MemImm8_0, Ax_8 is opcode_9_15=(0xB2>>1) & Ax_8 & MemImm8_0 { Ax_8 = Ax_8 + sext(MemImm8_0); }
 # 9280h TL  addh MemRn@0, Ax@8 || Rn@0stepZIDS@3
 # TODO
 # 92A0h TL  addh Register@0, Ax@8
-:addh Register_0, Ax_8 is opcode_9_15=(0x92>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0 { Ax_8 = Ax_8 + sext(Register_0); }
+op:"addh" Register_0, Ax_8 is opcode_9_15=(0x92>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0 { Ax_8 = Ax_8 + sext(Register_0); }
 @ifdef TEAK_LITE_2
 # 9464h TL2 addh r6, Ax@0
-:addh r6, Ax_0 is opcode_1_15=(0x9464>>1) & Ax_0 & r6 { Ax_0 = Ax_0 + sext(r6); }
+op:"addh" r6, Ax_0 is opcode_1_15=(0x9464>>1) & Ax_0 & r6 { Ax_0 = Ax_0 + sext(r6); }
 # 90E0h TL2 addhp MemR0425@2, Px@4, Ax@8 || R0425@2stepII2D2S@0 ;p=ProgMem? Px?
 # TODO
 @endif
 # TODO: how does addl differ from add? Does it target the low part of the accumulator?
 # B400h TL  addl MemImm8@0, Ax@8
-:addl MemImm8_0, Ax_8 is opcode_9_15=(0xB4>>1) & Ax_8 & MemImm8_0 { Ax_8 = Ax_8 + sext(MemImm8_0); }
+op:"addl" MemImm8_0, Ax_8 is opcode_9_15=(0xB4>>1) & Ax_8 & MemImm8_0 { Ax_8 = Ax_8 + sext(MemImm8_0); }
 # 9480h TL  addl MemRn@0, Ax@8 || Rn@0stepZIDS@3
 # TODO
 # 94A0h TL  addl Register@0, Ax@8
-:addl Register_0, Ax_8 is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0 { Ax_8 = Ax_8 + sext(Register_0); }
+op:"addl" Register_0, Ax_8 is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0 { Ax_8 = Ax_8 + sext(Register_0); }
 @ifdef TEAK_LITE_2
 # 9466h TL2 addl r6, Ax@0
-:addl r6, Ax_0 is opcode_1_15=(0x9466>>1) & Ax_0 & r6 { Ax_0 = Ax_0 + sext(r6); }
+op:"addl" r6, Ax_0 is opcode_1_15=(0x9466>>1) & Ax_0 & r6 { Ax_0 = Ax_0 + sext(r6); }
 # 906Ch TL2 addsub  p0, p1, Ab@0
-:addsub p0, p1, Ab_0 is opcode_2_15=(0x906C>>2) & Ab_0 & p0 & p1 unimpl
+op:"addsub" p0, p1, Ab_0 is opcode_2_15=(0x906C>>2) & Ab_0 & p0 & p1 unimpl
 # 49C2h TL2 addsub  p1, p0, Ab@4
-:addsub p1, p0, Ab_4 is opcode_6_15=(0x49C>>2) & Ab_4 & opcode_0_3=2 & p1 & p0 unimpl
+op:"addsub" p1, p0, Ab_4 is opcode_6_15=(0x49C>>2) & Ab_4 & opcode_0_3=2 & p1 & p0 unimpl
 # 916Ch TL2 addsuba p0, p1, Ab@0
-:addsuba p0, p1, Ab_0 is opcode_2_15=(0x916C>>2) & Ab_0 & p0 & p1 unimpl
+op:"addsuba" p0, p1, Ab_0 is opcode_2_15=(0x916C>>2) & Ab_0 & p0 & p1 unimpl
 # 49C3h TL2 addsuba p1, p0, Ab@4
-:addsub p1, p0, Ab_4 is opcode_6_15=(0x49C>>2) & Ab_4 & opcode_0_3=3 & p1 & p0 unimpl
+op:"addsub" p1, p0, Ab_4 is opcode_6_15=(0x49C>>2) & Ab_4 & opcode_0_3=3 & p1 & p0 unimpl
 @endif
 # E700h TL  addv Imm16@16, MemImm8@0
-:addv Imm16, MemImm8_0 is opcode_8_15=0xE7 & MemImm8_0; Imm16 { MemImm8_0 = MemImm8_0 + Imm16; }
+op:"addv" Imm16, MemImm8_0 is opcode_8_15=0xE7 & MemImm8_0; Imm16 { MemImm8_0 = MemImm8_0 + Imm16; }
 # 86E0h TL  addv Imm16@16, MemRn@0 || Rn@0stepZIDS@3
 # TODO
 # 87E0h TL  addv Imm16@16, Register@0
-:addv Imm16, Register_0 is opcode_5_15=(0x87E>>1) & Register_0; Imm16 { Register_0 = Register_0 + Imm16; }
+op:"addv" Imm16, Register_0 is opcode_5_15=(0x87E>>1) & Register_0; Imm16 { Register_0 = Register_0 + Imm16; }
 @ifdef TEAK_LITE_2
 # 47BBh TL2 addv Imm16@16, r6
-:addv Imm16, r6 is opcode_0_15=0x47BB & r6; Imm16 { r6 = r6 + Imm16; }
+op:"addv" Imm16, r6 is opcode_0_15=0x47BB & r6; Imm16 { r6 = r6 + Imm16; }
 @endif
 # D4F9h TL  and  MemImm16@16, Ax@8
 # TODO: what parts are affected by the and? As-is this zeros most of the accumulator
-:and MemImm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xF9; MemImm16 { Ax_8 = Ax_8 & zext(MemImm16); }
+op:"and" MemImm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xF9; MemImm16 { Ax_8 = Ax_8 & zext(MemImm16); }
 # A200h TL  and  MemImm8@0, Ax@8
-:and MemImm8_0, Ax_8 is opcode_9_15=(0xA2>>1) & Ax_8 & MemImm8_0 { Ax_8 = Ax_8 & zext(MemImm8_0); }
+op:"and" MemImm8_0, Ax_8 is opcode_9_15=(0xA2>>1) & Ax_8 & MemImm8_0 { Ax_8 = Ax_8 & zext(MemImm8_0); }
 # 82C0h TL  and  Imm16@16, Ax@8
-:and Imm16, Ax_8 is opcode_9_15=(0x82>>1) & Ax_8 & opcode_0_7=0xC0; Imm16 { Ax_8 = Ax_8 & zext(Imm16); }
+op:"and" Imm16, Ax_8 is opcode_9_15=(0x82>>1) & Ax_8 & opcode_0_7=0xC0; Imm16 { Ax_8 = Ax_8 & zext(Imm16); }
 # C200h TL  and  Imm8u@0, Ax@8
-:and Imm8u_0, Ax_8 is opcode_9_15=(0xC2>>1) & Ax_8 & Imm8u_0 { Ax_8 = Ax_8 & zext(Imm8u_0); }
+op:"and" Imm8u_0, Ax_8 is opcode_9_15=(0xC2>>1) & Ax_8 & Imm8u_0 { Ax_8 = Ax_8 & zext(Imm8u_0); }
 # D4D9h TL  and  MemR7Imm16@16, Ax@8
-:and MemR7Imm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xD9; MemR7Imm16 { Ax_8 = Ax_8 & zext(MemR7Imm16); }
+op:"and" MemR7Imm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xD9; MemR7Imm16 { Ax_8 = Ax_8 & zext(MemR7Imm16); }
 # 4200h TL  and  MemR7Imm7s@0, Ax@8
-:and MemR7Imm7s_0, Ax_8 is opcode_9_15=(0x42>>1) & Ax_8 & opcode_7_7=0 & MemR7Imm7s_0 { Ax_8 = Ax_8 & zext(MemR7Imm7s_0); }
+op:"and" MemR7Imm7s_0, Ax_8 is opcode_9_15=(0x42>>1) & Ax_8 & opcode_7_7=0 & MemR7Imm7s_0 { Ax_8 = Ax_8 & zext(MemR7Imm7s_0); }
 # 8280h TL  and  MemRn@0, Ax@8 || Rn@0stepZIDS@3
 # TODO
 # 82A0h TL  and  RegisterP0@0, Ax@8
-:and Register_P_0, Ax_8 is opcode_9_15=(0x82>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_P_0 { Ax_8 = Ax_8 & zext(Register_P_0); }
+op:"and" Register_P_0, Ax_8 is opcode_9_15=(0x82>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_P_0 { Ax_8 = Ax_8 & zext(Register_P_0); }
 @ifdef TEAK_LITE_2
 # 6770h TL2 and  Ab@2, Ab@0, Ax@12                ;TL2 only
-:and Ab_2, Ab_0, Ax_12 is opcode_13_15=(0x6>>1) & Ax_12 & opcode_4_11=0x77 & Ab_2 & Ab_0 { Ax_12 = Ab_2 & Ab_0; }
+op:"and" Ab_2, Ab_0, Ax_12 is opcode_13_15=(0x6>>1) & Ax_12 & opcode_4_11=0x77 & Ab_2 & Ab_0 { Ax_12 = Ab_2 & Ab_0; }
 # D389h TL2 and  r6, Ax@4
-:and r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=9 & r6 { Ax_4 = Ax_4 & zext(r6); }
+op:"and" r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=9 & r6 { Ax_4 = Ax_4 & zext(r6); }
 @endif
 # 4B80h TL  banke BankFlags6@0  ;{r0}{,r1}{,r4}{,cfgi}{,r7}{,cfgj}
 # Simplified to joining with spaces instead of commas, as that'd require extra checking.
@@ -933,7 +959,7 @@ BankFlag_r7:   is BankFlags_r7=0 {}
 BankFlag_r7:r7 is BankFlags_r7=1 & r7 { local tmp = r7; r7 = r7b; r7b = tmp; }
 BankFlag_cfgj:     is BankFlags_cfgj=0 {}
 BankFlag_cfgj:cfgj is BankFlags_cfgj=1 & cfgj { local tmp = cfgj; cfgj = cfgjb; cfgjb = tmp; }
-:banke BankFlag_r0 BankFlag_r1 BankFlag_r4 BankFlag_cfgi BankFlag_r7 BankFlag_cfgj is opcode_6_15=(0x4B8>>2) & BankFlag_r0 & BankFlag_r1 & BankFlag_r4 & BankFlag_cfgi & BankFlag_r7 & BankFlag_cfgj {
+op:"banke" BankFlag_r0 BankFlag_r1 BankFlag_r4 BankFlag_cfgi BankFlag_r7 BankFlag_cfgj is opcode_6_15=(0x4B8>>2) & BankFlag_r0 & BankFlag_r1 & BankFlag_r4 & BankFlag_cfgi & BankFlag_r7 & BankFlag_cfgj {
 	build BankFlag_r0;
 	build BankFlag_r1;
 	build BankFlag_r4;
@@ -943,31 +969,146 @@ BankFlag_cfgj:cfgj is BankFlags_cfgj=1 & cfgj { local tmp = cfgj; cfgj = cfgjb; 
 }
 @ifdef TEAK_LITE_2
 # 8CDFh TL2 bankr       ;without operand ?
-:bankr is opcode_0_15=0x8CDF unimpl # Note: 8CDE is undefined
+op:"bankr" is opcode_0_15=0x8CDF unimpl # Note: 8CDE is undefined
 # 8CDCh TL2 bankr Ar@0
-:bankr Ar_0 is opcode_1_15=(0x8CDC>>1) & Ar_0 unimpl
+op:"bankr" Ar_0 is opcode_1_15=(0x8CDC>>1) & Ar_0 unimpl
 # 8CD0h TL2 bankr Ar@2, Arp@0
-:bankr Ar_2, Arp_0 is opcode_3_15=(0x8CD0>>3) & Ar_2 & Arp_0 unimpl
+op:"bankr" Ar_2, Arp_0 is opcode_3_15=(0x8CD0>>3) & Ar_2 & Arp_0 unimpl
 # 8CD8h TL2 bankr Arp@0
-:bankr Arp_0 is opcode_2_15=(0x8CD8>>2) & Arp_0 unimpl
+op:"bankr" Arp_0 is opcode_2_15=(0x8CD8>>2) & Arp_0 unimpl
 # 5EB8h TL2 bitrev Rn@0
-:bitrev Rn_0 is opcode_3_15=(0x5EB8>>3) & Rn_0 unimpl
+op:"bitrev" Rn_0 is opcode_3_15=(0x5EB8>>3) & Rn_0 unimpl
 # D7E8h TL2 bitrev Rn@0, dbrv
-:bitrev Rn_0, "dbrv" is opcode_3_15=(0xD7E8>>3) & Rn_0 unimpl
+op:"bitrev" Rn_0, "dbrv" is opcode_3_15=(0xD7E8>>3) & Rn_0 unimpl
 # D7E0h TL2 bitrev Rn@0, ebrv
-:bitrev Rn_0, "ebrv" is opcode_3_15=(0xD7E0>>3) & Rn_0 unimpl
+op:"bitrev" Rn_0, "ebrv" is opcode_3_15=(0xD7E0>>3) & Rn_0 unimpl
 @endif
 # 5C00h TL  bkrep NoReverse, Imm8u@0, Address16@16
+op:"bkrep" Imm8u_0, Address16 is opcode_8_15=0x5C & Imm8u_0; Address16 & Address16After & CurLC
+[
+	hasloopjumpback = 1;
+	loopjumpbackaddr = inst_start + 2;
+	globalset(Address16After, loopstackdepth);
+	loopstackdepth = loopstackdepth + 1;
+	globalset(Address16, hasloopjumpback);
+	globalset(Address16, loopjumpbackaddr);
+	globalset(inst_next, loopstackdepth);
+	# Reset the addresses for this instruction - no looping should happen on this instruction, only the next one.
+	hasloopjumpback = 0;
+	loopjumpbackaddr = 0;
+] {
+	CurLC = Imm8u_0;
+}
 # 5D00h TL  bkrep NoReverse, Register@0, Address18@16and5
+op:"bkrep" Register_0, Address18_16and5 is opcode_7_15=(0x5D0>>3) ... & Address18_16and5 & Address18_16and5After & Register_0 ... & CurLC
+[
+	hasloopjumpback = 1;
+	loopjumpbackaddr = inst_start + 2;
+	globalset(Address18_16and5After, loopstackdepth);
+	loopstackdepth = loopstackdepth + 1;
+	globalset(Address18_16and5, hasloopjumpback);
+	globalset(Address18_16and5, loopjumpbackaddr);
+	globalset(inst_next, loopstackdepth);
+	# Reset the addresses for this instruction - no looping should happen on this instruction, only the next one.
+	hasloopjumpback = 0;
+	loopjumpbackaddr = 0;
+] {
+	CurLC = Register_0;
+}
 @ifdef TEAK_LITE_2
 # 8FDCh TL2 bkrep NoReverse, r6, Address18@16and0
+op:"bkrep" r6, Address18_16and0 is opcode_2_15=(0x8FDC>>2) ... & Address18_16and0 & Address18_16and0After & r6 & CurLC
+[
+	hasloopjumpback = 1;
+	loopjumpbackaddr = inst_start + 2;
+	globalset(Address18_16and0After, loopstackdepth);
+	loopstackdepth = loopstackdepth + 1;
+	globalset(Address18_16and0, hasloopjumpback);
+	globalset(Address18_16and0, loopjumpbackaddr);
+	globalset(inst_next, loopstackdepth);
+	# Reset the addresses for this instruction - no looping should happen on this instruction, only the next one.
+	hasloopjumpback = 0;
+	loopjumpbackaddr = 0;
+] {
+	CurLC = r6;
+}
 # DA9Ch TL2 bkreprst MemR0425@0
+# https://github.com/wwylele/teakra/blob/01db7cdd00aabcce559a8dddce8798dabb71949b/src/interpreter.h#L993-L1027
+# This pushes to the bottom of the block repeat stack, but the top of the stack (the current loop) remains the same.
+# So we don't need to mess with context variables or anything here.
+define pcodeop bkreprst;
+op:"bkreprst" MemR0425_0 is opcode_2_15=(0xDA9C>>2) & MemR0425_0 & R0425_0 {
+	local flag:2 = MemR0425_0;
+	R0425_0 = R0425_0 + 1;
+	local end:3 = zext(MemR0425_0) | (((zext(flag) >> 8) & 3) << 16);
+	R0425_0 = R0425_0 + 1;
+	local start:3 = zext(MemR0425_0) | ((zext(flag) & 3) << 16);
+	R0425_0 = R0425_0 + 1;
+	local counter:2 = MemR0425_0;
+	R0425_0 = R0425_0 + 1;
+
+	bkreprst(flag, end, start, counter);
+}
 # 5F48h TL2 bkreprst MemSp, Unused2@0
+op:"bkreprst" MemSp is MemSp & opcode_2_15=(0x5F48>>2) & unused_0_1 {
+	local flag:2 = MemSp;
+	sp = sp + 1;
+	local end:3 = zext(MemSp) | (((zext(flag) >> 8) & 3) << 16);
+	sp = sp + 1;
+	local start:3 = zext(MemSp) | ((zext(flag) & 3) << 16);
+	sp = sp + 1;
+	local counter:2 = MemSp;
+	sp = sp + 1;
+
+	bkreprst(flag, end, start, counter);
+}
+define pcodeop bkrepsto_lp;
+define pcodeop bkrepsto_end;
+define pcodeop bkrepsto_start;
+define pcodeop bkrepsto_counter;
 # DADCh TL2 bkrepsto MemR0425@0, Unused1@10
+op:"bkrepsto" MemR0425_0 is opcode_11_15=(0xDA>>3) & unused_10_10 & opcode_2_9=(0x2DC>>2) & MemR0425_0 & R0425_0 {
+	local counter:2 = bkrepsto_counter();
+	local start:3 = bkrepsto_start();
+	local end:3 = bkrepsto_end();
+	local start_end_bits = ((start >> 16) & 3) | (((end >> 16) & 3) << 8);
+	local flag:2 = (bkrepsto_lp() << 15) | start_end_bits:2;
+
+	R0425_0 = R0425_0 - 1;
+	MemR0425_0 = counter;
+	R0425_0 = R0425_0 - 1;
+	MemR0425_0 = start:2;
+	R0425_0 = R0425_0 - 1;
+	MemR0425_0 = end:2;
+	R0425_0 = R0425_0 - 1;
+	MemR0425_0 = flag;
+}
 # 9468h TL2 bkrepsto MemSp, Unused3@0
+op:"bkrepsto" MemSp is opcode_3_15=(0x9468>>3) & unused_0_2 & MemSp {
+	local counter:2 = bkrepsto_counter();
+	local start:3 = bkrepsto_start();
+	local end:3 = bkrepsto_end();
+	local start_end_bits = ((start >> 16) & 3) | (((end >> 16) & 3) << 8);
+	local flag:2 = (bkrepsto_lp() << 15) | start_end_bits:2;
+
+	sp = sp - 1;
+	MemSp = counter;
+	sp = sp - 1;
+	MemSp = start:2;
+	sp = sp - 1;
+	MemSp = end:2;
+	sp = sp - 1;
+	MemSp = flag;
+}
 @endif
 # 4180h TL  br   Address18@16and4, Cond@0
 # D3C0h TL  break               ;break
+# Only changes the loop stack depth; no jumping
+# https://github.com/wwylele/teakra/blob/01db7cdd00aabcce559a8dddce8798dabb71949b/src/interpreter.h#L1111-L1116
+op:"break" is opcode_0_15=0xD3C0 [
+	loopstackdepth = loopstackdepth - 1;
+	globalset(inst_next, loopstackdepth);
+] {}
 # 5000h TL  brr  RelAddr7@4, Cond@0
 # 41C0h TL  call Address18@16and4, Cond@0
 # D480h TL  calla Axl@8
@@ -1548,63 +1689,108 @@ BankFlag_cfgj:cfgj is BankFlags_cfgj=1 & cfgj { local tmp = cfgj; cfgj = cfgjb; 
 # D7C2h TL2 pacr1 Implied Const8000h, Implied p1, Ax@0
 @endif
 # 5E60h TL  pop  Register@0
-:pop Register_0 is opcode_5_15=(0x5E60>>5) & Register_0 unimpl
+op:"pop" Register_0 is opcode_5_15=(0x5E60>>5) & Register_0 unimpl
 @ifdef TEAK_LITE_2
 # 47B4h TL2 pop  Abe@0
-:pop Abe_0 is opcode_2_15=(0x47B4>>2) & Abe_0 unimpl
+op:"pop" Abe_0 is opcode_2_15=(0x47B4>>2) & Abe_0 unimpl
 # 80C7h TL2 pop  ArArpSttMod@8
-:pop ArArpSttMod_8 is opcode_12_15=0x8 & ArArpSttMod_8 & opcode_0_7=0xc7 unimpl
+op:"pop" ArArpSttMod_8 is opcode_12_15=0x8 & ArArpSttMod_8 & opcode_0_7=0xc7 unimpl
 # 0006h TL2 pop  Bx@5, Unused1@0
-:pop Bx_5 is opcode_6_15=0 & Bx_5 & opcode_1_4=(6>>1) & unused_0_0 unimpl
+op:"pop" Bx_5 is opcode_6_15=0 & Bx_5 & opcode_1_4=(6>>1) & unused_0_0 unimpl
 # D7F4h TL2 pop  prpage, Unused2@0
-:pop prpage is opcode_2_15=(0xD7F4>>2) & unused_0_1 & prpage unimpl
+op:"pop" prpage is opcode_2_15=(0xD7F4>>2) & unused_0_1 & prpage unimpl
 # D496h TL2 pop  Px@0
-:pop Px_0 is opcode_1_15=(0xD496>>1) & Px_0 unimpl
+op:"pop" Px_0 is opcode_1_15=(0xD496>>1) & Px_0 unimpl
 # 0024h TL2 pop  r6, Unused1@0
-:pop r6 is opcode_1_15=(0x0024>>1) & unused_0_0 & r6 unimpl
+op:"pop" r6 is opcode_1_15=(0x0024>>1) & unused_0_0 & r6 unimpl
 # D7F0h TL2 pop  repc, Unused2@0
-:pop repc is opcode_2_15=(0xD7F0>>2) & unused_0_1 & repc unimpl
+op:"pop" repc is opcode_2_15=(0xD7F0>>2) & unused_0_1 & repc unimpl
 # D494h TL2 pop  x0
-:pop x0 is opcode_0_15=0xD494 & x0 unimpl
+op:"pop" x0 is opcode_0_15=0xD494 & x0 unimpl
 # D495h TL2 pop  x1
-:pop x1 is opcode_0_15=0xD495 & x1 unimpl
+op:"pop" x1 is opcode_0_15=0xD495 & x1 unimpl
 # 0004h TL2 pop  y1, Unused1@0
-:pop y1 is opcode_1_15=(4>>1) & unused_0_0 & y1 unimpl
+op:"pop" y1 is opcode_1_15=(4>>1) & unused_0_0 & y1 unimpl
 # 47B0h TL2 popa Ab@0
-:popa Ab_0 is opcode_2_15=(0x47B0>>2) & Ab_0 unimpl
+op:"popa" Ab_0 is opcode_2_15=(0x47B0>>2) & Ab_0 unimpl
 @endif
 # 5F40h TL  push Imm16@16
-:push expanded_imm is opcode_0_15=0x5F40; expanded_imm unimpl
+op:"push" expanded_imm is opcode_0_15=0x5F40; expanded_imm unimpl
 # 5E40h TL  push Register@0
-:push Register_0 is opcode_5_15=(0x5E40>>5) & Register_0 unimpl
+op:"push" Register_0 is opcode_5_15=(0x5E40>>5) & Register_0 unimpl
 @ifdef TEAK_LITE_2
 # D7C8h TL2 push Abe@1, Unused1@0
-:push Abe_1 is opcode_2_15=(0xD7C8>>2) & Abe_1 & unused_0_0 unimpl
+op:"push" Abe_1 is opcode_2_15=(0xD7C8>>2) & Abe_1 & unused_0_0 unimpl
 # D3D0h TL2 push ArArpSttMod@0
-:push ArArpSttMod_0 is opcode_4_15=0xD3D & ArArpSttMod_0 unimpl
+op:"push" ArArpSttMod_0 is opcode_4_15=0xD3D & ArArpSttMod_0 unimpl
 # D7FCh TL2 push prpage, Unused2@0
-:push prpage is opcode_2_15=(0xD7FC>>2) & unused_0_1 & prpage unimpl
+op:"push" prpage is opcode_2_15=(0xD7FC>>2) & unused_0_1 & prpage unimpl
 # D78Ch TL2 push Px@1, Unused1@0
-:push Px_1 is opcode_2_15=(0xD78C>>2) & Px_1 & unused_0_0 unimpl
+op:"push" Px_1 is opcode_2_15=(0xD78C>>2) & Px_1 & unused_0_0 unimpl
 # D4D7h TL2 push r6, Unused1@5
-:push r6 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x17 & r6 unimpl
+op:"push" r6 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x17 & r6 unimpl
 # D7F8h TL2 push repc, Unused2@0
-:push repc is opcode_2_15=(0xD7F8>>2) & unused_0_1 & repc unimpl
+op:"push" repc is opcode_2_15=(0xD7F8>>2) & unused_0_1 & repc unimpl
 # D4D4h TL2 push x0, Unused1@5
-:push x0 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x14 & x0 unimpl
+op:"push" x0 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x14 & x0 unimpl
 # D4D5h TL2 push x1, Unused1@5
-:push x1 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x15 & x1 unimpl
+op:"push" x1 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x15 & x1 unimpl
 # D4D6h TL2 push y1, Unused1@5
-:push y1 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x16 & y1 unimpl
+op:"push" y1 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x16 & y1 unimpl
 # 4384h TL2 pusha Ax@6, Unused2@0
-:pusha Ax_6 is opcode_7_15=(0x438>>3) & Ax_6 & opcode_2_5=(4>>2) & unused_0_1 unimpl
+op:"pusha" Ax_6 is opcode_7_15=(0x438>>3) & Ax_6 & opcode_2_5=(4>>2) & unused_0_1 unimpl
 # D788h TL2 pusha Bx@1, Unused1@0
-:pusha Bx_1 is opcode_2_15=(0xD788>>2) & Bx_1 & unused_0_0 unimpl
+op:"pusha" Bx_1 is opcode_2_15=(0xD788>>2) & Bx_1 & unused_0_0 unimpl
 @endif
+AfterLoopWrapper:tmp is epsilon [ tmp = inst_start + 2; ] { export *[code]:2 tmp; }
 # 0C00h TL  rep  Imm8u@0    ;repeat next opcode N+1 times
+# Note: these should use repc instead of the same system as bkrep, but I don't think there's any
+# way to actually observe this in a single-instruction loop.
+op:"rep" Imm8u_0 is opcode_8_15=0x0C & Imm8u_0 & AfterLoopWrapper & CurLC [
+	hasloopjumpback = 1;
+	loopjumpbackaddr = inst_start + 1;
+	globalset(AfterLoopWrapper, loopstackdepth);
+	loopstackdepth = loopstackdepth + 1;
+	globalset(inst_next, hasloopjumpback);
+	globalset(inst_next, loopjumpbackaddr);
+	globalset(inst_next, loopstackdepth);
+	# Reset the addresses for this instruction - no looping should happen on this instruction, only the next one.
+	hasloopjumpback = 0;
+	loopjumpbackaddr = 0;
+] {
+	CurLC = Imm8u_0;
+}
 # 0D00h TL  rep  Register@0 ;repeat next opcode N+1 times
+op:"rep" Register_0 is opcode_5_15=(0x0D0>>1) & Register_0 & AfterLoopWrapper & CurLC [
+	hasloopjumpback = 1;
+	loopjumpbackaddr = inst_start + 1;
+	globalset(AfterLoopWrapper, loopstackdepth);
+	loopstackdepth = loopstackdepth + 1;
+	globalset(inst_next, hasloopjumpback);
+	globalset(inst_next, loopjumpbackaddr);
+	globalset(inst_next, loopstackdepth);
+	# Reset the addresses for this instruction - no looping should happen on this instruction, only the next one.
+	hasloopjumpback = 0;
+	loopjumpbackaddr = 0;
+] {
+	CurLC = Register_0;
+}
 @ifdef TEAK_LITE_2
 # 0002h TL2 rep  r6, Unused1@0
+op:"rep" r6 is opcode_1_15=(0x0002>>1) & unused_0_0 & r6 & AfterLoopWrapper & CurLC [
+	hasloopjumpback = 1;
+	loopjumpbackaddr = inst_start + 1;
+	globalset(AfterLoopWrapper, loopstackdepth);
+	loopstackdepth = loopstackdepth + 1;
+	globalset(inst_next, hasloopjumpback);
+	globalset(inst_next, loopjumpbackaddr);
+	globalset(inst_next, loopstackdepth);
+	# Reset the addresses for this instruction - no looping should happen on this instruction, only the next one.
+	hasloopjumpback = 0;
+	loopjumpbackaddr = 0;
+] {
+	CurLC = r6;
+}
 @endif
 # 4580h TL  ret  Cond@0      ;=pop pc
 # D780h TL  retd    ;delayed return (after 2 clks)
@@ -1775,6 +1961,29 @@ BankFlag_cfgj:cfgj is BankFlags_cfgj=1 & cfgj { local tmp = cfgj; cfgj = cfgjb; 
 # D3C1h TL2 undefined
 # 5EB4h TL2 undefined Unused2@0
 @endif
+
+# Handle looping logic:
+LoopJumpBackAddrWrapper: " =>"^loopjumpbackaddr is loopjumpbackaddr { export *[code]:2 loopjumpbackaddr; }
+
+# Note: unlike GCDSP, a rep 0 or bkrep 0 instruction still runs the loop once. So we don't need
+# to check to skip a loop, and instead can handle everything in the jumpback.
+# Also, teakra checks this at the start of the instruction, instead of the end of the previous one:
+# https://github.com/wwylele/teakra/blob/01db7cdd00aabcce559a8dddce8798dabb71949b/src/interpreter.h#L102-L112
+# I guess this would make a difference with jumps, but it seems weird.
+loopjumpback:"" is hasloopjumpback=0 {}
+loopjumpback:LoopJumpBackAddrWrapper is hasloopjumpback=1 & LoopJumpBackAddrWrapper & CurLC {
+	if (CurLC == 0) goto inst_next;
+	CurLC = CurLC - 1;
+	goto LoopJumpBackAddrWrapper;
+}
+
+# Now populate the root instruction table.
+:^op is op & hasloopjumpback=0 {
+	build op;
+}
+:^" "^op^loopjumpback is op & hasloopjumpback=1 & loopjumpback {
+	build loopjumpback;
+}
 
 @ifdef OLD_GCDSP_JUNK
 # Note that if *[const]:2 is not used to use the value as a pointer in the constant address space, things break and the value will be treated as 0.
@@ -3782,26 +3991,5 @@ opp:^a_opp ":" ext_opp is a_opp & ext_opp { build a_opp; build ext_opp; }
 # We could explicitly show 'NOP here, but that just adds noise for no benefit.
 opc:^a_opc is a_opc & (axbit=0 | aop4_8=0b0011) & xop0_7=0 {}
 opp:^a_opp is a_opp & (axbit=0 | aop4_8=0b0011) & xop0_7=0 { build a_opp; }
-}
-
-# Handle looping logic:
-LoopSkipAddrWrapper: " ->"^loopskipaddr is loopskipaddr { export *[inst]:2 loopskipaddr; }
-LoopJumpBackAddrWrapper: " =>"^loopjumpbackaddr is loopjumpbackaddr { export *[inst]:2 loopjumpbackaddr; }
-
-loopcheck:"" is hasloopcheck=0 {}
-loopcheck:LoopSkipAddrWrapper is hasloopcheck=1 & LoopSkipAddrWrapper & CurSt3 {
-	if (CurSt3 == 0) goto LoopSkipAddrWrapper;
-	CurSt3 = CurSt3 - 1;
-}
-loopjumpback:"" is hasloopjumpback=0 {}
-loopjumpback:LoopJumpBackAddrWrapper is hasloopjumpback=1 & LoopJumpBackAddrWrapper {
-	goto LoopJumpBackAddrWrapper;
-}
-
-# Now populate the root instruction table.
-:^opc^" "^opp^loopcheck^loopjumpback is opc & opp & loopcheck & loopjumpback {
-	build loopcheck;
-	build opp;
-	build loopjumpback;
 }
 @endif
