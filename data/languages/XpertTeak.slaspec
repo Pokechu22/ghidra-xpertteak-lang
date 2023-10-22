@@ -951,8 +951,11 @@ BankFlag_cfgj:cfgj is BankFlags_cfgj=1 & cfgj { local tmp = cfgj; cfgj = cfgjb; 
 # 8CD8h TL2 bankr Arp@0
 :bankr Arp_0 is opcode_2_15=(0x8CD8>>2) & Arp_0 unimpl
 # 5EB8h TL2 bitrev Rn@0
+:bitrev Rn_0 is opcode_3_15=(0x5EB8>>3) & Rn_0 unimpl
 # D7E8h TL2 bitrev Rn@0, dbrv
+:bitrev Rn_0, "dbrv" is opcode_3_15=(0xD7E8>>3) & Rn_0 unimpl
 # D7E0h TL2 bitrev Rn@0, ebrv
+:bitrev Rn_0, "ebrv" is opcode_3_15=(0xD7E0>>3) & Rn_0 unimpl
 @endif
 # 5C00h TL  bkrep NoReverse, Imm8u@0, Address16@16
 # 5D00h TL  bkrep NoReverse, Register@0, Address18@16and5
