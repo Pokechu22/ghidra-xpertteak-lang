@@ -308,7 +308,7 @@ define token opcode (16)
 	Ablh_9  = (9, 11)
 	Ablh_10 = (10, 12)
 
-	Cond = (0, 3)
+	cond_0 = (0, 3)
 
 	R0123457y0_9  = (9, 11)
 	R0123457y0_10 = (10, 12)
@@ -510,6 +510,39 @@ attach values [ stepII2_0 stepII2_1 stepII2_2 stepII2_3 stepII2_4 stepII2_5 step
 Abl_2_copy:Abl_2 is Abl_2 {}
 sv_copy:sv is sv {}
 
+# Always
+Cond_0:"true" is cond_0=0x0 { local always:1 = 1; export always; }
+# Equal to zero             (Z=1)
+Cond_0:"eq"   is cond_0=0x1 unimpl
+# Not equal to zero         (Z=0)
+Cond_0:"neq"  is cond_0=0x2 unimpl
+# Greater than zero         (M=0 and Z=0)
+Cond_0:"gt"   is cond_0=0x3 unimpl
+# Greater or equal to zero  (M=0)
+Cond_0:"ge"   is cond_0=0x4 unimpl
+# Less than zero            (M=1)
+Cond_0:"lt"   is cond_0=0x5 unimpl
+# Less or equal to zero     (M=1 or Z=1)
+Cond_0:"le"   is cond_0=0x6 unimpl
+# Normalize flag is cleared (N=0)
+Cond_0:"nn"   is cond_0=0x7 unimpl
+# Carry flag is set         (C=1)
+Cond_0:"c"    is cond_0=0x8 unimpl
+# Overflow flag is set      (V=1)
+Cond_0:"v"    is cond_0=0x9 unimpl
+# Extension flag is set     (E=1)
+Cond_0:"e"    is cond_0=0xa unimpl
+# Limit flag is set         (L=1)
+Cond_0:"l"    is cond_0=0xb unimpl
+# R flag is cleared         (R=0)
+Cond_0:"nr"   is cond_0=0xc unimpl
+# Input user pin 0 cleared  (IUSER0=0)
+Cond_0:"niu0" is cond_0=0xd unimpl
+# Input user pin 0 set      (IUSER0=1)
+Cond_0:"iu0"  is cond_0=0xe unimpl
+# Input user pin 1 set      (IUSER1=1)
+Cond_0:"iu1"  is cond_0=0xf unimpl
+
 MemRn_0:$(OB)Rn_0$(CB) is Rn_0 { export *[data]:2 Rn_0; }
 MemSp:$(OB)sp$(CB) is sp { export *[data]:2 sp; }
 
@@ -592,29 +625,29 @@ MemR7Imm16:(r7+##expanded_imm) is expanded_imm & r7
 }
 
 Address18_16and0:full_addr is address18_2bits_0; expanded_imm
-[ full_addr = (expanded_imm << 2) + address18_2bits_0; ]
+[ full_addr = (address18_2bits_0 << 16) + expanded_imm; ]
 {
 	export *[code]:2 full_addr;
 }
 Address18_16and4:full_addr is address18_2bits_4; expanded_imm
-[ full_addr = (expanded_imm << 2) + address18_2bits_4; ]
+[ full_addr = (address18_2bits_4 << 16) + expanded_imm; ]
 {
 	export *[code]:2 full_addr;
 }
 Address18_16and5:full_addr is address18_2bits_5; expanded_imm
-[ full_addr = (expanded_imm << 2) + address18_2bits_5; ]
+[ full_addr = (address18_2bits_5 << 16) + expanded_imm; ]
 {
 	export *[code]:2 full_addr;
 }
 
 Address18_16and0After:full_addr is address18_2bits_0; expanded_imm
-[ full_addr = (expanded_imm << 2) + address18_2bits_0 + 1; ]
+[ full_addr = (address18_2bits_0 << 16) + expanded_imm + 1; ]
 {
 	export *[code]:2 full_addr;
 }
 
 Address18_16and5After:full_addr is address18_2bits_5; expanded_imm
-[ full_addr = (expanded_imm << 2) + address18_2bits_5 + 1; ]
+[ full_addr = (address18_2bits_5 << 16) + expanded_imm + 1; ]
 {
 	export *[code]:2 full_addr;
 }
@@ -629,7 +662,7 @@ Address16After:new_imm is expanded_imm [ new_imm = expanded_imm + 1; ]
 	export *[data]:2 expanded_imm;
 }
 
-RelAddr7:full_addr is imm7_4
+RelAddr7_4:full_addr is imm7_4
 [ full_addr = inst_next + imm7_4; ]  # TODO: inst_next or inst_start?
 {
 	export *[code]:2 full_addr;  # TODO: do we want to dereference this?
@@ -1102,6 +1135,9 @@ op:"bkrepsto" MemSp is opcode_3_15=(0x9468>>3) & unused_0_2 & MemSp {
 }
 @endif
 # 4180h TL  br   Address18@16and4, Cond@0
+op:"br" Address18_16and4, Cond_0 is opcode_6_15=(0x418>>2) ... & Cond_0 ... & Address18_16and4 {
+	if (Cond_0) goto Address18_16and4;
+}
 # D3C0h TL  break               ;break
 # Only changes the loop stack depth; no jumping
 # https://github.com/wwylele/teakra/blob/01db7cdd00aabcce559a8dddce8798dabb71949b/src/interpreter.h#L1111-L1116
@@ -1110,12 +1146,29 @@ op:"break" is opcode_0_15=0xD3C0 [
 	globalset(inst_next, loopstackdepth);
 ] {}
 # 5000h TL  brr  RelAddr7@4, Cond@0
+op:"brr" RelAddr7_4, Cond_0 is opcode_11_15=(0x50>>3) & RelAddr7_4 & Cond_0 {
+	if (Cond_0) goto RelAddr7_4;
+}
 # 41C0h TL  call Address18@16and4, Cond@0
+op:"call" Address18_16and4, Cond_0 is opcode_6_15=(0x41C>>2) ... & Cond_0 ... & Address18_16and4 {
+	if (!Cond_0) goto inst_next;
+	call Address18_16and4;
+}
 # D480h TL  calla Axl@8
+op:"calla" Axl_8 is opcode_9_15=(0xD4>>1) & Axl_8 & opcode_0_7=0x80 {
+	call [Axl_8];
+}
 @ifdef TEAK_LITE_2
 # D381h TL2 calla Ax@4
+op:"calla" Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=1 {
+	call [Ax_4];
+}
 @endif
 # 1000h TL  callr RelAddr7@4, Cond@0
+op:"brr" RelAddr7_4, Cond_0 is opcode_11_15=(0x10>>3) & RelAddr7_4 & Cond_0 {
+	if (!Cond_0) goto inst_next;
+	call RelAddr7_4;
+}
 @ifdef TEAK_LITE_2
 # 9068h TL2 cbs  Axh@0, Axh@not0, r0, ge
 # 9168h TL2 cbs  Axh@0, Axh@not0, r0, gt
@@ -1793,14 +1846,49 @@ op:"rep" r6 is opcode_1_15=(0x0002>>1) & unused_0_0 & r6 & AfterLoopWrapper & Cu
 }
 @endif
 # 4580h TL  ret  Cond@0      ;=pop pc
+op:"ret" Cond_0 is opcode_4_15=0x458 & Cond_0 {
+	if (!Cond_0) goto inst_next;
+	# TODO: proper stack
+	return [sp];
+}
 # D780h TL  retd    ;delayed return (after 2 clks)
+# TODO: This assumes every instruction is 1 clock, but http://problemkaputt.de/gbatek-dsi-teak-misc.htm says there are a few exceptions
+op:"retd" is opcode_0_15=0xD780 {
+	delayslot(2);
+	# TODO: proper stack
+	return [sp];
+}
 # 45C0h TL  reti Cond@0          ;Don't context switch
+op:"reti" Cond_0 is opcode_4_15=0x45C & Cond_0 {
+	if (!Cond_0) goto inst_next;
+	# TODO: proper stack
+	return [sp];
+}
 # 45D0h TL  reti Cond@0, context ;Do context switch
+op:"reti" Cond_0, "context" is opcode_4_15=0x45D & Cond_0 {
+	if (!Cond_0) goto inst_next;
+	# TODO: proper stack
+	return [sp];
+}
 # D7C0h TL  retid   ;delayed, from interrupt
+op:"retid" is opcode_0_15=0xD7C0 {
+	delayslot(2);
+	# TODO: proper stack
+	return [sp];
+}
 @ifdef TEAK_LITE_2
 # D3C3h TL2 retid context
+op:"retid" "context" is opcode_0_15=0xD3C3 {
+	delayslot(2);
+	# TODO: proper stack
+	return [sp];
+}
 @endif
 # 0900h TL  rets Imm8u@0          ;ret+dealloc sp (for INCOMING pushed params)
+op:"rets" Imm8u_0 is opcode_8_15=0x09 & Imm8u_0 {
+	# TODO: proper stack
+	return [sp];
+}
 # 67A0h TL  rnd  Implied Const8000h, Ax@12, Cond@0 ;aX=aX+8000h
 # 6750h TL  rol  Implied Const1,     Ax@12, Cond@0 ;aX=aX rcl 1 (37bit rotate)
 # 6F50h TL  rol  Implied Const1,     Bx@12, Cond@0 ;bX=bX rcl 1 (37bit rotate)
