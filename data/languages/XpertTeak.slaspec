@@ -179,11 +179,15 @@ define token opcode (16)
 	opcode_5_7   = (5, 7)
 	opcode_4_11  = (4, 11)
 	opcode_4_15  = (4, 15)
+	opcode_5_10  = (5, 10)
 	opcode_5_15  = (5, 15)
+	opcode_6_10  = (6, 10)
 	opcode_6_15  = (6, 15)
 	opcode_6_7   = (6, 7)
 	opcode_7_7   = (7, 7)
+	opcode_7_10  = (7, 10)
 	opcode_7_15  = (7, 15)
+	opcode_8_10  = (8, 10)
 	opcode_8_15  = (8, 15)
 	opcode_9_15  = (9, 15)
 	opcode_11_15 = (11, 15)
@@ -736,6 +740,8 @@ MemR04_8:         $(OB)R04_8$(CB)  is R04_8              { export *[data]:2 R04_
 # no offsZI variant exists for MemR04_8
 
 MemR0425_0: $(OB)R0425_0$(CB) is R0425_0 { export *[data]:2 R0425_0; }
+
+MemR0123_0: $(OB)R0123_0$(CB) is R0123_0 { export *[data]:2 R0123_0; }
 
 # Note: original formatting for these uses +s for stepZIDS=3;
 # I've replaced it with +stepi (or +stepj when applicable).
@@ -1376,56 +1382,92 @@ op:"load" Imm4u_0, "ps01" is opcode_4_15=0x001 & Imm4u_0 unimpl
 @endif
 # D400h TL  maa  MemR45@2, MemR0123@0, Ax@11
 #            || R0123@0stepZIDS@3, R45@2stepZIDS@5
+op:"maa" MemR45_2, MemR0123_0, Ax_11 || R0123_0_stepZIDS_3, R45_2_stepZIDS_5 is opcode_12_15=0xD & Ax_11 & opcode_7_10=(0x40>>3) & R45_2_stepZIDS_5 & R0123_0_stepZIDS_3 & MemR45_2 & MemR0123_0 unimpl
 # 8400h TL  maa  MemRn@0, Imm16@16, Ax@11 || Rn@0stepZIDS@3
+op:"maa" MemRn_0, Imm16, Ax_11 || Rn_0_stepZIDS_3 is opcode_12_15=0x8 & Ax_11 & opcode_5_10=(0x40>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 unimpl
 # 8420h TL  maa  y0, MemRn@0, Ax@11 || Rn@0stepZIDS@3
+op:"maa" y0, MemRn_0, Ax_11 || Rn_0_stepZIDS_3 is opcode_12_15=0x8 & Ax_11 & opcode_5_10=(0x42>>1) & Rn_0_stepZIDS_3 & MemRn_0 & y0 unimpl
 # 8440h TL  maa  y0, Register@0, Ax@11
+op:"maa" y0, Register_0, Ax_11 is opcode_12_15=0x8 & Ax_11 & opcode_6_10=(0x44>>2) & Register_0 & y0 unimpl
 # E400h TL  maa  y0, MemImm8@0, Ax@11
+op:"maa" y0, MemImm8_0, Ax_11 is opcode_12_15=0xE & Ax_11 & opcode_8_10=0x4 & MemImm8_0 & y0 unimpl
 @ifdef TEAK_LITE_2
 # 5EA8h TL2 maa  y0, r6, Ax@0
+op:"maa" y0, r6, Ax_0 is opcode_1_15=(0x5EA8>>1) & Ax_0 & y0 & r6 unimpl
 @endif
 # D700h TL  maasu MemR45@2, MemR0123@0, Ax@11
 #            || R0123@0stepZIDS@3, R45@2stepZIDS@5
+op:"maasu" MemR45_2, MemR0123_0, Ax_11 || R0123_0_stepZIDS_3, R45_2_stepZIDS_5 is opcode_12_15=0xD & Ax_11 & opcode_7_10=(0x70>>3) & R45_2_stepZIDS_5 & R0123_0_stepZIDS_3 & MemR45_2 & MemR0123_0 unimpl
 # 8700h TL  maasu MemRn@0, Imm16@16, Ax@11 || Rn@0stepZIDS@3
+op:"maasu" MemRn_0, Imm16, Ax_11 || Rn_0_stepZIDS_3 is opcode_12_15=0x8 & Ax_11 & opcode_5_10=(0x70>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 unimpl
 # 8720h TL  maasu y0, MemRn@0, Ax@11 || Rn@0stepZIDS@3
+op:"maasu" y0, MemRn_0, Ax_11 || Rn_0_stepZIDS_3 is opcode_12_15=0x8 & Ax_11 & opcode_5_10=(0x72>>1) & Rn_0_stepZIDS_3 & MemRn_0 & y0 unimpl
 # 8740h TL  maasu y0, Register@0, Ax@11
+op:"maasu" y0, Register_0, Ax_11 is opcode_12_15=0x8 & Ax_11 & opcode_6_10=(0x74>>2) & Register_0 & y0 unimpl
 @ifdef TEAK_LITE_2
 # 5EAEh TL2 maasu y0, r6, Ax@0
+op:"maasu" y0, r6, Ax_0 is opcode_1_15=(0x5EAE>>1) & Ax_0 & y0 & r6 unimpl
 @endif
 # D200h TL  mac  MemR45@2, MemR0123@0, Ax@11
 #            || R0123@0stepZIDS@3, R45@2stepZIDS@5
+op:"mac" MemR45_2, MemR0123_0, Ax_11 || R0123_0_stepZIDS_3, R45_2_stepZIDS_5 is opcode_12_15=0xD & Ax_11 & opcode_7_10=(0x20>>3) & R45_2_stepZIDS_5 & R0123_0_stepZIDS_3 & MemR45_2 & MemR0123_0 unimpl
 # 8200h TL  mac  MemRn@0, Imm16@16, Ax@11 || Rn@0stepZIDS@3
+op:"mac" MemRn_0, Imm16, Ax_11 || Rn_0_stepZIDS_3 is opcode_12_15=0x8 & Ax_11 & opcode_5_10=(0x20>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 unimpl
 # 8220h TL  mac  y0, MemRn@0, Ax@11 || Rn@0stepZIDS@3
+op:"mac" y0, MemRn_0, Ax_11 || Rn_0_stepZIDS_3 is opcode_12_15=0x8 & Ax_11 & opcode_5_10=(0x22>>1) & Rn_0_stepZIDS_3 & MemRn_0 & y0 unimpl
 # 8240h TL  mac  y0, Register@0, Ax@11
+op:"mac" y0, Register_0, Ax_11 is opcode_12_15=0x8 & Ax_11 & opcode_6_10=(0x24>>2) & Register_0 & y0 unimpl
 # E200h TL  mac  y0, MemImm8@0, Ax@11
+op:"mac" y0, MemImm8_0, Ax_11 is opcode_12_15=0xE & Ax_11 & opcode_8_10=0x2 & MemImm8_0 & y0 unimpl
 @ifdef TEAK_LITE_2
 # 5EA4h TL2 mac  y0, r6, Ax@0
+op:"mac" y0, r6, Ax_0 is opcode_1_15=(0x5EA4>>1) & Ax_0 & y0 & r6 unimpl
 # 4D84h TL2 mac  y0, x1, Ax@1, Unused1@0
+op:"mac" y0, x1, Ax_1, unused_0_0 is opcode_2_15=(0x4D84>>2) & Ax_1 & unused_0_0 & y0 & x1 unimpl
 # 5E28h TL2 mac1 MemR45@2, MemR01@2, Ax@8 || R01@2stepII2@0, R45@2stepII2@1
+op:"mac1" MemR45_2, MemR01_2, Ax_8 || R01_2_stepII2_0, R45_2_stepII2_1 is opcode_9_15=(0x5E>>1) & Ax_8 & opcode_3_7=(0x28>>3) & MemR45_2 & MemR01_2 & R45_2_stepII2_1 & R01_2_stepII2_0 unimpl
 @endif
 # D600h TL  macsu MemR45@2, MemR0123@0, Ax@11
 #            || R0123@0stepZIDS@3, R45@2stepZIDS@5
+op:"macsu" MemR45_2, MemR0123_0, Ax_11 || R0123_0_stepZIDS_3, R45_2_stepZIDS_5 is opcode_12_15=0xD & Ax_11 & opcode_7_10=(0x60>>3) & R45_2_stepZIDS_5 & R0123_0_stepZIDS_3 & MemR45_2 & MemR0123_0 unimpl
 # 8600h TL  macsu MemRn@0, Imm16@16, Ax@11 || Rn@0stepZIDS@3
-# E600h TL  macsu y0, MemImm8@0, Ax@11
+op:"macsu" MemRn_0, Imm16, Ax_11 || Rn_0_stepZIDS_3 is opcode_12_15=0x8 & Ax_11 & opcode_5_10=(0x60>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 unimpl
 # 8620h TL  macsu y0, MemRn@0, Ax@11 || Rn@0stepZIDS@3
+op:"macsu" y0, MemRn_0, Ax_11 || Rn_0_stepZIDS_3 is opcode_12_15=0x8 & Ax_11 & opcode_5_10=(0x62>>1) & Rn_0_stepZIDS_3 & MemRn_0 & y0 unimpl
 # 8640h TL  macsu y0, Register@0, Ax@11
+op:"macsu" y0, Register_0, Ax_11 is opcode_12_15=0x8 & Ax_11 & opcode_6_10=(0x64>>2) & Register_0 & y0 unimpl
+# E600h TL  macsu y0, MemImm8@0, Ax@11
+# NOTE: was listed between 8600h and 8620h in nocash docs, unlike the other variants
+op:"macsu" y0, MemImm8_0, Ax_11 is opcode_12_15=0xE & Ax_11 & opcode_8_10=0x6 & MemImm8_0 & y0 unimpl
 @ifdef TEAK_LITE_2
 # 5EACh TL2 macsu y0, r6, Ax@0
+op:"macsu" y0, r6, Ax_0 is opcode_1_15=(0x5EAC>>1) & Ax_0 & y0 & r6 unimpl
 @endif
 # D300h TL  macus MemR45@2, MemR0123@0, Ax@11
 #            || R0123@0stepZIDS@3, R45@2stepZIDS@5
+op:"macus" MemR45_2, MemR0123_0, Ax_11 || R0123_0_stepZIDS_3, R45_2_stepZIDS_5 is opcode_12_15=0xD & Ax_11 & opcode_7_10=(0x30>>3) & R45_2_stepZIDS_5 & R0123_0_stepZIDS_3 & MemR45_2 & MemR0123_0 unimpl
 # 8300h TL  macus MemRn@0, Imm16@16, Ax@11 || Rn@0stepZIDS@3
+op:"macus" MemRn_0, Imm16, Ax_11 || Rn_0_stepZIDS_3 is opcode_12_15=0x8 & Ax_11 & opcode_5_10=(0x30>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 unimpl
 # 8320h TL  macus y0, MemRn@0, Ax@11 || Rn@0stepZIDS@3
+op:"macus" y0, MemRn_0, Ax_11 || Rn_0_stepZIDS_3 is opcode_12_15=0x8 & Ax_11 & opcode_5_10=(0x32>>1) & Rn_0_stepZIDS_3 & MemRn_0 & y0 unimpl
 # 8340h TL  macus y0, Register@0, Ax@11
+op:"macus" y0, Register_0, Ax_11 is opcode_12_15=0x8 & Ax_11 & opcode_6_10=(0x34>>2) & Register_0 & y0 unimpl
 @ifdef TEAK_LITE_2
 # 5EA6h TL2 macus y0, r6, Ax@0
+op:"macus" y0, r6, Ax_0 is opcode_1_15=(0x5EA6>>1) & Ax_0 & y0 & r6 unimpl
 @endif
 # D500h TL  macuu MemR45@2, MemR0123@0, Ax@11
 #            || R0123@0stepZIDS@3, R45@2stepZIDS@5
+op:"macuu" MemR45_2, MemR0123_0, Ax_11 || R0123_0_stepZIDS_3, R45_2_stepZIDS_5 is opcode_12_15=0xD & Ax_11 & opcode_7_10=(0x50>>3) & R45_2_stepZIDS_5 & R0123_0_stepZIDS_3 & MemR45_2 & MemR0123_0 unimpl
 # 8500h TL  macuu MemRn@0, Imm16@16, Ax@11 || Rn@0stepZIDS@3
+op:"macuu" MemRn_0, Imm16, Ax_11 || Rn_0_stepZIDS_3 is opcode_12_15=0x8 & Ax_11 & opcode_5_10=(0x50>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 unimpl
 # 8520h TL  macuu y0, MemRn@0, Ax@11 || Rn@0stepZIDS@3
+op:"macuu" y0, MemRn_0, Ax_11 || Rn_0_stepZIDS_3 is opcode_12_15=0x8 & Ax_11 & opcode_5_10=(0x52>>1) & Rn_0_stepZIDS_3 & MemRn_0 & y0 unimpl
 # 8540h TL  macuu y0, Register@0, Ax@11
+op:"macuu" y0, Register_0, Ax_11 is opcode_12_15=0x8 & Ax_11 & opcode_6_10=(0x54>>2) & Register_0 & y0 unimpl
 @ifdef TEAK_LITE_2
 # 5EAAh TL2 macuu y0, r6, Ax@0
+op:"macuu" y0, r6, Ax_0 is opcode_1_15=(0x5EAA>>1) & Ax_0 & y0 & r6 unimpl
 @endif
 # 8460h TL  max  NoReverse, Ax@8, Implied Ax@not8, Bogus MemR0, ge,
 #            Implied mixp, Implied r0 || R0stepZIDS@3   ;when aY >= aX
