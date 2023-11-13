@@ -163,6 +163,7 @@ define hack_register offset=0 size=1 [ SR_CARRY_ SR_OVERFLOW_ SR_ARITH_ZERO_ SR_
 define token opcode (16)
 	opcode_0_15  = (0, 15)
 	opcode_0_1   = (0, 1)
+	opcode_0_2   = (0, 2)
 	opcode_0_3   = (0, 3)
 	opcode_0_4   = (0, 4)
 	opcode_0_7   = (0, 7)
@@ -1245,32 +1246,54 @@ op:"clrr" Ab_2, Ab_0 is opcode_4_15=0x8DD & Ab_2 & Ab_0 {
 }
 @endif
 # D4FEh TL  cmp  MemImm16@16, Ax@8
+op:"cmp" MemImm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xFE; MemImm16 unimpl
 # AC00h TL  cmp  MemImm8@0, Ax@8
+op:"cmp" MemImm8_0, Ax_8 is opcode_9_15=(0xAC>>1) & Ax_8 & MemImm8_0 unimpl
 # 8CC0h TL  cmp  Imm16@16, Ax@8
+op:"cmp" Imm16, Ax_8 is opcode_9_15=(0x8C>>1) & Ax_8 & opcode_0_7=0xC0; Imm16 unimpl
 # CC00h TL  cmp  Imm8u@0, Ax@8
+op:"cmp" Imm8u_0, Ax_8 is opcode_9_15=(0xCC>>1) & Ax_8 & Imm8u_0 unimpl
 # D4DEh TL  cmp  MemR7Imm16@16, Ax@8
+op:"cmp" MemR7Imm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xDE; MemR7Imm16 unimpl
 # 4C00h TL  cmp  MemR7Imm7s@0, Ax@8
+op:"cmp" MemR7Imm7s_0, Ax_8 is opcode_9_15=(0x4C>>1) & Ax_8 & opcode_7_7=0 & MemR7Imm7s_0 unimpl
 # 8C80h TL  cmp  MemRn@0, Ax@8 || Rn@0stepZIDS@3
+op:"cmp" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x8C>>1) & Ax_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 unimpl
 # 8CA0h TL  cmp  RegisterP0@0, Ax@8
+op:"cmp" Register_P_0, Ax_8 is opcode_9_15=(0x8C)>>1 & Ax_8 & opcode_5_7=(0xA>>1) & Register_P_0 unimpl
 @ifdef TEAK_LITE_2
 # 4D8Ch TL2 cmp  Ax@1, Bx@0
+op:"cmp" Ax_1, Bx_0 is opcode_2_15=(0x4D8C>>2) & Ax_1 & Bx_0 unimpl
 # D483h TL2 cmp  b0, b1
+op:"cmp" b0, b1 is opcode_0_15=0xD483 & b0 & b1 unimpl
 # D583h TL2 cmp  b1, b0
+op:"cmp" b1, b0 is opcode_0_15=0xD583 & b0 & b1 unimpl
 # DA9Ah TL2 cmp  Bx@10, Ax@0
+op:"cmp" Bx_10, Ax_0 is opcode_11_15=(0xDA>>3) & Bx_10 & opcode_1_9=(0x29A>>1) & Ax_0 unimpl
 # 8B63h TL2 cmp  p1, Ax@4
+op:"cmp" p1, Ax_4 is opcode_5_15=(0x8B6>>1) & Ax_4 & opcode_0_3=0x3 & p1 unimpl
 # D38Eh TL2 cmp  r6, Ax@4
+op:"cmp" r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=0xE & r6 unimpl
 @endif
 # BE00h TL  cmpu MemImm8@0, Ax@8
+op:"cmpu" MemImm8_0, Ax_8 is opcode_9_15=(0xBE>>1) & Ax_8 & MemImm8_0 unimpl
 # 9E80h TL  cmpu MemRn@0, Ax@8 || Rn@0stepZIDS@3
+op:"cmpu" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x9E>>1) & Ax_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 unimpl
 # 9EA0h TL  cmpu Register@0, Ax@8
+op:"cmpu" Register_0, Ax_8 is opcode_9_15=(0x9E>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0 unimpl
 @ifdef TEAK_LITE_2
 # 8A63h TL2 cmpu r6, Ax@3
+op:"cmpu" r6, Ax_3 is opcode_4_15=0x8A6 & Ax_3 & opcode_0_2=3 & r6 unimpl
 @endif
 # ED00h TL  cmpv Imm16@16, MemImm8@0
+op:"cmpv" Imm16, MemImm8_0 is opcode_8_15=0xED & MemImm8_0; Imm16 unimpl
 # 8CE0h TL  cmpv Imm16@16, MemRn@0 || Rn@0stepZIDS@3
+op:"cmpv" Imm16, MemRn_0 || Rn_0_stepZIDS_3 is opcode_5_15=(0x8CE>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 unimpl
 # 8DE0h TL  cmpv Imm16@16, Register@0
+op:"cmpv" Imm16, Register_0 is opcode_5_15=(0x8DE>>1) & Register_0; Imm16 unimpl
 @ifdef TEAK_LITE_2
 # 47BEh TL2 cmpv Imm16@16, r6
+op:"cmpv" Imm16, r6 is opcode_0_15=0x47BE & r6; Imm16 unimpl
 @endif
 # D390h TL  cntx r  ;restore shadows
 # D380h TL  cntx s  ;store shadows
