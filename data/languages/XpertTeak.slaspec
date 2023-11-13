@@ -171,9 +171,11 @@ define token opcode (16)
 	opcode_1_7   = (1, 7)
 	opcode_1_9   = (1, 9)
 	opcode_1_15  = (1, 15)
+	opcode_2_2   = (2, 2)
 	opcode_2_5   = (2, 5)
 	opcode_2_9   = (2, 9)
 	opcode_2_15  = (2, 15)
+	opcode_3_4   = (3, 4)
 	opcode_3_7   = (3, 7)
 	opcode_3_15  = (3, 15)
 	opcode_5_7   = (5, 7)
@@ -254,11 +256,11 @@ define token opcode (16)
 	Axh_9  = (9, 9)
 	Axh_11 = (11, 11)
 	Axh_12 = (12, 12)
-	Axh_not0  = (0, 0)
-	Axh_not3  = (3, 3)
-	Axh_not4  = (4, 4)
-	Axh_not6  = (6, 6)
-	Axh_not11 = (11, 11)
+	Axh_Not0  = (0, 0)
+	Axh_Not3  = (3, 3)
+	Axh_Not4  = (4, 4)
+	Axh_Not6  = (6, 6)
+	Axh_Not11 = (11, 11)
 
 	Px_0 = (0, 0)
 	Px_1 = (1, 1)
@@ -279,7 +281,7 @@ define token opcode (16)
 	Bxl_4 = (4, 4)
 	Bxl_5 = (5, 5)
 	Bxl_10 = (10, 10)
-	Bxl_not4 = (4, 4)
+	Bxl_Not4 = (4, 4)
 
 	Bxh_0 = (0, 0)
 	Bxh_2 = (3, 3)
@@ -288,7 +290,7 @@ define token opcode (16)
 	Bxh_5 = (5, 5)
 	Bxh_8 = (5, 5)
 	Bxh_10 = (10, 10)
-	Bxh_not4 = (4, 4)
+	Bxh_Not4 = (4, 4)
 
 	Ab_0  = (0, 1)
 	Ab_2  = (2, 3)
@@ -458,17 +460,17 @@ attach variables [ Axl_0 Axl_1 Axl_3 Axl_4 Axl_6 Axl_8 Axl_11 Axl_12 ] [ a0l a1l
 attach variables [ Axl_Not0 Axl_Not3 Axl_Not4 Axl_Not6 Axl_Not11 ] [ a1l a0l ];
 
 attach variables [ Axh_0 Axh_1 Axh_3 Axh_4 Axh_6 Axh_8 Axh_9 Axh_11 Axh_12 ] [ a0h a1h ];
-attach variables [ Axh_not0 Axh_not3 Axh_not4 Axh_not6 Axh_not11 ] [ a1h a0h ];
+attach variables [ Axh_Not0 Axh_Not3 Axh_Not4 Axh_Not6 Axh_Not11 ] [ a1h a0h ];
 
 attach variables [ Px_0 Px_1 Px_4 ] [ p0 p1 ];
 
 attach variables [ Bx_0 Bx_1 Bx_2 Bx_3 Bx_4 Bx_5 Bx_8 Bx_10 Bx_12 ] [ b0 b1 ];
 
 attach variables [ Bxl_0 Bxl_3 Bxl_4 Bxl_5 Bxl_10 ] [ b0l b1l ];
-attach variables [ Bxl_not4 ] [ b1l b0l ];
+attach variables [ Bxl_Not4 ] [ b1l b0l ];
 
 attach variables [ Bxh_0 Bxh_2 Bxh_3 Bxh_4 Bxh_5 Bxh_8 Bxh_10 ] [ b0h b1h ];
-attach variables [ Bxh_not4 ] [ b1h b0h ];
+attach variables [ Bxh_Not4 ] [ b1h b0h ];
 
 attach variables [ Ab_0 Ab_2 Ab_3 Ab_4 Ab_5 Ab_6 Ab_7 Ab_8 Ab_10 Ab_11 ] [ b0 b1 a0 a1 ];
 attach variables [ Abl_0 Abl_2 Abl_3 Abl_4 Abl_10 ] [ b0l b1l a0l a1l ];
@@ -679,6 +681,8 @@ RelAddr7_4:full_addr is imm7_4
 	export *[code]:2 full_addr;  # TODO: do we want to dereference this?
 }
 
+MemR0:$(OB)r0$(CB) is r0 { export *[data]:2 r0; }
+
 # Notepad++ regexes for these:
 # ^MemR(\d+)@(\d+)$
 # MemR\1_\2:        $\(OB\)R\1_\2$\(CB\)  is R\1_\2              { export *[data]:2 R\1_\2; }
@@ -755,6 +759,11 @@ R0_stepZIDS_0:r0       is stepZIDS_0=0 & r0         {}
 R0_stepZIDS_0:r0+1     is stepZIDS_0=1 & r0         { r0 = r0 + 1; }
 R0_stepZIDS_0:r0-1     is stepZIDS_0=2 & r0         { r0 = r0 - 1; }
 R0_stepZIDS_0:r0+stepi is stepZIDS_0=3 & r0 & stepi { r0 = r0 + stepi; }
+
+R0_stepZIDS_3:r0       is stepZIDS_3=0 & r0         {}
+R0_stepZIDS_3:r0+1     is stepZIDS_3=1 & r0         { r0 = r0 + 1; }
+R0_stepZIDS_3:r0-1     is stepZIDS_3=2 & r0         { r0 = r0 - 1; }
+R0_stepZIDS_3:r0+stepi is stepZIDS_3=3 & r0 & stepi { r0 = r0 + stepi; }
 
 # Note: R0123@0stepZIDS@3 is always combined with R45@2stepZIDS@5, so bits 0-6 are always used (there's no gap).
 R0123_0_stepZIDS_3:R0123_0       is stepZIDS_3=0 & R0123_0         {}
@@ -1188,9 +1197,9 @@ op:"brr" RelAddr7_4, Cond_0 is opcode_11_15=(0x10>>3) & RelAddr7_4 & Cond_0 {
 }
 @ifdef TEAK_LITE_2
 # 9068h TL2 cbs  Axh@0, Axh@not0, r0, ge
-op:"cbs" Axh_0, Axh_not0, r0, "ge" is opcode_1_15=(0x9068>>1) & Axh_0 & Axh_not0 & r0 unimpl
+op:"cbs" Axh_0, Axh_Not0, r0, "ge" is opcode_1_15=(0x9068>>1) & Axh_0 & Axh_Not0 & r0 unimpl
 # 9168h TL2 cbs  Axh@0, Axh@not0, r0, gt
-op:"cbs" Axh_0, Axh_not0, r0, "gt" is opcode_1_15=(0x9168>>1) & Axh_0 & Axh_not0 & r0 unimpl
+op:"cbs" Axh_0, Axh_Not0, r0, "gt" is opcode_1_15=(0x9168>>1) & Axh_0 & Axh_Not0 & r0 unimpl
 # D49Eh TL2 cbs  Axh@8, Bxh@5, r0, ge
 op:"cbs" Axh_8, Bxh_5, r0, "ge" is opcode_9_15=(0xD4>>1) & Axh_8 & opcode_6_7=(0x9>>2) & Bxh_5 & opcode_0_4=(0x1E) & r0 unimpl
 # D49Fh TL2 cbs  Axh@8, Bxh@5, r0, gt
@@ -1471,31 +1480,51 @@ op:"macuu" y0, r6, Ax_0 is opcode_1_15=(0x5EAA>>1) & Ax_0 & y0 & r6 unimpl
 @endif
 # 8460h TL  max  NoReverse, Ax@8, Implied Ax@not8, Bogus MemR0, ge,
 #            Implied mixp, Implied r0 || R0stepZIDS@3   ;when aY >= aX
+op:"max" Ax_8, Ax_Not8, r0, "ge", mixp || R0_stepZIDS_3 is opcode_9_15=(0x84>>1) & Ax_8 & Ax_Not8 & opcode_5_7=(6>>1) & R0_stepZIDS_3 & opcode_0_2=0 & r0 & mixp unimpl
 # 8660h TL  max  NoReverse, Ax@8, Implied Ax@not8, Bogus MemR0, gt,
 #            Implied mixp, Implied r0 || R0stepZIDS@3   ;when aY > aX
+op:"max" Ax_8, Ax_Not8, r0, "gt", mixp || R0_stepZIDS_3 is opcode_9_15=(0x86>>1) & Ax_8 & Ax_Not8 & opcode_5_7=(6>>1) & R0_stepZIDS_3 & opcode_0_2=0 & r0 & mixp unimpl
 @ifdef TEAK_LITE_2
 # 5E21h TL2 max  a0h, a1h || max a0l, a1l || vtrshr
+op:"max" a0h, a1h || "max" a0l, a1l || "vtrshr" is opcode_0_15=0x5E21 & a0h & a1h & a0l & a1l unimpl
 # 5F21h TL2 max  a1h, a0h || max a1l, a0l || vtrshr
+op:"max" a1h, a0h || "max" a1l, a0l || "vtrshr" is opcode_0_15=0x5F21 & a0h & a1h & a0l & a1l unimpl
 # D784h TL2 max  Axh@1, Bxh@0 || max Axl@1, Bxl@0 || vtrshr
+op:"max" Axh_1, Bxh_0 || "max" Axl_1, Bxl_0 || "vtrshr" is opcode_2_15=(0xD784>>2) & Axh_1 & Axl_1 & Bxh_0 & Bxl_0 unimpl
 # 4A40h TL2 max  Axh@3, Bxh@4 || max Axl@3, Bxl@4 || mov Axl@not3, MemR04@1
 #            || vtrshr || R04@1stepII2@0
+# NOTE: bit 2 chooses between Axl_Not3 and Axh_Not3 - this could be merged
+op:"max" Axh_3, Bxh_4 || "max" Axl_3, Bxl_4 || "mov" Axl_Not3, MemR04_1 || "vtrshr" || R04_1_stepII2_0
+	is opcode_5_15=(0x4A4>>1) & Bxh_4 & Bxl_4 & Axh_3 & Axl_3 & Axl_Not3 & opcode_2_2=0 & MemR04_1 & R04_1_stepII2_0 unimpl
 # 4A44h TL2 max  Axh@3, Bxh@4 || max Axl@3, Bxl@4 || mov Axh@not3, MemR04@1
 #            || vtrshr || R04@1stepII2@0
+op:"max" Axh_3, Bxh_4 || "max" Axl_3, Bxl_4 || "mov" Axh_Not3, MemR04_1 || "vtrshr" || R04_1_stepII2_0
+	is opcode_5_15=(0x4A4>>1) & Bxh_4 & Bxl_4 & Axh_3 & Axl_3 & Axh_Not3 & opcode_2_2=1 & MemR04_1 & R04_1_stepII2_0 unimpl
 # 45A0h TL2 max  Axh@4, Bxh@3 || max Axl@4, Bxl@3 || mov Axh@not4, MemR45@2
 #            || mov Axl@not4, MemR01@2 || vtrshr
 #            || R01@2stepII2@0, R45@2stepII2@1
+op:"max" Axh_4, Bxh_3 || "max" Axl_4, Bxl_3 || "mov" Axh_Not4, MemR45_2 || "mov" Axl_Not4, MemR01_2 || "vtrshr" || R01_2_stepII2_0, R45_2_stepII2_1
+	is opcode_5_15=(0x45A>>1) & Axh_4 & Axl_4 & Axh_Not4 & Axl_Not4 & Bxh_3 & Bxl_3 & MemR45_2 & MemR01_2 & R45_2_stepII2_1 & R01_2_stepII2_0 unimpl
 # D590h TL2 max  Axh@6, Bxh@5 || max Axl@6, Bxl@5 || mov Axh@not6, MemR01@2
 #            || mov Axl@not6, MemR45@2 || vtrshr
 #            || R01@2stepII2@0, R45@2stepII2@1
+op:"max" Axh_6, Bxh_5 || "max" Axl_6, Bxl_5 || "mov" Axh_Not6, MemR01_2 || "mov" Axl_Not6, MemR45_2 || "vtrshr" || R01_2_stepII2_0, R45_2_stepII2_1
+	is opcode_7_15=(0xD59>>3) & Axh_6 & Axl_6 & Axh_Not6 & Axl_Not6 & Bxh_5 & Bxl_5 & opcode_3_4=2 & MemR01_2 & MemR45_2 & R45_2_stepII2_1 & R01_2_stepII2_0 unimpl
 # 4A60h TL2 max  Bxh@4, Axh@3 || max Bxl@4, Axl@3 || mov Bxl@not4, MemR04@1
 #            || vtrshr || R04@1stepII2@0
+op:"max" Bxh_4, Axh_3 || "max" Bxl_4, Axl_3 || "mov" Bxl_Not4, MemR04_1 || "vtrshr" || R04_1_stepII2_0
+	is opcode_5_15=(0x4A6>>1) & Bxh_4 & Bxl_4 & Bxl_Not4 & Axh_3 & Axl_3 & opcode_2_2=0 & MemR04_1 & R04_1_stepII2_0 unimpl
 # 4A64h TL2 max  Bxh@4, Axh@3 || max Bxl@4, Axl@3 || mov Bxh@not4, MemR04@1
 #            || vtrshr || R04@1stepII2@0
+op:"max" Bxh_4, Axh_3 || "max" Bxl_4, Axl_3 || "mov" Bxh_Not4, MemR04_1 || "vtrshr" || R04_1_stepII2_0
+	is opcode_5_15=(0x4A6>>1) & Bxh_4 & Bxl_4 & Bxh_Not4 & Axh_3 & Axl_3 & opcode_2_2=1 & MemR04_1 & R04_1_stepII2_0 unimpl
 @endif
 # 8060h TL  maxd NoReverse, Ax@8, MemR0, ge, Implied mixp, Implied r0
 #            || R0stepZIDS@3   ;when (r0) >= aX
+op:"maxd" Ax_8, MemR0, "ge", mixp || R0_stepZIDS_3 is opcode_9_15=(0x80>>1) & Ax_8 & opcode_5_7=(6>>1) & R0_stepZIDS_3 & opcode_0_2=0 & MemR0 & mixp unimpl
 # 8260h TL  maxd NoReverse, Ax@8, MemR0, gt, Implied mixp, Implied r0
 #            || R0stepZIDS@3   ;when (r0) > aX
+op:"maxd" Ax_8, MemR0, "gt", mixp || R0_stepZIDS_3 is opcode_9_15=(0x82>>1) & Ax_8 & opcode_5_7=(6>>1) & R0_stepZIDS_3 & opcode_0_2=0 & MemR0 & mixp unimpl
 # 8860h TL  min  NoReverse, Ax@8, Implied Ax@not8, Bogus MemR0, le,
 #            Implied mixp, Implied r0 || R0stepZIDS@3   ;when aY <= aX
 # 8A60h TL  min  NoReverse, Ax@8, Implied Ax@not8, Bogus MemR0, lt,
