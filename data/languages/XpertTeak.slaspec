@@ -1296,12 +1296,25 @@ op:"cmpv" Imm16, Register_0 is opcode_5_15=(0x8DE>>1) & Register_0; Imm16 unimpl
 op:"cmpv" Imm16, r6 is opcode_0_15=0x47BE & r6; Imm16 unimpl
 @endif
 # D390h TL  cntx r  ;restore shadows
+op:"cntx" "r" is opcode_0_15=0xD390 unimpl
 # D380h TL  cntx s  ;store shadows
+op:"cntx" "s" is opcode_0_15=0xD380 unimpl
 # 67F0h TL  copy Implied Ax@not12,   Ax@12, Cond@0 ;aX=aY
+op:"copy" Ax_Not12, Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & Ax_Not12 & opcode_4_11=0x7F & Cond_0 {
+	if (!Cond_0) goto inst_next;
+	Ax_Not12 = Ax_12;
+}
 # 67E0h TL  dec  Implied Const1,     Ax@12, Cond@0 ;aX=aX-1
+op:"dec" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x7E & Cond_0 {
+	if (!Cond_0) goto inst_next;
+	Ax_12 = Ax_12 - 1;
+}
 # 43C0h TL  dint        ;IE=0, interrupt disable
+op:"dint" is opcode_0_15=0x43C0 unimpl
 # 0E00h TL  divs MemImm8@0, Ax@8
+op:"divs" MemImm8_0, Ax_8 is opcode_9_15=(0x0E>>1) & Ax_8 & MemImm8_0 unimpl
 # 4380h TL  eint        ;IE=1, interrupt enable
+op:"eint" is opcode_0_15=0x4380 unimpl
 # 9460h TL  exp  Bx@0, Implied sv
 # 9060h TL  exp  Bx@0, Implied sv, Ax@8
 # 9C40h TL  exp  MemRn@0, Implied sv || Rn@0stepZIDS@3
