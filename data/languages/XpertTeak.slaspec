@@ -179,6 +179,7 @@ define token opcode (16)
 	opcode_4_15  = (4, 15)
 	opcode_5_15  = (5, 15)
 	opcode_6_15  = (6, 15)
+	opcode_6_7   = (6, 7)
 	opcode_7_7   = (7, 7)
 	opcode_7_15  = (7, 15)
 	opcode_8_15  = (8, 15)
@@ -1171,18 +1172,29 @@ op:"brr" RelAddr7_4, Cond_0 is opcode_11_15=(0x10>>3) & RelAddr7_4 & Cond_0 {
 }
 @ifdef TEAK_LITE_2
 # 9068h TL2 cbs  Axh@0, Axh@not0, r0, ge
+op:"cbs" Axh_0, Axh_not0, r0, "ge" is opcode_1_15=(0x9068>>1) & Axh_0 & Axh_not0 & r0 unimpl
 # 9168h TL2 cbs  Axh@0, Axh@not0, r0, gt
+op:"cbs" Axh_0, Axh_not0, r0, "gt" is opcode_1_15=(0x9168>>1) & Axh_0 & Axh_not0 & r0 unimpl
 # D49Eh TL2 cbs  Axh@8, Bxh@5, r0, ge
+op:"cbs" Axh_8, Bxh_5, r0, "ge" is opcode_9_15=(0xD4>>1) & Axh_8 & opcode_6_7=(0x9>>2) & Bxh_5 & opcode_0_4=(0x1E) & r0 unimpl
 # D49Fh TL2 cbs  Axh@8, Bxh@5, r0, gt
+op:"cbs" Axh_8, Bxh_5, r0, "gt" is opcode_9_15=(0xD4>>1) & Axh_8 & opcode_6_7=(0x9>>2) & Bxh_5 & opcode_0_4=(0x1F) & r0 unimpl
 # D5C0h TL2 cbs  MemR01@2, MemR45@2, ge || R01@2stepII2@0, R45@2stepII2@1
+op:"cbs" MemR01_2, MemR45_2, "ge" || R01_2_stepII2_0, R45_2_stepII2_1 is opcode_3_15=(0xD5C0>>3) & MemR01_2 & MemR45_2 & R45_2_stepII2_1 & R01_2_stepII2_0 unimpl
 # D5C8h TL2 cbs  MemR01@2, MemR45@2, gt || R01@2stepII2@0, R45@2stepII2@1
+op:"cbs" MemR01_2, MemR45_2, "gt" || R01_2_stepII2_0, R45_2_stepII2_1 is opcode_3_15=(0xD5C8>>3) & MemR01_2 & MemR45_2 & R45_2_stepII2_1 & R01_2_stepII2_0 unimpl
 @endif
 # E500h TL  chng Imm16@16, MemImm8@0
+op:"chng" Imm16, MemImm8_0 is opcode_8_15=0xE5 & MemImm8_0; Imm16 unimpl
 # 84E0h TL  chng Imm16@16, MemRn@0 || Rn@0stepZIDS@3
+op:"chng" Imm16, MemRn_0 || Rn_0_stepZIDS_3 is opcode_5_15=(0x84E>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 unimpl
 # 85E0h TL  chng Imm16@16, Register@0
+op:"chng" Imm16, Register_0 is opcode_5_15=(0x85E>>1) & Register_0; Imm16 unimpl
 @ifdef TEAK_LITE_2
 # 47BAh TL2 chng Imm16@16, r6
+op:"chng" Imm16, r6 is opcode_0_15=0x47BA & r6; Imm16 unimpl
 # 0038h TL2 chng Imm16@16, SttMod@0
+op:"chng" Imm16, SttMod_0 is opcode_3_15=(0x0038>>3) & SttMod_0; Imm16 unimpl
 @endif
 # 6760h TL  clr  Implied ConstZero, Ax@12, Cond@0  ;aX=0
 # 6F60h TL  clr  Implied ConstZero, Bx@12, Cond@0  ;bX=0
