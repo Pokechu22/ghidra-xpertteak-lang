@@ -168,6 +168,7 @@ define token opcode (16)
 	opcode_0_4   = (0, 4)
 	opcode_0_7   = (0, 7)
 	opcode_1_4   = (1, 4)
+	opcode_1_7   = (1, 7)
 	opcode_1_9   = (1, 9)
 	opcode_1_15  = (1, 15)
 	opcode_2_5   = (2, 5)
@@ -1316,14 +1317,22 @@ op:"divs" MemImm8_0, Ax_8 is opcode_9_15=(0x0E>>1) & Ax_8 & MemImm8_0 unimpl
 # 4380h TL  eint        ;IE=1, interrupt enable
 op:"eint" is opcode_0_15=0x4380 unimpl
 # 9460h TL  exp  Bx@0, Implied sv
+op:"exp" Bx_0, sv is opcode_1_15=(0x9460>>1) & Bx_0 & sv unimpl
 # 9060h TL  exp  Bx@0, Implied sv, Ax@8
+op:"exp" Bx_0, sv, Ax_8 is opcode_9_15=(0x90>>1) & Ax_8 & opcode_1_7=(0x60>>1) & Bx_0 & sv unimpl
 # 9C40h TL  exp  MemRn@0, Implied sv || Rn@0stepZIDS@3
+op:"exp" MemRn_0, sv || Rn_0_stepZIDS_3 is opcode_5_15=(0x9C4>>1) & Rn_0_stepZIDS_3 & MemRn_0 & sv unimpl
 # 9840h TL  exp  MemRn@0, Implied sv, Ax@8 || Rn@0stepZIDS@3
+op:"exp" MemRn_0, sv, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x98>>1) & Ax_8 & opcode_5_7=(4>>1) & Rn_0_stepZIDS_3 & MemRn_0 & sv unimpl
 # 9040h TL  exp  RegisterP0@0, Implied sv, Ax@8
+op:"exp" Register_P_0, sv, Ax_8 is opcode_9_15=(0x90>>1) & Ax_8 & opcode_5_7=(4>>1) & Register_P_0 & sv unimpl
 # 9440h TL  exp  RegisterP0@0, Implied sv
+op:"exp" Register_P_0, sv is opcode_5_15=(0x944>>1) & Register_P_0 & sv unimpl
 @ifdef TEAK_LITE_2
 # D7C1h TL2 exp  r6, Implied sv
+op:"exp" r6, sv is opcode_0_15=0xD7C1 & r6 & sv unimpl
 # D382h TL2 exp  r6, Implied sv, Ax@4
+op:"exp" r6, sv, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=2 & r6 & sv unimpl
 @endif
 # 67D0h TL  inc  Implied Const1,     Ax@12, Cond@0 ;aX=aX+1
 # 49C0h TL  lim  a0     ;aka a0,a0
