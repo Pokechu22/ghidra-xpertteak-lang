@@ -1335,10 +1335,19 @@ op:"exp" r6, sv is opcode_0_15=0xD7C1 & r6 & sv unimpl
 op:"exp" r6, sv, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=2 & r6 & sv unimpl
 @endif
 # 67D0h TL  inc  Implied Const1,     Ax@12, Cond@0 ;aX=aX+1
+op:"inc" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x7D & Cond_0 {
+	if (!Cond_0) goto inst_next;
+	Ax_12 = Ax_12 + 1;
+}
 # 49C0h TL  lim  a0     ;aka a0,a0
+# Probably related to the limit flag that is one of the condition codes (0xB)?
+op:"lim" a0 is opcode_0_15=0x49C0 & a0 unimpl
 # 49D0h TL  lim  a0, a1
+op:"lim" a0, a1 is opcode_0_15=0x49D0 & a0 & a1 unimpl
 # 49F0h TL  lim  a1     ;aka a1,a1
+op:"lim" a1 is opcode_0_15=0x49F0 & a1 unimpl
 # 49E0h TL  lim  a1, a0
+op:"lim" a1, a0 is opcode_0_15=0x49E0 & a0 & a1 unimpl
 # 4D80h TL  load Imm2u@0, ps               ;st1.bit11-10=imm2
 # DB80h TL  load Imm7s@0, stepi            ;cfgi.LSB=imm7
 # DF80h TL  load Imm7s@0, stepj            ;cfgj.LSB=imm7
