@@ -200,11 +200,15 @@ define token opcode (16)
 	unused_5_5   = (5, 5)
 	unused_10_10 = (10, 10)
 
-	imm8_0 = (0, 7)
+	imm2u_0 = (0, 1)
+	imm2u_1 = (1, 2)
+	imm4u_0 = (0, 3)
+	imm7s_0 = (0, 6) signed
+	imm7_4  = (4, 10)
+	imm8_0  = (0, 7)
 	imm8s_0 = (0, 7) signed
 	imm8u_0 = (0, 7)
-	imm7s_0 = (0, 6) signed
-	imm7_4 = (4, 10)
+	imm9u_0 = (0, 8)
 
 	Register_0 = (0, 4)
 	Register_5 = (5, 9)
@@ -806,9 +810,13 @@ R04_8_stepII2_5:R04_8+stepII2_5 is R04_8 & stepII2_5 { R04_8 = R04_8 + stepII2_5
 
 R0425_7_stepII2_6:R0425_7+stepII2_6 is R0425_7 & stepII2_6 { R0425_7 = R0425_7 + stepII2_6; }
 
-# TODO: there are more of these
+Imm2u_0:imm2u_0 is imm2u_0 { local tmp:2 = imm2u_0; export tmp; }
+Imm2u_1:imm2u_1 is imm2u_1 { local tmp:2 = imm2u_1; export tmp; }
+Imm4u_0:imm4u_0 is imm4u_0 { local tmp:2 = imm4u_0; export tmp; }
+Imm7s_0:imm7s_0 is imm7s_0 { local tmp:2 = imm7s_0; export tmp; }
 Imm8s_0:imm8s_0 is imm8s_0 { local tmp:2 = imm8s_0; export tmp; }
 Imm8u_0:imm8u_0 is imm8u_0 { local tmp:2 = imm8u_0; export tmp; }
+Imm9u_0:imm9u_0 is imm9u_0 { local tmp:2 = imm9u_0; export tmp; }
 Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 
 # Comments are from http://problemkaputt.de/gbatek.htm#dsiteakliteiiinstructionsetencoding
@@ -1349,14 +1357,22 @@ op:"lim" a1 is opcode_0_15=0x49F0 & a1 unimpl
 # 49E0h TL  lim  a1, a0
 op:"lim" a1, a0 is opcode_0_15=0x49E0 & a0 & a1 unimpl
 # 4D80h TL  load Imm2u@0, ps               ;st1.bit11-10=imm2
+op:"load" Imm2u_0, "ps" is opcode_2_15=(0x4D80>>2) & Imm2u_0 unimpl
 # DB80h TL  load Imm7s@0, stepi            ;cfgi.LSB=imm7
+op:"load" Imm7s_0, stepi is opcode_7_15=(0xDB8>>3) & Imm7s_0 & stepi unimpl
 # DF80h TL  load Imm7s@0, stepj            ;cfgj.LSB=imm7
+op:"load" Imm7s_0, stepj is opcode_7_15=(0xDF8>>3) & Imm7s_0 & stepj unimpl
 # 0400h TL  load Imm8u@0, page             ;st1.LSBs=imm8 ;aka "lpg"
+op:"load" Imm8u_0, "page" is opcode_8_15=0x04 & Imm8u_0 unimpl
 # 0200h TL  load Imm9u@0, modi             ;cfgi.MSB=imm9
+op:"load" Imm9u_0, "modi" is opcode_9_15=(0x02>>1) & Imm9u_0 unimpl
 # 0A00h TL  load Imm9u@0, modj             ;cfgj.MSB=imm9
+op:"load" Imm9u_0, "modi" is opcode_9_15=(0x0A>>1) & Imm9u_0 unimpl
 @ifdef TEAK_LITE_2
 # D7D8h TL2 load Imm2u@1, movpd, Unused1@0 ;stt2.bit6.7 (page for ProgMem)
+op:"load" Imm2u_1, "movpd", unused_0_0 is opcode_3_15=(0xD7D8>>3) & Imm2u_1 & unused_0_0 unimpl
 # 0010h TL2 load Imm4u@0, ps01             ;mod0.bit10-11,13-14 and st1.10-11 ?
+op:"load" Imm4u_0, "ps01" is opcode_4_15=0x001 & Imm4u_0 unimpl
 @endif
 # D400h TL  maa  MemR45@2, MemR0123@0, Ax@11
 #            || R0123@0stepZIDS@3, R45@2stepZIDS@5
