@@ -1197,17 +1197,52 @@ op:"chng" Imm16, r6 is opcode_0_15=0x47BA & r6; Imm16 unimpl
 op:"chng" Imm16, SttMod_0 is opcode_3_15=(0x0038>>3) & SttMod_0; Imm16 unimpl
 @endif
 # 6760h TL  clr  Implied ConstZero, Ax@12, Cond@0  ;aX=0
+op:"clr" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=(0x76) & Cond_0 {
+	if (!Cond_0) goto inst_next;
+	Ax_12 = 0;
+}
 # 6F60h TL  clr  Implied ConstZero, Bx@12, Cond@0  ;bX=0
+op:"clr" Bx_12, Cond_0 is opcode_13_15=(6>>1) & Bx_12 & opcode_4_11=(0xF6) & Cond_0 {
+	if (!Cond_0) goto inst_next;
+	Bx_12 = 0;
+}
 @ifdef TEAK_LITE_2
 # 8ED0h TL2 clr  Implied ConstZero, Ab@2, Ab@0
+# TODO: What if Ab_2 == Ab_0? Is that something else?
+op:"clr" Ab_2, Ab_0 is opcode_4_15=0x8ED & Ab_2 & Ab_0 {
+	Ab_2 = 0;
+	Ab_0 = 0;
+}
 # 5DFEh TL2 clrp p0
+op:"clrp" p0 is opcode_0_15=0x5DFE & p0 {
+	p0 = 0;
+}
 # 5DFFh TL2 clrp p0, p1
+op:"clrp" p0, p1 is opcode_0_15=0x5DFF & p0 & p1 {
+	p0 = 0;
+	p1 = 0;
+}
 # 5DFDh TL2 clrp p1
+op:"clrp" p1 is opcode_0_15=0x5DFD & p1 {
+	p1 = 0;
+}
 @endif
 # 67C0h TL  clrr Implied Const8000h, Ax@12, Cond@0 ;aX=8000h
+op:"clrr" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x7C & Cond_0 {
+	if (!Cond_0) goto inst_next;
+	Ax_12 = 0x8000;
+}
 @ifdef TEAK_LITE_2
 # 6F70h TL2 clrr Implied Const8000h, Bx@12, Cond@0 ;bX=8000h
+op:"clrr" Bx_12, Cond_0 is opcode_13_15=(6>>1) & Bx_12 & opcode_4_11=0xF7 & Cond_0 {
+	if (!Cond_0) goto inst_next;
+	Bx_12 = 0x8000;
+}
 # 8DD0h TL2 clrr Implied Const8000h, Ab@2, Ab@0
+op:"clrr" Ab_2, Ab_0 is opcode_4_15=0x8DD & Ab_2 & Ab_0 {
+	Ab_2 = 0x8000;
+	Ab_0 = 0x8000;
+}
 @endif
 # D4FEh TL  cmp  MemImm16@16, Ax@8
 # AC00h TL  cmp  MemImm8@0, Ax@8
@@ -2056,7 +2091,7 @@ op:"rets" Imm8u_0 is opcode_8_15=0x09 & Imm8u_0 {
 # E800h TL  undefined Unused8@0  ;(mpy without A in bit11)
 @ifdef TEAK_LITE_2
 # 5EA1h TL2 undefined Unused1@1  ;(mpy/mpys without A in bit11)
-# 5DFCh TL2 undefined
+# 5DFCh TL2 undefined - would be clrp clearing neither p0 nor p1
 # 8CDEh TL2 undefined
 # D3C1h TL2 undefined
 # 5EB4h TL2 undefined Unused2@0
