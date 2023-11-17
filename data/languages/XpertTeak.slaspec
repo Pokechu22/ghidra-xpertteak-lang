@@ -167,6 +167,7 @@ define token opcode (16)
 	opcode_0_3   = (0, 3)
 	opcode_0_4   = (0, 4)
 	opcode_0_7   = (0, 7)
+	opcode_0_9   = (0, 9)
 	opcode_0_15  = (0, 15)
 	opcode_1_4   = (1, 4)
 	opcode_1_7   = (1, 7)
@@ -193,7 +194,10 @@ define token opcode (16)
 	opcode_7_9   = (7, 9)
 	opcode_7_10  = (7, 10)
 	opcode_7_15  = (7, 15)
+	opcode_8_8   = (8, 8)
+	opcode_8_9   = (8, 9)
 	opcode_8_10  = (8, 10)
+	opcode_8_11  = (8, 11)
 	opcode_8_15  = (8, 15)
 	opcode_9_15  = (9, 15)
 	opcode_10_15 = (10, 15)
@@ -214,6 +218,8 @@ define token opcode (16)
 	imm2u_0 = (0, 1)
 	imm2u_1 = (1, 2)
 	imm4u_0 = (0, 3)
+	imm5u_0 = (0, 4)
+	imm5s_0 = (0, 4) signed
 	imm7s_0 = (0, 6) signed
 	imm7_4  = (4, 10)
 	imm8_0  = (0, 7)
@@ -879,6 +885,8 @@ R0425_7_stepII2_6:R0425_7+stepII2_6 is R0425_7 & stepII2_6 { R0425_7 = R0425_7 +
 Imm2u_0:imm2u_0 is imm2u_0 { local tmp:2 = imm2u_0; export tmp; }
 Imm2u_1:imm2u_1 is imm2u_1 { local tmp:2 = imm2u_1; export tmp; }
 Imm4u_0:imm4u_0 is imm4u_0 { local tmp:2 = imm4u_0; export tmp; }
+Imm5u_0:imm5u_0 is imm5u_0 { local tmp:2 = imm5u_0; export tmp; }
+Imm5s_0:imm5s_0 is imm5s_0 { local tmp:2 = imm5s_0; export tmp; }
 Imm7s_0:imm7s_0 is imm7s_0 { local tmp:2 = imm7s_0; export tmp; }
 Imm8s_0:imm8s_0 is imm8s_0 { local tmp:2 = imm8s_0; export tmp; }
 Imm8u_0:imm8u_0 is imm8u_0 { local tmp:2 = imm8u_0; export tmp; }
@@ -1677,46 +1685,91 @@ op:"modr" MemRn_0+2 is opcode_3_15=(0x4990>>3) & MemRn_0 & Rn_0 { Rn_0 = Rn_0 + 
 op:"modr" MemRn_0+2, "dmod" is opcode_3_15=(0x4998>>3) & MemRn_0 & Rn_0 { Rn_0 = Rn_0 + 2; }  # TODO: dmod
 @endif
 # D290h TL  mov  Ab@10, Ab@5
+op:"mov" Ab_10, Ab_5 is opcode_12_15=0xD & Ab_10 & opcode_7_9=(0x29>>3) & Ab_5 & opcode_0_4=0x10 { Ab_5 = Ab_10; }
 # D298h TL  mov  Abl@10, dvm
+op:"mov" Abl_10, dvm is opcode_12_15=0xD & Abl_10 & opcode_0_9=0x298 & dvm { dvm = Abl_10; }
 # D2D8h TL  mov  Abl@10, x0
+op:"mov" Abl_10, x0 is opcode_12_15=0xD & Abl_10 & opcode_0_9=0x2D8 & x0 { x0 = Abl_10; }
 # 3000h TL  mov  Ablh@9, MemImm8@0
+op:"mov" Ablh_9, MemImm8_0 is opcode_12_15=0x3 & Ablh_9 & opcode_8_8=0 & MemImm8_0 { MemImm8_0 = Ablh_9; }
 # D4BCh TL  mov  Axl@8, MemImm16@16
+op:"mov" Axl_8, MemImm16 is opcode_9_15=(0xD4>>1) & Axl_8 & opcode_0_7=0xBC; MemImm16 { MemImm16 = Axl_8; }
 # D49Ch TL  mov  Axl@8, MemR7Imm16@16
+op:"mov" Axl_8, MemR7Imm16 is opcode_9_15=(0xD4>>1) & Axl_8 & opcode_0_7=0x9C; MemR7Imm16 { MemR7Imm16 = Axl_8; }
 # DC80h TL  mov  Axl@8, MemR7Imm7s@0
+op:"mov" Axl_8, MemR7Imm7s_0 is opcode_9_15=(0xDC>>1) & Axl_8 & opcode_7_7=1 & MemR7Imm7s_0 { MemR7Imm7s_0 = Axl_8; }
 # D4B8h TL  mov  MemImm16@16, Ax@8
+# TODO: sign extension or zero-extension? Where in the accumulator do we move to?
+op:"mov" MemImm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xB8; MemImm16 { Ax_8 = sext(MemImm16); }
 # 6100h TL  mov  MemImm8@0, Ab@11
+op:"mov" MemImm8_0, Ab_11 is opcode_13_15=(6>>1) & Ab_11 & opcode_8_10=1 & MemImm8_0 { Ab_11 = sext(MemImm8_0); }
 # 6200h TL  mov  MemImm8@0, Ablh@10
+op:"mov" MemImm8_0, Ablh_10 is opcode_13_15=(6>>1) & Ablh_10 & opcode_8_9=2 & MemImm8_0 { Ablh_10 = MemImm8_0; }
 # 6500h TL  mov  MemImm8@0, Axh@12, eu   ;aka Axheu
+# TODO: What is this? Is this like Abe (a0e/a1e etc)? If so, why "eu" and not just "e", and why isn't it in the operand encoding table?
+op:"mov" MemImm8_0, Axh_12, "eu" is opcode_13_15=(6>>1) & Axh_12 & opcode_8_11=5 & MemImm8_0 unimpl
 # 6000h TL  mov  MemImm8@0, R0123457y0@10
+op:"mov" MemImm8_0, R0123457y0_10 is opcode_13_15=(6>>1) & R0123457y0_10 & opcode_8_9=0 & MemImm8_0 { R0123457y0_10 = MemImm8_0; }
 # 6D00h TL  mov  MemImm8@0, sv
+op:"mov" MemImm8_0, sv is opcode_8_15=0x6D & MemImm8_0 & sv { sv = MemImm8_0; }
 # D491h TL  mov  dvm, Ab@5
+op:"mov" dvm, Ab_5 is opcode_7_15=(0xD49>>3) & Ab_5 & opcode_0_4=0x11 & dvm { Ab_5 = sext(dvm); }
 # D492h TL  mov  icr, Ab@5
+op:"mov" icr, Ab_5 is opcode_7_15=(0xD49>>3) & Ab_5 & opcode_0_4=0x12 & icr { Ab_5 = sext(icr); }
 # 5E20h TL  mov  Imm16@16, Bx@8
+op:"mov" Imm16, Bx_8 is opcode_9_15=(0x5E>>1) & Bx_8 & opcode_0_7=0x20; Imm16 { Bx_8 = sext(Imm16); }
 # 5E00h TL  mov  Imm16@16, Register@0
+op:"mov" Imm16, Register_0 is opcode_5_15=(0x5E0>>1) & Register_0; Imm16 { Register_0 = Imm16; }
 # 4F80h TL  mov  Imm5u@0, icr    ;uh, but icr is 8bit wide (only 4bit are R/W)?
+# TODO: comment from nocash
+op:"mov" Imm5u_0, icr is opcode_5_15=(0x4F8>>1) & Imm5u_0 & icr { icr = Imm5u_0; }
 # 2500h TL  mov  Imm8s@0, Axh@12         ;signed!
+op:"mov" Imm8s_0, Axh_12 is opcode_13_15=(2>>1) & Axh_12 & opcode_8_11=5 & Imm8s_0 { Axh_12 = Imm8s_0; }
 # 2900h TL  mov  Imm8s@0, ext0
+# TODO: ext0 through ext3 could definitely be merged
+op:"mov" Imm8s_0, ext0 is opcode_8_15=0x29 & Imm8s_0 & ext0 { ext0 = Imm8s_0; }
 # 2D00h TL  mov  Imm8s@0, ext1
+op:"mov" Imm8s_0, ext1 is opcode_8_15=0x2D & Imm8s_0 & ext1 { ext1 = Imm8s_0; }
 # 3900h TL  mov  Imm8s@0, ext2
+op:"mov" Imm8s_0, ext2 is opcode_8_15=0x39 & Imm8s_0 & ext2 { ext2 = Imm8s_0; }
 # 3D00h TL  mov  Imm8s@0, ext3
+op:"mov" Imm8s_0, ext3 is opcode_8_15=0x3D & Imm8s_0 & ext3 { ext3 = Imm8s_0; }
 # 2300h TL  mov  Imm8s@0, R0123457y0@10  ;signed!
+op:"mov" Imm8s_0, R0123457y0_10 is opcode_13_15=(2>>1) & R0123457y0_10 & opcode_8_9=3 & Imm8s_0 { R0123457y0_10 = Imm8s_0; }
 # 0500h TL  mov  Imm8s@0, sv
+op:"mov" Imm8s_0, sv is opcode_8_15=0x05 & Imm8s_0 & sv { sv = Imm8s_0; }
 # 2100h TL  mov  Imm8u@0, Axl@12         ;unsigned!
+op:"mov" Imm8u_0, Axl_12 is opcode_13_15=(2>>1) & Axl_12 & opcode_8_11=1 & Imm8u_0 { Axl_12 = Imm8u_0; }
 # D498h TL  mov  MemR7Imm16@16, Ax@8
+op:"mov" MemR7Imm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0x98; MemR7Imm16 { Ax_8 = sext(MemR7Imm16); }
 # D880h TL  mov  MemR7Imm7s@0, Ax@8
+op:"mov" MemR7Imm7s_0, Ax_8 is opcode_9_15=(0xD8>>1) & Ax_8 & opcode_7_7=1 & MemR7Imm7s_0 { Ax_8 = sext(MemR7Imm7s_0); }
 # 98C0h TL  mov  MemRn@0, Bx@8 || Rn@0stepZIDS@3
+op:"mov" MemRn_0, Bx_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0xD8>>1) & Bx_8 & opcode_5_7=(0xC>>1) & Rn_0_stepZIDS_3 & MemRn_0 { Bx_8 = sext(MemRn_0); build Rn_0_stepZIDS_3; }
 # 1C00h TL  mov  MemRn@0, Register@5 || Rn@0stepZIDS@3
+op:"mov" MemRn_0, Register_5 || Rn_0_stepZIDS_3 is opcode_10_15=(0x1C>>2) & Register_5 & Rn_0_stepZIDS_3 & MemRn_0 { Register_5 = MemRn_0; build Rn_0_stepZIDS_3; }
 # 47E0h TL  mov  MemSp, Register@0
+op:"mov" MemSp, Register_0 is opcode_5_15=(0x47E>>1) & Register_0 & MemSp { Register_0 = MemSp; }
 # 47C0h TL  mov  mixp, Register@0
+op:"mov" mixp, Register_0 is opcode_5_15=(0x47C>>1) & Register_0 & mixp { Register_0 = mixp; }
 # 2000h TL  mov  R0123457y0@9, MemImm8@0
+op:"mov" R0123457y0_9, MemImm8_0 is opcode_12_15=2 & R0123457y0_9 & opcode_8_8=0 & MemImm8_0 { MemImm8_0 = R0123457y0_9; }
 # 4FC0h TL  mov  Register@0, icr
+op:"mov" Register_0, icr is opcode_5_15=(0x4FC>>1) & Register_0 & icr { icr = Register_0; }
 # 5E80h TL  mov  Register@0, mixp
+op:"mov" Register_0, mixp is opcode_5_15=(0x5E8>>1) & Register_0 & mixp { mixp = Register_0; }
 # 1800h TL  mov  Register@5, MemRn@0 || Rn@0stepZIDS@3
+op:"mov" Register_5, MemRn_0 || Rn_0_stepZIDS_3 is opcode_10_15=(0x18>>2) & Register_5 & Rn_0_stepZIDS_3 & MemRn_0 { MemRn_0 = Register_5; build Rn_0_stepZIDS_3; }
 # 5EC0h TL  mov  RegisterP0@0, Bx@5
+op:"mov" Register_P_0, Bx_5 is opcode_6_15=(0x5EC>>2) & Bx_5 & Register_P_0 { Bx_5 = sext(Register_P_0); }
 # 5800h TL  mov  RegisterP0@0, Register@5
+op:"mov" Register_P_0, Register_5 is opcode_10_15=(0x58>>2) & Register_5 & Register_P_0 { Register_5 = Register_P_0; }
 # D490h TL  mov  repc, Ab@5
+op:"mov" repc, Ab_5 is opcode_7_15=(0xDA9>>3) & Ab_5 & opcode_0_4=0x10 & repc { Ab_5 = sext(repc); }
 # 7D00h TL  mov  sv, MemImm8@0
+op:"mov" sv, MemImm8_0 is opcode_8_15=0x7D & MemImm8_0 & sv { MemImm8_0 = sv; }
 # D493h TL  mov  x0, Ab@5
+op:"mov" x0, Ab_5 is opcode_7_15=(0xD49>>3) & Ab_5 & opcode_0_4=0x13 & x0 { Ab_5 = sext(x0); }
 @ifdef TEAK_LITE_2
 # D49Bh TL2 mov  a0h, stepi0
 # D59Bh TL2 mov  a0h, stepj0
