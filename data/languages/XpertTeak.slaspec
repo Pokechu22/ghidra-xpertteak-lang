@@ -177,6 +177,7 @@ define token opcode (16)
 	opcode_2_15  = (2, 15)
 	opcode_3_4   = (3, 4)
 	opcode_3_7   = (3, 7)
+	opcode_3_9   = (3, 9)
 	opcode_3_15  = (3, 15)
 	opcode_5_7   = (5, 7)
 	opcode_4_11  = (4, 11)
@@ -1527,29 +1528,55 @@ op:"maxd" Ax_8, MemR0, "ge", mixp || R0_stepZIDS_3 is opcode_9_15=(0x80>>1) & Ax
 op:"maxd" Ax_8, MemR0, "gt", mixp || R0_stepZIDS_3 is opcode_9_15=(0x82>>1) & Ax_8 & opcode_5_7=(6>>1) & R0_stepZIDS_3 & opcode_0_2=0 & MemR0 & mixp unimpl
 # 8860h TL  min  NoReverse, Ax@8, Implied Ax@not8, Bogus MemR0, le,
 #            Implied mixp, Implied r0 || R0stepZIDS@3   ;when aY <= aX
+# NOTE: matches 8460h
+op:"min" Ax_8, Ax_Not8, r0, "le", mixp || R0_stepZIDS_3 is opcode_9_15=(0x88>>1) & Ax_8 & Ax_Not8 & opcode_5_7=(6>>1) & R0_stepZIDS_3 & opcode_0_2=0 & r0 & mixp unimpl
 # 8A60h TL  min  NoReverse, Ax@8, Implied Ax@not8, Bogus MemR0, lt,
 #            Implied mixp, Implied r0 || R0stepZIDS@3   ;when aY < aX
+# NOTE: matches 8660h
+op:"min" Ax_8, Ax_Not8, r0, "lt", mixp || R0_stepZIDS_3 is opcode_9_15=(0x8A>>1) & Ax_8 & Ax_Not8 & opcode_5_7=(6>>1) & R0_stepZIDS_3 & opcode_0_2=0 & r0 & mixp unimpl
 @ifdef TEAK_LITE_2
 # 43C2h TL2 min  Axh@0, Axh@not0 || min Axl@0, Axl@not0 || vtrshr
+op:"min" Axh_0, Axh_Not0 || "min" Axl_0, Axl_Not0 || "vtrshr" is opcode_1_15=(0x43C2>>1) & Axh_0 & Axh_Not0 & Axl_0 & Axl_Not0 unimpl
 # D2B8h TL2 min  Axh@11, Bxh@10 || min Axl@11, Bxl@10
 #            || mov Axh@not11, MemR01@2 || mov Axl@not11, MemR45@2
 #            || vtrshr || R01@2stepII2@0, R45@2stepII2@1
+op:"min" Axh_11, Bxh_10 || "min" Axl_11, Bxl_10 || "mov" Axh_Not11, MemR01_2 || "mov" Axl_Not11, MemR45_2 || "vtrshr" || R01_2_stepII2_0 || R45_2_stepII2_1
+	is opcode_12_15=0xD & Axh_11 & Axl_11 & Axh_Not11 & Axl_Not11 & Bxh_10 & Bxl_10 & opcode_3_9=(0x2B8>>3) & MemR01_2 & MemR45_2 & R45_2_stepII2_1 & R01_2_stepII2_0 unimpl
 # 4A00h TL2 min  Axh@3, Bxh@4 || min Axl@3, Bxl@4 || mov Axl@not3, MemR04@1
 #            || vtrshr || R04@1stepII2@0
+# NOTE: bit 2 chooses between Axl_Not3 and Axh_Not3 - this could be merged
+# NOTE: matches 4A40h
+op:"min" Axh_3, Bxh_4 || "min" Axl_3, Bxl_4 || "mov" Axl_Not3, MemR04_1 || "vtrshr" || R04_1_stepII2_0
+	is opcode_5_15=(0x4A0>>1) & Bxh_4 & Bxl_4 & Axh_3 & Axl_3 & Axl_Not3 & opcode_2_2=0 & MemR04_1 & R04_1_stepII2_0 unimpl
 # 4A04h TL2 min  Axh@3, Bxh@4 || min Axl@3, Bxl@4 || mov Axh@not3, MemR04@1
 #            || vtrshr || R04@1stepII2@0
+# NOTE: matches 4A44h
+op:"min" Axh_3, Bxh_4 || "min" Axl_3, Bxl_4 || "mov" Axh_Not3, MemR04_1 || "vtrshr" || R04_1_stepII2_0
+	is opcode_5_15=(0x4A0>>1) & Bxh_4 & Bxl_4 & Axh_3 & Axl_3 & Axh_Not3 & opcode_2_2=1 & MemR04_1 & R04_1_stepII2_0 unimpl
 # 45E0h TL2 min  Axh@4, Bxh@3 || min Axl@4, Bxl@3 || mov Axh@not4, MemR45@2
 #            || mov Axl@not4, MemR01@2 || vtrshr
 #            || R01@2stepII2@0, R45@2stepII2@1
+# NOTE: matches 45A0h
+op:"min" Axh_4, Bxh_3 || "min" Axl_4, Bxl_3 || "mov" Axh_Not4, MemR45_2 || "mov" Axl_Not4, MemR01_2 || "vtrshr" || R01_2_stepII2_0, R45_2_stepII2_1
+	is opcode_5_15=(0x45E>>1) & Axh_4 & Axl_4 & Axh_Not4 & Axl_Not4 & Bxh_3 & Bxl_3 & MemR45_2 & MemR01_2 & R45_2_stepII2_1 & R01_2_stepII2_0 unimpl
 # D4BAh TL2 min  Axh@8, Bxh@0 || min Axl@8, Bxl@0 || vtrshr
+op:"min" Axh_8, Bxh_0 || "min" Axl_8, Bxl_0 || "vtrshr" is opcode_9_15=(0xD4>>1) & Axh_8 & Axl_8 & opcode_1_7=(0xBA>>1) & Bxh_0 & Bxl_0 unimpl
 # 4A20h TL2 min  Bxh@4, Axh@3 || min Bxl@4, Axl@3 || mov Bxl@not4, MemR04@1
 #            || vtrshr || R04@1stepII2@0
+# NOTE: matches 4A60h
+op:"min" Bxh_4, Axh_3 || "min" Bxl_4, Axl_3 || "mov" Bxl_Not4, MemR04_1 || "vtrshr" || R04_1_stepII2_0
+	is opcode_5_15=(0x4A2>>1) & Bxh_4 & Bxl_4 & Bxl_Not4 & Axh_3 & Axl_3 & opcode_2_2=0 & MemR04_1 & R04_1_stepII2_0 unimpl
 # 4A24h TL2 min  Bxh@4, Axh@3 || min Bxl@4, Axl@3 || mov Bxh@not4, MemR04@1
 #            || vtrshr || R04@1stepII2@0
+# NOTE: matches 4A64h
+op:"min" Bxh_4, Axh_3 || "min" Bxl_4, Axl_3 || "mov" Bxh_Not4, MemR04_1 || "vtrshr" || R04_1_stepII2_0
+	is opcode_5_15=(0x4A2>>1) & Bxh_4 & Bxl_4 & Bxh_Not4 & Axh_3 & Axl_3 & opcode_2_2=1 & MemR04_1 & R04_1_stepII2_0 unimpl
 # 47A0h TL2 mind NoReverse, Ax@3, MemR0, le, Implied mixp, Implied r0
 #            || R0stepZIDS@0
+op:"mind" Ax_3, MemR0, "le", mixp || R0_stepZIDS_0 is opcode_4_15=0x47A & Ax_3 & opcode_2_2=0 & R0_stepZIDS_0 & MemR0 & mixp unimpl
 # 47A4h TL2 mind NoReverse, Ax@3, MemR0, lt, Implied mixp, Implied r0
 #            || R0stepZIDS@0
+op:"mind" Ax_3, MemR0, "lt", mixp || R0_stepZIDS_0 is opcode_4_15=0x47A & Ax_3 & opcode_2_2=1 & R0_stepZIDS_0 & MemR0 & mixp unimpl
 @endif
 # 0080h TL  modr MemRn@0stepZIDS@3
 # 00A0h TL  modr MemRn@0stepZIDS@3, dmod  ;Disable modulo
