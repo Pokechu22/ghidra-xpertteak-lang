@@ -76,7 +76,7 @@ define register offset=0x60 size=2 [ ar0 ar1 arp0 arp1 arp2 arp3 ];
 @endif
 define register offset=0x6c size=2 [ cfgi cfgj ];
 @ifdef TEAK_LITE_2
-define register offset=0x70 size=2 [ stepi stepj cfgib cfgjb ];
+define register offset=0x70 size=2 [ stepi stepj cfgib cfgjb stepi0 stepj0 ];
 @endif
 
 # a0e and a1e are 4-bit instead of 8-bit on teak lite 1, and b0e and b1e don't exist
@@ -161,17 +161,19 @@ define hack_register offset=0 size=1 [ SR_CARRY_ SR_OVERFLOW_ SR_ARITH_ZERO_ SR_
 @endif
 
 define token opcode (16)
-	opcode_0_15  = (0, 15)
+	opcode_0_0   = (0, 0)
 	opcode_0_1   = (0, 1)
 	opcode_0_2   = (0, 2)
 	opcode_0_3   = (0, 3)
 	opcode_0_4   = (0, 4)
 	opcode_0_7   = (0, 7)
+	opcode_0_15  = (0, 15)
 	opcode_1_4   = (1, 4)
 	opcode_1_7   = (1, 7)
 	opcode_1_9   = (1, 9)
 	opcode_1_15  = (1, 15)
 	opcode_2_2   = (2, 2)
+	opcode_2_4   = (2, 4)
 	opcode_2_5   = (2, 5)
 	opcode_2_9   = (2, 9)
 	opcode_2_15  = (2, 15)
@@ -188,11 +190,13 @@ define token opcode (16)
 	opcode_6_15  = (6, 15)
 	opcode_6_7   = (6, 7)
 	opcode_7_7   = (7, 7)
+	opcode_7_9   = (7, 9)
 	opcode_7_10  = (7, 10)
 	opcode_7_15  = (7, 15)
 	opcode_8_10  = (8, 10)
 	opcode_8_15  = (8, 15)
 	opcode_9_15  = (9, 15)
+	opcode_10_15 = (10, 15)
 	opcode_11_15 = (11, 15)
 	opcode_12_15 = (12, 15)
 	opcode_13_15 = (13, 15)
@@ -407,6 +411,11 @@ define token opcode (16)
 	stepII2_6 = (6, 6)
 	stepII2_8 = (8, 8)
 	stepII2_9 = (9, 9)
+
+	modrstepII2D2S0_0 = (0, 1)
+	modrstepII2D2S0_1 = (1, 2)
+	modrstepII2D2S0_3 = (3, 4)
+	modrstepII2D2S0_5 = (5, 6)
 
 	offsZI_0 = (0, 0)
 	offsZI_1 = (1, 1)
@@ -746,7 +755,48 @@ MemR04_8:         $(OB)R04_8$(CB)  is R04_8              { export *[data]:2 R04_
 
 MemR0425_0: $(OB)R0425_0$(CB) is R0425_0 { export *[data]:2 R0425_0; }
 
-MemR0123_0: $(OB)R0123_0$(CB) is R0123_0 { export *[data]:2 R0123_0; }
+MemR0123_0:  $(OB)R0123_0$(CB)  is R0123_0  { export *[data]:2 R0123_0; }
+MemR0123_5:  $(OB)R0123_5$(CB)  is R0123_5  { export *[data]:2 R0123_5; }
+MemR0123_8:  $(OB)R0123_8$(CB)  is R0123_8  { export *[data]:2 R0123_8; }
+MemR0123_10: $(OB)R0123_10$(CB) is R0123_10 { export *[data]:2 R0123_10; }  # Only used by MemR0123_10_modrstepII2D2S0_1
+
+# TODO: do we want to do something special with the brackets here? Right now it'd be [r0]+2 and maybe [r0+2] or just r0+2 would make more sense
+# TODO: stepi0 or stepj0?
+MemR0123_5_modrstepII2D2S0_1:MemR0123_5+       is MemR0123_5 & modrstepII2D2S0_1=0 & R0123_5          { R0123_5 = R0123_5 + 1; }
+MemR0123_5_modrstepII2D2S0_1:MemR0123_5+2      is MemR0123_5 & modrstepII2D2S0_1=1 & R0123_5          { R0123_5 = R0123_5 + 2; }
+MemR0123_5_modrstepII2D2S0_1:MemR0123_5-2      is MemR0123_5 & modrstepII2D2S0_1=2 & R0123_5          { R0123_5 = R0123_5 - 2; }
+MemR0123_5_modrstepII2D2S0_1:MemR0123_5+stepi0 is MemR0123_5 & modrstepII2D2S0_1=3 & R0123_5 & stepi0 { R0123_5 = R0123_5 + stepi0; }
+
+MemR0123_8_modrstepII2D2S0_0:MemR0123_8+       is MemR0123_8 & modrstepII2D2S0_0=0 & R0123_8          { R0123_8 = R0123_8 + 1; }
+MemR0123_8_modrstepII2D2S0_0:MemR0123_8+2      is MemR0123_8 & modrstepII2D2S0_0=1 & R0123_8          { R0123_8 = R0123_8 + 2; }
+MemR0123_8_modrstepII2D2S0_0:MemR0123_8-2      is MemR0123_8 & modrstepII2D2S0_0=2 & R0123_8          { R0123_8 = R0123_8 - 2; }
+MemR0123_8_modrstepII2D2S0_0:MemR0123_8+stepi0 is MemR0123_8 & modrstepII2D2S0_0=3 & R0123_8 & stepi0 { R0123_8 = R0123_8 + stepi0; }
+
+MemR0123_10_modrstepII2D2S0_0:MemR0123_10+       is MemR0123_10 & modrstepII2D2S0_0=0 & R0123_10          { R0123_10 = R0123_10 + 1; }
+MemR0123_10_modrstepII2D2S0_0:MemR0123_10+2      is MemR0123_10 & modrstepII2D2S0_0=1 & R0123_10          { R0123_10 = R0123_10 + 2; }
+MemR0123_10_modrstepII2D2S0_0:MemR0123_10-2      is MemR0123_10 & modrstepII2D2S0_0=2 & R0123_10          { R0123_10 = R0123_10 - 2; }
+MemR0123_10_modrstepII2D2S0_0:MemR0123_10+stepi0 is MemR0123_10 & modrstepII2D2S0_0=3 & R0123_10 & stepi0 { R0123_10 = R0123_10 + stepi0; }
+
+MemR4567_4:  $(OB)MemR4567_4$(CB)  is MemR4567_4  { export *[data]:2 MemR4567_4; }
+MemR4567_5:  $(OB)MemR4567_5$(CB)  is MemR4567_5  { export *[data]:2 MemR4567_5; }
+MemR4567_8:  $(OB)MemR4567_8$(CB)  is MemR4567_8  { export *[data]:2 MemR4567_8; }
+MemR4567_10: $(OB)MemR4567_10$(CB) is MemR4567_10 { export *[data]:2 MemR4567_10; }
+
+# TODO: brackets; stepi0 or stepj0?
+MemR4567_5_modrstepII2D2S0_3:MemR4567_5+       is MemR4567_5 & modrstepII2D2S0_3=0 & R4567_5          { R4567_5 = R4567_5 + 1; }
+MemR4567_5_modrstepII2D2S0_3:MemR4567_5+2      is MemR4567_5 & modrstepII2D2S0_3=1 & R4567_5          { R4567_5 = R4567_5 + 2; }
+MemR4567_5_modrstepII2D2S0_3:MemR4567_5-2      is MemR4567_5 & modrstepII2D2S0_3=2 & R4567_5          { R4567_5 = R4567_5 - 2; }
+MemR4567_5_modrstepII2D2S0_3:MemR4567_5+stepj0 is MemR4567_5 & modrstepII2D2S0_3=3 & R4567_5 & stepj0 { R4567_5 = R4567_5 + stepj0; }
+
+MemR4567_8_modrstepII2D2S0_3:MemR4567_8+       is MemR4567_8 & modrstepII2D2S0_3=0 & R4567_8          { R4567_8 = R4567_8 + 1; }
+MemR4567_8_modrstepII2D2S0_3:MemR4567_8+2      is MemR4567_8 & modrstepII2D2S0_3=1 & R4567_8          { R4567_8 = R4567_8 + 2; }
+MemR4567_8_modrstepII2D2S0_3:MemR4567_8-2      is MemR4567_8 & modrstepII2D2S0_3=2 & R4567_8          { R4567_8 = R4567_8 - 2; }
+MemR4567_8_modrstepII2D2S0_3:MemR4567_8+stepj0 is MemR4567_8 & modrstepII2D2S0_3=3 & R4567_8 & stepj0 { R4567_8 = R4567_8 + stepj0; }
+
+MemR4567_10_modrstepII2D2S0_5:MemR4567_10+       is MemR4567_10 & modrstepII2D2S0_5=0 & R4567_10          { R4567_10 = R4567_10 + 1; }
+MemR4567_10_modrstepII2D2S0_5:MemR4567_10+2      is MemR4567_10 & modrstepII2D2S0_5=1 & R4567_10          { R4567_10 = R4567_10 + 2; }
+MemR4567_10_modrstepII2D2S0_5:MemR4567_10-2      is MemR4567_10 & modrstepII2D2S0_5=2 & R4567_10          { R4567_10 = R4567_10 - 2; }
+MemR4567_10_modrstepII2D2S0_5:MemR4567_10+stepj0 is MemR4567_10 & modrstepII2D2S0_5=3 & R4567_10 & stepj0 { R4567_10 = R4567_10 + stepj0; }
 
 # Note: original formatting for these uses +s for stepZIDS=3;
 # I've replaced it with +stepi (or +stepj when applicable).
@@ -1579,17 +1629,52 @@ op:"mind" Ax_3, MemR0, "le", mixp || R0_stepZIDS_0 is opcode_4_15=0x47A & Ax_3 &
 op:"mind" Ax_3, MemR0, "lt", mixp || R0_stepZIDS_0 is opcode_4_15=0x47A & Ax_3 & opcode_2_2=1 & R0_stepZIDS_0 & MemR0 & mixp unimpl
 @endif
 # 0080h TL  modr MemRn@0stepZIDS@3
+op:"modr" MemRn_0_stepZIDS_3 is opcode_5_15=(0x008>>1) & MemRn_0_stepZIDS_3 { build MemRn_0_stepZIDS_3; }
 # 00A0h TL  modr MemRn@0stepZIDS@3, dmod  ;Disable modulo
+op:"modr" MemRn_0_stepZIDS_3,"dmod" is opcode_5_15=(0x00A>>1) & MemRn_0_stepZIDS_3 { build MemRn_0_stepZIDS_3; }
 @ifdef TEAK_LITE_2
+# NOTE: nocash documentation has a "modrstepII2D2S0" which is what is used here (the difference is
+# that one uses stepi/stepj (unclear which) and the other uses stepi0/stepj0 (also unclear which).)
+# For whatever reason nocash doesn't use modrstepII2D2S0 in the actual instruction list though.
 # D294h TL2 modr MemR0123@10stepII2D2S0@0 || modr MemR4567@10stepII2D2S0@5
+op:"modr" MemR0123_10_modrstepII2D2S0_0 || "modr" MemR4567_10_modrstepII2D2S0_5
+	is opcode_12_15=0xD & opcode_7_9=(0x29>>3) & MemR4567_10_modrstepII2D2S0_5 & opcode_2_4=(0x14>>2) & MemR0123_10_modrstepII2D2S0_0
+{
+	build MemR0123_10_modrstepII2D2S0_0;
+	build MemR4567_10_modrstepII2D2S0_5;
+}
 # 0D80h TL2 modr MemR0123@5stepII2D2S0@1  || modr MemR4567@5stepII2D2S0@3, dmod
+op:"modr" MemR0123_5_modrstepII2D2S0_1 || "modr" MemR4567_5_modrstepII2D2S0_3, "dmod"
+	is opcode_5_15=(0x0D8>>3) & MemR4567_5_modrstepII2D2S0_3 & MemR0123_5_modrstepII2D2S0_1 & opcode_0_0=0
+{
+	build MemR0123_5_modrstepII2D2S0_1;
+	build MemR4567_5_modrstepII2D2S0_3;
+}
 # 0D81h TL2 modr MemR0123@5stepII2D2S0@1, dmod
 #            || modr MemR4567@5stepII2D2S0@3, dmod
+# NOTE: identical to 0D80h apart from the first dmod (TODO: which we haven't implemented yet)
+op:"modr" MemR0123_5_modrstepII2D2S0_1 || "modr" MemR4567_5_modrstepII2D2S0_3, "dmod"
+	is opcode_5_15=(0x0D8>>3) & MemR4567_5_modrstepII2D2S0_3 & MemR0123_5_modrstepII2D2S0_1 & opcode_0_0=1
+{
+	build MemR0123_5_modrstepII2D2S0_1;
+	build MemR4567_5_modrstepII2D2S0_3;
+}
 # 8464h TL2 modr MemR0123@8stepII2D2S0@0, dmod || modr MemR4567@8stepII2D2S0@3
+op:"modr" MemR0123_8_modrstepII2D2S0_0, "dmod" || "modr" MemR4567_8_modrstepII2D2S0_3
+	is opcode_10_15=(0x84>>2) & opcode_5_7=(6>>1) & MemR4567_8_modrstepII2D2S0_3 & opcode_2_2=1 & MemR0123_8_modrstepII2D2S0_0
+{
+	build MemR0123_8_modrstepII2D2S0_0;
+	build MemR4567_8_modrstepII2D2S0_3;
+}
+# TODO: Brackets? (See comment on MemR0123_5_modrstepII2D2S0_1)
 # 5DA0h TL2 modr MemRn@0stepD2
+op:"modr" MemRn_0-2 is opcode_3_15=(0x5DA0>>3) & MemRn_0 & Rn_0 { Rn_0 = Rn_0 - 2; }
 # 5DA8h TL2 modr MemRn@0stepD2, dmod
+op:"modr" MemRn_0-2, "dmod" is opcode_3_15=(0x5DA8>>3) & MemRn_0 & Rn_0 { Rn_0 = Rn_0 - 2; }  # TODO: dmod
 # 4990h TL2 modr MemRn@0stepI2
+op:"modr" MemRn_0+2 is opcode_3_15=(0x4990>>3) & MemRn_0 & Rn_0 { Rn_0 = Rn_0 + 2; }
 # 4998h TL2 modr MemRn@0stepI2, dmod
+op:"modr" MemRn_0+2, "dmod" is opcode_3_15=(0x4998>>3) & MemRn_0 & Rn_0 { Rn_0 = Rn_0 + 2; }  # TODO: dmod
 @endif
 # D290h TL  mov  Ab@10, Ab@5
 # D298h TL  mov  Abl@10, dvm
