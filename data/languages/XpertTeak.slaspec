@@ -2467,54 +2467,120 @@ op:"pacr" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x7B & Cond
 op:"pacrl" Ax_0 is opcode_1_15=(0xD7C2>>1) & Ax_0 unimpl
 @endif
 # 5E60h TL  pop  Register@0
-op:"pop" Register_0 is opcode_5_15=(0x5E60>>5) & Register_0 unimpl
+op:"pop" Register_0 is opcode_5_15=(0x5E60>>5) & Register_0 {
+	Register_0 = *[data]:2 sp;
+	sp = sp + 1;
+}
 @ifdef TEAK_LITE_2
 # 47B4h TL2 pop  Abe@0
-op:"pop" Abe_0 is opcode_2_15=(0x47B4>>2) & Abe_0 unimpl
+op:"pop" Abe_0 is opcode_2_15=(0x47B4>>2) & Abe_0 {
+	Abe_0 = *[data]:2 sp;
+	sp = sp + 1;
+}
 # 80C7h TL2 pop  ArArpSttMod@8
-op:"pop" ArArpSttMod_8 is opcode_12_15=0x8 & ArArpSttMod_8 & opcode_0_7=0xc7 unimpl
+op:"pop" ArArpSttMod_8 is opcode_12_15=0x8 & ArArpSttMod_8 & opcode_0_7=0xc7 {
+	ArArpSttMod_8 = *[data]:2 sp;
+	sp = sp + 1;
+}
 # 0006h TL2 pop  Bx@5, Unused1@0
-op:"pop" Bx_5 is opcode_6_15=0 & Bx_5 & opcode_1_4=(6>>1) & unused_0_0 unimpl
+op:"pop" Bx_5 is opcode_6_15=0 & Bx_5 & opcode_1_4=(6>>1) & unused_0_0 {
+	Bx_5 = *[data]:2 sp;
+	sp = sp + 1;
+}
 # D7F4h TL2 pop  prpage, Unused2@0
-op:"pop" prpage is opcode_2_15=(0xD7F4>>2) & unused_0_1 & prpage unimpl
+op:"pop" prpage is opcode_2_15=(0xD7F4>>2) & unused_0_1 & prpage {
+	prpage = *[data]:2 sp;
+	sp = sp + 1;
+}
 # D496h TL2 pop  Px@0
-op:"pop" Px_0 is opcode_1_15=(0xD496>>1) & Px_0 unimpl
+op:"pop" Px_0 is opcode_1_15=(0xD496>>1) & Px_0 {
+	Px_0 = *[data]:2 sp;
+	sp = sp + 1;
+}
 # 0024h TL2 pop  r6, Unused1@0
-op:"pop" r6 is opcode_1_15=(0x0024>>1) & unused_0_0 & r6 unimpl
+op:"pop" r6 is opcode_1_15=(0x0024>>1) & unused_0_0 & r6 {
+	r6 = *[data]:2 sp;
+	sp = sp + 1;
+}
 # D7F0h TL2 pop  repc, Unused2@0
-op:"pop" repc is opcode_2_15=(0xD7F0>>2) & unused_0_1 & repc unimpl
+op:"pop" repc is opcode_2_15=(0xD7F0>>2) & unused_0_1 & repc {
+	repc = *[data]:2 sp;
+	sp = sp + 1;
+}
 # D494h TL2 pop  x0
-op:"pop" x0 is opcode_0_15=0xD494 & x0 unimpl
+op:"pop" x0 is opcode_0_15=0xD494 & x0 {
+	x0 = *[data]:2 sp;
+	sp = sp + 1;
+}
 # D495h TL2 pop  x1
-op:"pop" x1 is opcode_0_15=0xD495 & x1 unimpl
+op:"pop" x1 is opcode_0_15=0xD495 & x1 {
+	x1 = *[data]:2 sp;
+	sp = sp + 1;
+}
 # 0004h TL2 pop  y1, Unused1@0
-op:"pop" y1 is opcode_1_15=(4>>1) & unused_0_0 & y1 unimpl
+op:"pop" y1 is opcode_1_15=(4>>1) & unused_0_0 & y1 {
+	y1 = *[data]:2 sp;
+	sp = sp + 1;
+}
 # 47B0h TL2 popa Ab@0
 op:"popa" Ab_0 is opcode_2_15=(0x47B0>>2) & Ab_0 unimpl
 @endif
 # 5F40h TL  push Imm16@16
-op:"push" expanded_imm is opcode_0_15=0x5F40; expanded_imm unimpl
+op:"push" Imm16 is opcode_0_15=0x5F40; Imm16 {
+	sp = sp - 1;
+	*[data]:2 sp = Imm16;
+}
 # 5E40h TL  push Register@0
-op:"push" Register_0 is opcode_5_15=(0x5E40>>5) & Register_0 unimpl
+op:"push" Register_0 is opcode_5_15=(0x5E40>>5) & Register_0 {
+	sp = sp - 1;
+	*[data]:2 sp = Register_0;
+}
 @ifdef TEAK_LITE_2
 # D7C8h TL2 push Abe@1, Unused1@0
-op:"push" Abe_1 is opcode_2_15=(0xD7C8>>2) & Abe_1 & unused_0_0 unimpl
+op:"push" Abe_1 is opcode_2_15=(0xD7C8>>2) & Abe_1 & unused_0_0 {
+	sp = sp - 1;
+	*[data]:2 sp = Abe_1;
+}
 # D3D0h TL2 push ArArpSttMod@0
-op:"push" ArArpSttMod_0 is opcode_4_15=0xD3D & ArArpSttMod_0 unimpl
+op:"push" ArArpSttMod_0 is opcode_4_15=0xD3D & ArArpSttMod_0 {
+	sp = sp - 1;
+	*[data]:2 sp = ArArpSttMod_0;
+}
 # D7FCh TL2 push prpage, Unused2@0
-op:"push" prpage is opcode_2_15=(0xD7FC>>2) & unused_0_1 & prpage unimpl
+op:"push" prpage is opcode_2_15=(0xD7FC>>2) & unused_0_1 & prpage {
+	sp = sp - 1;
+	*[data]:2 sp = prpage;
+}
 # D78Ch TL2 push Px@1, Unused1@0
-op:"push" Px_1 is opcode_2_15=(0xD78C>>2) & Px_1 & unused_0_0 unimpl
+op:"push" Px_1 is opcode_2_15=(0xD78C>>2) & Px_1 & unused_0_0 {
+	sp = sp - 1;
+	*[data]:2 sp = Px_1;
+}
 # D4D7h TL2 push r6, Unused1@5
-op:"push" r6 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x17 & r6 unimpl
+op:"push" r6 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x17 & r6 {
+	sp = sp - 1;
+	*[data]:2 sp = r6;
+}
 # D7F8h TL2 push repc, Unused2@0
-op:"push" repc is opcode_2_15=(0xD7F8>>2) & unused_0_1 & repc unimpl
+op:"push" repc is opcode_2_15=(0xD7F8>>2) & unused_0_1 & repc {
+	sp = sp - 1;
+	*[data]:2 sp = repc;
+}
 # D4D4h TL2 push x0, Unused1@5
-op:"push" x0 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x14 & x0 unimpl
+op:"push" x0 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x14 & x0 {
+	sp = sp - 1;
+	*[data]:2 sp = x0;
+}
 # D4D5h TL2 push x1, Unused1@5
-op:"push" x1 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x15 & x1 unimpl
+op:"push" x1 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x15 & x1 {
+	sp = sp - 1;
+	*[data]:2 sp = x1;
+}
 # D4D6h TL2 push y1, Unused1@5
-op:"push" y1 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x16 & y1 unimpl
+op:"push" y1 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x16 & y1 {
+	sp = sp - 1;
+	*[data]:2 sp = y1;
+}
 # 4384h TL2 pusha Ax@6, Unused2@0
 op:"pusha" Ax_6 is opcode_7_15=(0x438>>3) & Ax_6 & opcode_2_5=(4>>2) & unused_0_1 unimpl
 # D788h TL2 pusha Bx@1, Unused1@0
