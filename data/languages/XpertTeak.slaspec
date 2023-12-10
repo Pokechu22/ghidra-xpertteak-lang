@@ -2591,45 +2591,82 @@ op:"mpy" y0, x1 || "mpyus" y1, x0 || "sub" p0, p1, Bx_5 is opcode_6_15=(0xD59>>2
 op:"mpy" y0, x1 || "mpyus" y1, x0 || "addsub" p0, p1, Ab_0 is opcode_2_15=(0xD5A0>>2) & Ab_0 & x0 & x1 & y0 & y1 & p0 & p1 unimpl
 @endif
 # 0800h TL  mpyi NoReverse, Implied p0, y0, Imm8s@0   ;multiply  ;aka "mpys"
+op:"mpyi" y0, Imm8s_0 is opcode_8_15=0x08 & Imm8s_0 & y0 unimpl
 # D100h TL  mpysu MemR45@2, MemR0123@0 || R0123@0stepZIDS@3, R45@2stepZIDS@5
+op:"mpysu" MemR45_2, MemR0123_0 || R0123_0_stepZIDS_3, R45_2_stepZIDS_5 is opcode_7_15=(0xD10>>3) & R45_2_stepZIDS_5 & R0123_0_stepZIDS_3 & MemR45_2 & MemR0123_0 unimpl
 # 8100h TL  mpysu MemRn@0, Imm16@16    || Rn@0stepZIDS@3
+op:"mpysu" MemRn_0, Imm16 || Rn_0_stepZIDS_3 is opcode_5_15=(0x810>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 unimpl
 # 8120h TL  mpysu y0, MemRn@0          || Rn@0stepZIDS@3
+op:"mpysu" y0, MemRn_0 || Rn_0_stepZIDS_3 is opcode_5_15=(0x812>>1) & Rn_0_stepZIDS_3 & MemRn_0 & y0 unimpl
 # 8140h TL  mpysu y0, Register@0
+op:"mpysu" y0, Register_0 is opcode_5_15=(0x814>>1) & Register_0 & y0 unimpl
 @ifdef TEAK_LITE_2
 # CA00h TL2 mpysu MemR45@5, MemR01@5
 #            || mpysu MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || sub3a  p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
+op:"mpysu" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "sub3a" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
+	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=0 & p0 & p1
+unimpl
 # CA01h TL2 mpysu MemR45@5, MemR01@5
 #            || mpyus MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || sub3a  p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
+op:"mpysu" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "sub3a" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
+	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=1 & p0 & p1
+unimpl
 # CA02h TL2 mpysu MemR45@5, MemR01@5
 #            || mpysu MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || sub3aa p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
+op:"mpysu" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "sub3aa" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
+	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=2 & p0 & p1
+unimpl
 # CA03h TL2 mpysu MemR45@5, MemR01@5
 #            || mpyus MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || sub3aa p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
+op:"mpysu" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "sub3aa" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
+	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=3 & p0 & p1
+unimpl
 # CA04h TL2 mpysu MemR45@5, MemR01@5
 #            || mpysu MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || add3a  p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
+op:"mpysu" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "add3a" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
+	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=4 & p0 & p1
+unimpl
 # CA05h TL2 mpysu MemR45@5, MemR01@5
 #            || mpyus MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || add3a  p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
+op:"mpysu" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "add3a" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
+	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=5 & p0 & p1
+unimpl
 # CA06h TL2 mpysu MemR45@5, MemR01@5
 #            || mpysu MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || add3aa p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
+op:"mpysu" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "add3aa" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
+	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=6 & p0 & p1
+unimpl
 # CA07h TL2 mpysu MemR45@5, MemR01@5
 #            || mpyus MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || add3aa p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
+op:"mpysu" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "add3aa" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
+	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=7 & p0 & p1
+unimpl
 # 5EA2h TL2 mpysu y0, r6
+op:"mpysu" y0, r6 is opcode_0_15=0x5EA2 & y0 & r6 unimpl
 @endif
 # D080h TL  msu  MemR45@2,MemR0123@0,Ax@8 || R0123@0stepZIDS@3, R45@2stepZIDS@5
+op:"msu" MemR45_2, MemR0123_0, Ax_8 || R0123_0_stepZIDS_3, R45_2_stepZIDS_5 is opcode_9_15=(0xD0>>1) & Ax_8 & opcode_7_7=1 & R45_2_stepZIDS_5 & R0123_0_stepZIDS_3 & MemR45_2 & MemR0123_0 unimpl
 # 90C0h TL  msu  MemRn@0, Imm16@16,  Ax@8 || Rn@0stepZIDS@3 ;multiply, subtract
+op:"msu" MemRn_0, Imm16, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x90>>1) & Ax_8 & opcode_5_7=(0xC>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 unimpl
 # 9080h TL  msu  y0, MemRn@0, Ax@8 || Rn@0stepZIDS@3
+op:"msu" y0, MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x90>>1) & Ax_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 & y0 unimpl
 # 90A0h TL  msu  y0, Register@0, Ax@8
+op:"msu" y0, Register_0, Ax_8 is opcode_9_15=(0x90>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0 & y0 unimpl
 # B000h TL  msu  y0,MemImm8@0, Ax@8
+op:"msu" y0, MemImm8_0, Ax_8 is opcode_9_15=(0xB0>>1) & Ax_8 & MemImm8_0 & y0 unimpl
 @ifdef TEAK_LITE_2
 # 9462h TL2 msu  y0, r6, Ax@0
+op:"msu" y0, r6, Ax_0 is opcode_1_15=(0x9462>>1) & Ax_0 & r6 & y0 unimpl
 # 8264h TL2 msusu y0, MemR0425@3, Ax@8 || R0425@3stepII2D2S@0
+op:"msusu" y0, MemR0425_3, Ax_8 || R0425_3_stepII2D2S_0 is opcode_9_15=(0x82>>1) & Ax_8 & opcode_5_7=(0x6>>1) & MemR0425_3 & opcode_2_2=1 & R0425_3_stepII2D2S_0 & y0 unimpl
 @endif
 # 6790h TL  neg  Ax@12, Cond@0 ;aX=0-aX
 op:"neg" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x79 & Cond_0 {
