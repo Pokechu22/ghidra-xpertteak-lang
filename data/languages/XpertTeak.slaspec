@@ -194,6 +194,7 @@ define token opcode (16)
 	opcode_6_15  = (6, 15)
 	opcode_6_7   = (6, 7)
 	opcode_7_7   = (7, 7)
+	opcode_7_8   = (7, 8)
 	opcode_7_9   = (7, 9)
 	opcode_7_10  = (7, 10)
 	opcode_7_15  = (7, 15)
@@ -2200,19 +2201,38 @@ op:"movp" ProgMemRn_0, MemR0123_5 || R0123_5_stepZIDS_7, Rn_0_stepZIDS_3
 op:"movpdw" ProgMemAx_8^"_"^ProgMemAx_8_offsI, pc is opcode_9_15=(0xD4>>1) & ProgMemAx_8 & ProgMemAx_8_offsI & opcode_0_7=0x99 & pc unimpl
 @endif
 # 8864h TL  movr MemR0425@3, Abh@8 || R0425@3stepII2D2S@0   ;op*10000h+8000h
+# TODO: rounding?
+op:"movr" MemR0425_3, Abh_8 || R0425_3_stepII2D2S_0 is opcode_10_15=(0x88>>2) & Abh_8 & opcode_5_7=(6>>1) & MemR0425_3 & opcode_2_2=1 & R0425_3_stepII2D2S_0 {
+	Abh_8 = MemR0425_3;
+	build R0425_3_stepII2D2S_0;
+}
 # 9CE0h TL  movr MemRn@0, Ax@8 || Rn@0stepZIDS@3
+op:"movr" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x9C>>1) & Ax_8 & opcode_5_7=(0xE>>1) & Rn_0_stepZIDS_3 & MemRn_0 {
+	Ax_8 = zext(MemRn_0);
+	build Rn_0_stepZIDS_3;
+}
 # 9CC0h TL  movr RegisterP0@0, Ax@8
+op:"movr" Register_P_0, Ax_8 is opcode_9_15=(0x9C>>1) & Ax_8 & opcode_5_7=(0xC>>1) & Register_P_0 { Ax_8 = zext(Register_P_0); }
 @ifdef TEAK_LITE_2
 # 5DF4h TL2 movr Bx@1, Ax@0
+op:"movr" Bx_1, Ax_0 is opcode_2_15=(0x5DF4>>2) & Bx_1 & Ax_0 { Ax_0 = Bx_1; }
 # 8961h TL2 movr r6, Ax@3
+op:"movr" r6, Ax_3 is opcode_4_15=0x896 & Ax_3 & opcode_0_2=1 & r6 { Ax_3 = zext(r6); }
 @endif
 # 6300h TL  movs Implied sv, MemImm8@0, Ab@11
+# TODO: what does this do and what does sv do?
+op:"movs" MemImm8_0, Ab_11 is opcode_12_15=6 & Ab_11 & opcode_8_10=3 & MemImm8_0 { Ab_11 = zext(MemImm8_0); }
 # 0180h TL  movs Implied sv, MemRn@0, Ab@5 || Rn@0stepZIDS@3
+op:"movs" MemRn_0, Ab_5 || Rn_0_stepZIDS_3 is opcode_7_15=(0x018>>3) & Ab_5 & Rn_0_stepZIDS_3 & MemRn_0 { Ab_5 = zext(MemRn_0); build Rn_0_stepZIDS_3; }
 # 0100h TL  movs Implied sv, RegisterP0@0, Ab@5
+op:"movs" Register_P_0, Ab_5 is opcode_7_15=(0x010>>3) & Ab_5 & Register_P_0 { Ab_5 = zext(Register_P_0); }
 @ifdef TEAK_LITE_2
 # 5F42h TL2 movs Implied sv, r6, Ax@0
+op:"movs" r6, Ax_0 is opcode_1_15=(0x5F42>>1) & Ax_0 & r6 { Ax_0 = zext(r6); }
 @endif
 # 4080h TL  movsi Implied Imm5s@0, R0123457y0@9, Ab@5, Bogus Imm5s@0
+# TODO: OK, this is trying to indicate a different order or something? But what is it doing? Hardcoding a value for sv?
+op:"movsi" Imm5s_0, R0123457y0_9, Ab_5 is opcode_12_15=4 & R0123457y0_9 & opcode_7_8=(0x08>>3) & Ab_5 & Imm5s_0 { Ab_5 = zext(R0123457y0_9); }
 # D000h TL  mpy  MemR45@2, MemR0123@0 || R0123@0stepZIDS@3, R45@2stepZIDS@5
 # 8000h TL  mpy  MemRn@0, Imm16@16    || Rn@0stepZIDS@3
 # 8020h TL  mpy  y0, MemRn@0          || Rn@0stepZIDS@3
