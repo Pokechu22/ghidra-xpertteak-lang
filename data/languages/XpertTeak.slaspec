@@ -169,6 +169,7 @@ define token opcode (16)
 	opcode_0_7   = (0, 7)
 	opcode_0_9   = (0, 9)
 	opcode_0_15  = (0, 15)
+	opcode_1_1   = (1, 1)
 	opcode_1_4   = (1, 4)
 	opcode_1_7   = (1, 7)
 	opcode_1_9   = (1, 9)
@@ -182,9 +183,11 @@ define token opcode (16)
 	opcode_3_7   = (3, 7)
 	opcode_3_9   = (3, 9)
 	opcode_3_15  = (3, 15)
-	opcode_5_7   = (5, 7)
+	opcode_4_4   = (4, 4)
+	opcode_4_7   = (4, 7)
 	opcode_4_11  = (4, 11)
 	opcode_4_15  = (4, 15)
+	opcode_5_7   = (5, 7)
 	opcode_5_10  = (5, 10)
 	opcode_5_15  = (5, 15)
 	opcode_6_10  = (6, 10)
@@ -383,7 +386,9 @@ define token opcode (16)
 	ArArpSttMod_8 = (8, 11)
 
 	ArArp_0 = (0, 2)
+	ArArp_8 = (8, 10)
 	SttMod_0 = (0, 2)
+	SttMod_8 = (8, 10)
 
 	Ar_0 = (0, 0)
 	Ar_2 = (2, 2)
@@ -427,9 +432,21 @@ define token opcode (16)
 	offsZI_1 = (1, 1)
 	offsZI_2 = (2, 2)
 	offsZI_3 = (3, 3)
-	offsZI_4 = (8, 8)
+	offsZI_4 = (4, 4)
+	offsZI_6 = (6, 6)
 	offsZI_8 = (8, 8)
-	offsZI_9 = (8, 8)
+	offsZI_9 = (9, 9)
+
+	offsZIDZ_0 = (0, 1)
+	offsZIDZ_2 = (2, 3)
+	offsZIDZ_5 = (5, 6)
+
+	stepII2D2S_0 = (0, 1)
+	stepII2D2S_2 = (2, 3)
+	stepII2D2S_5 = (5, 6)
+	stepII2D2S_8 = (8, 9)
+
+	stepD2S_3 = (3, 3)
 
 	step_Rn_0 = (2, 2)
 ;
@@ -514,8 +531,8 @@ attach variables [ ArArpSttMod_0 ArArpSttMod_8 ] [
 ];
 @endif
 
-attach variables [ ArArp_0 ] [ ar0 ar1 arp0 arp1 arp2 arp3 _ _ ];
-attach variables [ SttMod_0 ] [ stt0 stt1 stt2 _ mod0 mod1 mod2 mod3 ];
+attach variables [ ArArp_0 ArArp_8 ] [ ar0 ar1 arp0 arp1 arp2 arp3 _ _ ];
+attach variables [ SttMod_0 SttMod_8 ] [ stt0 stt1 stt2 _ mod0 mod1 mod2 mod3 ];
 attach variables [ Ar_0 Ar_2 ] [ ar0 ar1 ];
 attach variables [ Arp_0 ] [ arp0 arp1 arp2 arp3 ];
 
@@ -538,6 +555,8 @@ attach values [ stepII2_0 stepII2_1 stepII2_2 stepII2_3 stepII2_4 stepII2_5 step
 # These should not appear in the semantic section.
 Abl_2_copy:Abl_2 is Abl_2 {}
 sv_copy:sv is sv {}
+Axh_4_copy:Axh_4 is Axh_4 {}
+Axh_6_copy:Axh_6 is Axh_6 {}
 
 # Always
 Cond_0:"true" is cond_0=0x0 { local always:1 = 1; export always; }
@@ -748,20 +767,23 @@ MemR45_9:         $(OB)R45_9$(CB)  is R45_9              { export *[data]:2 R45_
 # no offsZI variant exists for MemR45_9
 
 MemR04_1:         $(OB)R04_1$(CB)  is R04_1              { export *[data]:2 R04_1; }
+MemR04_1_copy:    $(OB)R04_1$(CB)  is R04_1              { export *[data]:2 R04_1; }
 MemR04_1_offsZI_0:$(OB)R04_1$(CB)  is R04_1 & offsZI_0=0 { export *[data]:2 R04_1; }
 MemR04_1_offsZI_0:$(OB)R04_1+$(CB) is R04_1 & offsZI_0=1 { addr = R04_1 + 1; export *[data]:2 addr; }
 MemR04_3:         $(OB)R04_3$(CB)  is R04_3              { export *[data]:2 R04_3; }
+MemR04_3_copy:    $(OB)R04_3$(CB)  is R04_3              { export *[data]:2 R04_3; }
 MemR04_3_offsZI_2:$(OB)R04_3$(CB)  is R04_3 & offsZI_2=0 { export *[data]:2 R04_3; }
 MemR04_3_offsZI_2:$(OB)R04_3+$(CB) is R04_3 & offsZI_2=1 { addr = R04_3 + 1; export *[data]:2 addr; }
 MemR04_4:         $(OB)R04_4$(CB)  is R04_4              { export *[data]:2 R04_4; }
+MemR04_4_copy:    $(OB)R04_4$(CB)  is R04_4              { export *[data]:2 R04_4; }
 MemR04_4_offsZI_3:$(OB)R04_4$(CB)  is R04_4 & offsZI_3=0 { export *[data]:2 R04_4; }
 MemR04_4_offsZI_3:$(OB)R04_4+$(CB) is R04_4 & offsZI_3=1 { addr = R04_4 + 1; export *[data]:2 addr; }
 MemR04_8:         $(OB)R04_8$(CB)  is R04_8              { export *[data]:2 R04_8; }
+MemR04_8_copy:    $(OB)R04_8$(CB)  is R04_8              { export *[data]:2 R04_8; }
 # no offsZI variant exists for MemR04_8
 
-MemR0425_0: $(OB)R0425_0$(CB) is R0425_0 { export *[data]:2 R0425_0; }
-
 MemR0123_0:  $(OB)R0123_0$(CB)  is R0123_0  { export *[data]:2 R0123_0; }
+MemR0123_4:  $(OB)R0123_4$(CB)  is R0123_4  { export *[data]:2 R0123_4; }
 MemR0123_5:  $(OB)R0123_5$(CB)  is R0123_5  { export *[data]:2 R0123_5; }
 MemR0123_8:  $(OB)R0123_8$(CB)  is R0123_8  { export *[data]:2 R0123_8; }
 MemR0123_10: $(OB)R0123_10$(CB) is R0123_10 { export *[data]:2 R0123_10; }  # Only used by MemR0123_10_modrstepII2D2S0_1
@@ -783,6 +805,77 @@ MemR0123_10_modrstepII2D2S0_0:MemR0123_10+2      is MemR0123_10 & modrstepII2D2S
 MemR0123_10_modrstepII2D2S0_0:MemR0123_10-2      is MemR0123_10 & modrstepII2D2S0_0=2 & R0123_10          { R0123_10 = R0123_10 - 2; }
 MemR0123_10_modrstepII2D2S0_0:MemR0123_10+stepi0 is MemR0123_10 & modrstepII2D2S0_0=3 & R0123_10 & stepi0 { R0123_10 = R0123_10 + stepi0; }
 
+# TODO: stepi/stepj?
+R0123_4_stepII2D2S_0:R0123_4+1      is R0123_4 & stepII2D2S_0=0          { R0123_4 = R0123_4 + 1; }
+R0123_4_stepII2D2S_0:R0123_4+2      is R0123_4 & stepII2D2S_0=1          { R0123_4 = R0123_4 + 2; }
+R0123_4_stepII2D2S_0:R0123_4-2      is R0123_4 & stepII2D2S_0=2          { R0123_4 = R0123_4 - 2; }
+R0123_4_stepII2D2S_0:R0123_4+stepi0 is R0123_4 & stepII2D2S_0=3 & stepi0 { R0123_4 = R0123_4 + stepi0; }
+
+R0123_8_stepII2D2S_0:R0123_8+1      is R0123_8 & stepII2D2S_0=0          { R0123_8 = R0123_8 + 1; }
+R0123_8_stepII2D2S_0:R0123_8+2      is R0123_8 & stepII2D2S_0=1          { R0123_8 = R0123_8 + 2; }
+R0123_8_stepII2D2S_0:R0123_8-2      is R0123_8 & stepII2D2S_0=2          { R0123_8 = R0123_8 - 2; }
+R0123_8_stepII2D2S_0:R0123_8+stepi0 is R0123_8 & stepII2D2S_0=3 & stepi0 { R0123_8 = R0123_8 + stepi0; }
+
+MemR0425_0:  $(OB)R0425_0$(CB)  is R0425_0  { export *[data]:2 R0425_0; }
+MemR0425_2:  $(OB)R0425_2$(CB)  is R0425_2  { export *[data]:2 R0425_2; }
+MemR0425_3:  $(OB)R0425_3$(CB)  is R0425_3  { export *[data]:2 R0425_3; }
+MemR0425_4:  $(OB)R0425_4$(CB)  is R0425_4  { export *[data]:2 R0425_4; }
+MemR0425_7:  $(OB)R0425_7$(CB)  is R0425_7  { export *[data]:2 R0425_7; }
+MemR0425_8:  $(OB)R0425_8$(CB)  is R0425_8  { export *[data]:2 R0425_8; }
+MemR0425_10: $(OB)R0425_10$(CB) is R0425_10 { export *[data]:2 R0425_10; }
+
+# Note: offsZIDZ has two instances of zero, but they are always paired with a stepII2D2S using the same bits which disambiguates
+MemR0425_2_offsZIDZ_0: $(OB)R0425_2$(CB)  is R0425_2 & offsZIDZ_0=0 { export *[data]:2 R0425_2; }
+MemR0425_2_offsZIDZ_0: $(OB)R0425_2+$(CB) is R0425_2 & offsZIDZ_0=1 { addr = R0425_2 + 1; export *[data]:2 addr; }
+MemR0425_2_offsZIDZ_0: $(OB)R0425_2-$(CB) is R0425_2 & offsZIDZ_0=2 { addr = R0425_2 - 1; export *[data]:2 addr; }
+MemR0425_2_offsZIDZ_0: $(OB)R0425_2$(CB)  is R0425_2 & offsZIDZ_0=3 { export *[data]:2 R0425_2; }
+
+MemR0425_4_offsZIDZ_2: $(OB)R0425_4$(CB)  is R0425_4 & offsZIDZ_2=0 { export *[data]:2 R0425_4; }
+MemR0425_4_offsZIDZ_2: $(OB)R0425_4+$(CB) is R0425_4 & offsZIDZ_2=1 { addr = R0425_4 + 1; export *[data]:2 addr; }
+MemR0425_4_offsZIDZ_2: $(OB)R0425_4-$(CB) is R0425_4 & offsZIDZ_2=2 { addr = R0425_4 - 1; export *[data]:2 addr; }
+MemR0425_4_offsZIDZ_2: $(OB)R0425_4$(CB)  is R0425_4 & offsZIDZ_2=3 { export *[data]:2 R0425_4; }
+
+MemR0425_8_offsZIDZ_2: $(OB)R0425_8$(CB)  is R0425_8 & offsZIDZ_2=0 { export *[data]:2 R0425_8; }
+MemR0425_8_offsZIDZ_2: $(OB)R0425_8+$(CB) is R0425_8 & offsZIDZ_2=1 { addr = R0425_8 + 1; export *[data]:2 addr; }
+MemR0425_8_offsZIDZ_2: $(OB)R0425_8-$(CB) is R0425_8 & offsZIDZ_2=2 { addr = R0425_8 - 1; export *[data]:2 addr; }
+MemR0425_8_offsZIDZ_2: $(OB)R0425_8$(CB)  is R0425_8 & offsZIDZ_2=3 { export *[data]:2 R0425_8; }
+
+MemR0425_10_offsZIDZ_5: $(OB)R0425_10$(CB)  is R0425_10 & offsZIDZ_5=0 { export *[data]:2 R0425_10; }
+MemR0425_10_offsZIDZ_5: $(OB)R0425_10+$(CB) is R0425_10 & offsZIDZ_5=1 { addr = R0425_10 + 1; export *[data]:2 addr; }
+MemR0425_10_offsZIDZ_5: $(OB)R0425_10-$(CB) is R0425_10 & offsZIDZ_5=2 { addr = R0425_10 - 1; export *[data]:2 addr; }
+MemR0425_10_offsZIDZ_5: $(OB)R0425_10$(CB)  is R0425_10 & offsZIDZ_5=3 { export *[data]:2 R0425_10; }
+
+# TODO: stepi/stepj?
+R0425_2_stepII2D2S_0:R0425_2+1      is R0425_2 & stepII2D2S_0=0          { R0425_2 = R0425_2 + 1; }
+R0425_2_stepII2D2S_0:R0425_2+2      is R0425_2 & stepII2D2S_0=1          { R0425_2 = R0425_2 + 2; }
+R0425_2_stepII2D2S_0:R0425_2-2      is R0425_2 & stepII2D2S_0=2          { R0425_2 = R0425_2 - 2; }
+R0425_2_stepII2D2S_0:R0425_2+stepi0 is R0425_2 & stepII2D2S_0=3 & stepi0 { R0425_2 = R0425_2 + stepi0; }
+
+R0425_3_stepII2D2S_0:R0425_3+1      is R0425_3 & stepII2D2S_0=0          { R0425_3 = R0425_3 + 1; }
+R0425_3_stepII2D2S_0:R0425_3+2      is R0425_3 & stepII2D2S_0=1          { R0425_3 = R0425_3 + 2; }
+R0425_3_stepII2D2S_0:R0425_3-2      is R0425_3 & stepII2D2S_0=2          { R0425_3 = R0425_3 - 2; }
+R0425_3_stepII2D2S_0:R0425_3+stepi0 is R0425_3 & stepII2D2S_0=3 & stepi0 { R0425_3 = R0425_3 + stepi0; }
+
+R0425_4_stepII2D2S_2:R0425_4+1      is R0425_4 & stepII2D2S_2=0          { R0425_4 = R0425_4 + 1; }
+R0425_4_stepII2D2S_2:R0425_4+2      is R0425_4 & stepII2D2S_2=1          { R0425_4 = R0425_4 + 2; }
+R0425_4_stepII2D2S_2:R0425_4-2      is R0425_4 & stepII2D2S_2=2          { R0425_4 = R0425_4 - 2; }
+R0425_4_stepII2D2S_2:R0425_4+stepi0 is R0425_4 & stepII2D2S_2=3 & stepi0 { R0425_4 = R0425_4 + stepi0; }
+
+R0425_8_stepII2D2S_2:R0425_8+1      is R0425_8 & stepII2D2S_2=0          { R0425_8 = R0425_8 + 1; }
+R0425_8_stepII2D2S_2:R0425_8+2      is R0425_8 & stepII2D2S_2=1          { R0425_8 = R0425_8 + 2; }
+R0425_8_stepII2D2S_2:R0425_8-2      is R0425_8 & stepII2D2S_2=2          { R0425_8 = R0425_8 - 2; }
+R0425_8_stepII2D2S_2:R0425_8+stepi0 is R0425_8 & stepII2D2S_2=3 & stepi0 { R0425_8 = R0425_8 + stepi0; }
+
+R0425_10_stepII2D2S_5:R0425_10+1      is R0425_10 & stepII2D2S_5=0          { R0425_10 = R0425_10 + 1; }
+R0425_10_stepII2D2S_5:R0425_10+2      is R0425_10 & stepII2D2S_5=1          { R0425_10 = R0425_10 + 2; }
+R0425_10_stepII2D2S_5:R0425_10-2      is R0425_10 & stepII2D2S_5=2          { R0425_10 = R0425_10 - 2; }
+R0425_10_stepII2D2S_5:R0425_10+stepi0 is R0425_10 & stepII2D2S_5=3 & stepi0 { R0425_10 = R0425_10 + stepi0; }
+
+R0425_10_stepII2D2S_8:R0425_10+1      is R0425_10 & stepII2D2S_8=0          { R0425_10 = R0425_10 + 1; }
+R0425_10_stepII2D2S_8:R0425_10+2      is R0425_10 & stepII2D2S_8=1          { R0425_10 = R0425_10 + 2; }
+R0425_10_stepII2D2S_8:R0425_10-2      is R0425_10 & stepII2D2S_8=2          { R0425_10 = R0425_10 - 2; }
+R0425_10_stepII2D2S_8:R0425_10+stepi0 is R0425_10 & stepII2D2S_8=3 & stepi0 { R0425_10 = R0425_10 + stepi0; }
+
 MemR4567_4:  $(OB)MemR4567_4$(CB)  is MemR4567_4  { export *[data]:2 MemR4567_4; }
 MemR4567_5:  $(OB)MemR4567_5$(CB)  is MemR4567_5  { export *[data]:2 MemR4567_5; }
 MemR4567_8:  $(OB)MemR4567_8$(CB)  is MemR4567_8  { export *[data]:2 MemR4567_8; }
@@ -803,6 +896,17 @@ MemR4567_10_modrstepII2D2S0_5:MemR4567_10+       is MemR4567_10 & modrstepII2D2S
 MemR4567_10_modrstepII2D2S0_5:MemR4567_10+2      is MemR4567_10 & modrstepII2D2S0_5=1 & R4567_10          { R4567_10 = R4567_10 + 2; }
 MemR4567_10_modrstepII2D2S0_5:MemR4567_10-2      is MemR4567_10 & modrstepII2D2S0_5=2 & R4567_10          { R4567_10 = R4567_10 - 2; }
 MemR4567_10_modrstepII2D2S0_5:MemR4567_10+stepj0 is MemR4567_10 & modrstepII2D2S0_5=3 & R4567_10 & stepj0 { R4567_10 = R4567_10 + stepj0; }
+
+# TODO: stepi/stepj?
+R4567_4_stepII2D2S_2:R4567_4+1      is R4567_4 & stepII2D2S_2=0          { R4567_4 = R4567_4 + 1; }
+R4567_4_stepII2D2S_2:R4567_4+2      is R4567_4 & stepII2D2S_2=1          { R4567_4 = R4567_4 + 2; }
+R4567_4_stepII2D2S_2:R4567_4-2      is R4567_4 & stepII2D2S_2=2          { R4567_4 = R4567_4 - 2; }
+R4567_4_stepII2D2S_2:R4567_4+stepj0 is R4567_4 & stepII2D2S_2=3 & stepj0 { R4567_4 = R4567_4 + stepj0; }
+
+R4567_8_stepII2D2S_2:R4567_8+1      is R4567_8 & stepII2D2S_2=0          { R4567_8 = R4567_8 + 1; }
+R4567_8_stepII2D2S_2:R4567_8+2      is R4567_8 & stepII2D2S_2=1          { R4567_8 = R4567_8 + 2; }
+R4567_8_stepII2D2S_2:R4567_8-2      is R4567_8 & stepII2D2S_2=2          { R4567_8 = R4567_8 - 2; }
+R4567_8_stepII2D2S_2:R4567_8+stepj0 is R4567_8 & stepII2D2S_2=3 & stepj0 { R4567_8 = R4567_8 + stepj0; }
 
 # Note: original formatting for these uses +s for stepZIDS=3;
 # I've replaced it with +stepi (or +stepj when applicable).
@@ -879,6 +983,13 @@ R04_3_stepII2_2:R04_3+stepII2_2 is R04_3 & stepII2_2 { R04_3 = R04_3 + stepII2_2
 R04_4_stepII2_3:R04_4+stepII2_3 is R04_4 & stepII2_3 { R04_4 = R04_4 + stepII2_3; }
 R04_8_stepII2_3:R04_8+stepII2_3 is R04_8 & stepII2_3 { R04_8 = R04_8 + stepII2_3; }
 R04_8_stepII2_5:R04_8+stepII2_5 is R04_8 & stepII2_5 { R04_8 = R04_8 + stepII2_5; }
+
+# TODO: stepi/stepj? Also nocash doc has a stray quote here
+R04_4_stepD2S_3:R04_3-2     is R04_3 & stepD2S_3=0         { R04_3 = R04_3 - 2; }
+R04_4_stepD2S_3:R04_3+stepi is R04_3 & stepD2S_3=1 & stepi { R04_3 = R04_3 + stepi; }
+
+MemR0425_7_offsZI_6: $(OB)R0425_7$(CB)  is R0425_7 & offsZI_6=0 { export *[data]:2 R0425_7; }
+MemR0425_7_offsZI_6: $(OB)R0425_7+$(CB) is R0425_7 & offsZI_6=1 { addr = R0425_7; export *[data]:2 addr; }
 
 R0425_7_stepII2_6:R0425_7+stepII2_6 is R0425_7 & stepII2_6 { R0425_7 = R0425_7 + stepII2_6; }
 
@@ -1772,96 +1883,266 @@ op:"mov" sv, MemImm8_0 is opcode_8_15=0x7D & MemImm8_0 & sv { MemImm8_0 = sv; }
 op:"mov" x0, Ab_5 is opcode_7_15=(0xD49>>3) & Ab_5 & opcode_0_4=0x13 & x0 { Ab_5 = sext(x0); }
 @ifdef TEAK_LITE_2
 # D49Bh TL2 mov  a0h, stepi0
+op:"mov" a0h, stepi0 is opcode_0_15=0xD49B & a0h & stepi0 { stepi0 = a0h; }
 # D59Bh TL2 mov  a0h, stepj0
+op:"mov" a0h, stepj0 is opcode_0_15=0xD59B & a0h & stepj0 { stepj0 = a0h; }
 # 4390h TL2 mov  a0h, MemR0425@2 || mov y0, MemR0425@2offsZIDZ@0
 #            || R0425@2stepII2D2S@0
+op:"mov" a0h, MemR0425_2 || "mov" y0, MemR0425_2_offsZIDZ_0 || R0425_2_stepII2D2S_0 is opcode_4_15=0x439 & MemR0425_2 & MemR0425_2_offsZIDZ_0 & R0425_2_stepII2D2S_0 & a0h & y0 {
+	MemR0425_2 = a0h;
+	MemR0425_2_offsZIDZ_0 = y0;
+	build R0425_2_stepII2D2S_0;
+}
 # 43D0h TL2 mov  a1h, MemR0425@2 || mov y0, MemR0425@2offsZIDZ@0
 #            || R0425@2stepII2D2S@0
+op:"mov" a1h, MemR0425_2 || "mov" y0, MemR0425_2_offsZIDZ_0 || R0425_2_stepII2D2S_0 is opcode_4_15=0x43D & MemR0425_2 & MemR0425_2_offsZIDZ_0 & R0425_2_stepII2D2S_0 & a1h & y0 {
+	MemR0425_2 = a1h;
+	MemR0425_2_offsZIDZ_0 = y0;
+	build R0425_2_stepII2D2S_0;
+}
 # 8FD4h TL2 mov  Ab@0, p0
+op:"mov" Ab_0, p0 is opcode_2_15=(0x8FD4>>2) & Ab_0 & p0 unimpl # TODO: { p0 = Ab_0; } gives a size error
 # 43A0h TL2 mov  Abh@3, MemR01@2 || mov Abl@3, MemR45@2
 #            || R01@2stepII2@0, R45@2stepII2@1
+op:"mov" Abh_3, MemR01_2 || "mov" Abl_3, MemR45_2 || R01_2_stepII2_0, R45_2_stepII2_1 is opcode_5_15=(0x43A>>1) & Abh_3 & Abl_3 & MemR01_2 & MemR45_2 & R45_2_stepII2_1 & R01_2_stepII2_0 {
+	MemR01_2 = Abh_3;
+	MemR45_2 = Abl_3;
+	build R01_2_stepII2_0;
+	build R45_2_stepII2_1;
+}
 # 43E0h TL2 mov  Abh@3, MemR45@2 || mov Abl@3, MemR01@2
 #            || R01@2stepII2@0, R45@2stepII2@1
+op:"mov" Abh_3, MemR45_2 || "mov" Abl_3, MemR01_2 || R01_2_stepII2_0, R45_2_stepII2_1 is opcode_5_15=(0x43E>>1) & Abh_3 & Abl_3 & MemR01_2 & MemR45_2 & R45_2_stepII2_1 & R01_2_stepII2_0 {
+	MemR45_2 = Abh_3;
+	MemR01_2 = Abl_3;
+	build R01_2_stepII2_0;
+	build R45_2_stepII2_1;
+}
 # 9D40h TL2 mov  Abh@4, MemR04@1 || mov Abh@2, MemR04@1offsZI@0
 #            || R04@1stepII2@0
+op:"mov" Abh_4, MemR04_1 || "mov" Abh_2, MemR04_1_offsZI_0 || R04_1_stepII2_0 is opcode_6_15=(0x9D4>>2) & Abh_4 & Abh_2 & MemR04_1 & MemR04_1_offsZI_0 & R04_1_stepII2_0 {
+	MemR04_1 = Abh_4;
+	MemR04_1_offsZI_0 = Abh_2;
+	build R04_1_stepII2_0;
+}
 # 9164h TL2 mov  Abl@0, prpage
+op:"mov" Abl_0, prpage is opcode_2_15=(0x9164>>2) & Abl_0 & prpage { prpage = Abl_0; }
 # 9064h TL2 mov  Abl@0, repc
+op:"mov" Abl_0, repc is opcode_2_15=(0x9064>>2) & Abl_0 & repc { repc = Abl_0; }
 # D394h TL2 mov  Abl@0, x1
+op:"mov" Abl_0, x1 is opcode_2_15=(0xD394>>2) & Abl_0 & x1 { x1 = Abl_0; }
 # D384h TL2 mov  Abl@0, y1
+op:"mov" Abl_0, y1 is opcode_2_15=(0xD384>>2) & Abl_0 & y1 { y1 = Abl_0; }
 # 9540h TL2 mov  Abl@3, ArArp@0
+op:"mov" Abl_3, ArArp_0 is opcode_5_15=(0x954>>1) & Abl_3 & ArArp_0 { ArArp_0 = Abl_3; }
 # 9C60h TL2 mov  Abl@3, SttMod@0
+op:"mov" Abl_3, SttMod_0 is opcode_5_15=(0x9C6>>1) & Abl_3 & SttMod_0 { SttMod_0 = Abl_3; }
 # 9560h TL2 mov  ArArp@0, Abl@3
+op:"mov" ArArp_0, Abl_3 is opcode_5_15=(0x956>>1) & Abl_3 & ArArp_0 { Abl_3 = ArArp_0; }
 # D488h TL2 mov  ArArp@0, MemR04@8 || R04@8stepII2@5
+op:"mov" ArArp_0, MemR04_8 || R04_8_stepII2_5 is opcode_9_15=(0xD4>>1) & MemR04_8 & opcode_6_7=(8>>2) & R04_8_stepII2_5 & opcode_3_4=(0x08>>3) & ArArp_0 {
+	MemR04_8 = ArArp_0;
+	build R04_8_stepII2_5;
+}
 # 5F50h TL2 mov  ArArpSttMod@0, MemR7Imm16@16
+op:"mov" ArArpSttMod_0, MemR7Imm16 is opcode_4_15=0x5F5 & ArArpSttMod_0; MemR7Imm16 { MemR7Imm16 = ArArpSttMod_0; }
 # 886Bh TL2 mov  Ax@8, pc
+op:"mov" Ax_8, pc is opcode_9_15=(0x88>>1) & Ax_8 & opcode_0_7=0x6B & pc { goto Ax_8; }
 # 8C60h TL2 mov  Axh@4, MemR4567@8 || mov MemR0123@8, Axh@4
 #            || R0123@8stepII2D2S@0, R4567@8stepII2D2S@2
+op:"mov" Axh_4, MemR4567_8 || "mov" MemR0123_8, Axh_4_copy || R0123_8_stepII2D2S_0, R4567_8_stepII2D2S_2
+	is opcode_10_15=(0x8C>>2) & MemR4567_8 & MemR0123_8 & opcode_5_7=(1>>2) & Axh_4 & Axh_4_copy & R4567_8_stepII2D2S_2 & R0123_8_stepII2D2S_0
+{
+	MemR4567_8 = Axh_4;
+	Axh_4 = MemR0123_8;
+	build R0123_8_stepII2D2S_0;
+	build R4567_8_stepII2D2S_2;
+}
 # 4800h TL2 mov  Axh@6, MemR0123@4 || movr MemR4567@4, Axh@6
 #            || R0123@4stepII2D2S@0, R4567@4stepII2D2S@2
+op:"mov" Axh_6, MemR0123_4 || "movr" MemR4567_4, Axh_6_copy || R0123_4_stepII2D2S_0, R4567_4_stepII2D2S_2
+	is opcode_7_15=(0x480>>3) & Axh_6 & Axh_6_copy & MemR0123_4 & MemR4567_4 & R4567_4_stepII2D2S_2 & R0123_4_stepII2D2S_0
+{
+	MemR0123_4 = Axh_6;
+	Axh_6 = MemR4567_4;  # TODO: movr
+	build R0123_4_stepII2D2S_0;
+	build R4567_4_stepII2D2S_2;
+}
 # 4900h TL2 mov  Axh@6, MemR0123@4 || mov  MemR4567@4, Axh@6
 #            || R0123@4stepII2D2S@0, R4567@4stepII2D2S@2
+op:"mov" Axh_6, MemR0123_4 || "mov" MemR4567_4, Axh_6_copy || R0123_4_stepII2D2S_0, R4567_4_stepII2D2S_2
+	is opcode_7_15=(0x490>>3) & Axh_6 & Axh_6_copy & MemR0123_4 & MemR4567_4 & R4567_4_stepII2D2S_2 & R0123_4_stepII2D2S_0
+{
+	MemR0123_4 = Axh_6;
+	Axh_6 = MemR4567_4;
+	build R0123_4_stepII2D2S_0;
+	build R4567_4_stepII2D2S_2;
+}
 # 7F80h TL2 mov  Axh@6, MemR4567@4 || movr MemR0123@4, Axh@6
 #            || R0123@4stepII2D2S@0, R4567@4stepII2D2S@2
+op:"mov" Axh_6, MemR4567_4 || "movr" MemR0123_4, Axh_6_copy || R0123_4_stepII2D2S_0, R4567_4_stepII2D2S_2
+	is opcode_7_15=(0x7F8>>3) & Axh_6 & Axh_6_copy & MemR0123_4 & MemR4567_4 & R4567_4_stepII2D2S_2 & R0123_4_stepII2D2S_0
+{
+	MemR4567_4 = Axh_6;
+	Axh_6 = MemR0123_4;  # TODO: movr
+	build R0123_4_stepII2D2S_0;
+	build R4567_4_stepII2D2S_2;
+}
 # 8863h TL2 mov  Bx@8, pc
+op:"mov" Bx_8, pc is opcode_9_15=(0x88>>1) & Bx_8 & opcode_0_7=0x63 & pc { goto Bx_8; }
 # 0008h TL2 mov  Imm16@16, ArArp@0
+op:"mov" Imm16, ArArp_0 is opcode_3_15=(0x0008>>3) & ArArp_0; Imm16 { ArArp_0 = Imm16; }
 # 0023h TL2 mov  Imm16@16, r6
+op:"mov" Imm16, r6 is opcode_0_15=0x0023 & r6; Imm16 { r6 = Imm16; }
 # 0001h TL2 mov  Imm16@16, repc
+op:"mov" Imm16, repc is opcode_0_15=0x0001 & repc; Imm16 { repc = Imm16; }
 # 8971h TL2 mov  Imm16@16, stepi0
+op:"mov" Imm16, stepi0 is opcode_0_15=0x8971 & stepi0; Imm16 { stepi0 = Imm16; }
 # 8979h TL2 mov  Imm16@16, stepj0
+op:"mov" Imm16, stepj0 is opcode_0_15=0x8979 & stepj0; Imm16 { stepj0 = Imm16; }
 # 0030h TL2 mov  Imm16@16, SttMod@0
+op:"mov" Imm16, SttMod_0 is opcode_3_15=(0x0030>>3) & SttMod_0; Imm16 { SttMod_0 = Imm16; }
 # 5DD0h TL2 mov  Imm4u@0, prpage
+op:"mov" Imm4u_0, prpage is opcode_4_15=0x5DD & Imm4u_0 & prpage { prpage = Imm4u_0; }
 # 80C4h TL2 mov  MemR01@9, Abh@10 || mov MemR45@9, Abl@10
 #            || R01@9stepII2@0, R45@9stepII2@8
+op:"mov" MemR01_9, Abh_10 || "mov" MemR45_9, Abl_10 || R01_9_stepII2_0, R45_9_stepII2_8
+	is opcode_11_15=(0x80>>3) & Abh_10 & Abl_10 & MemR01_9 & MemR45_9 & R45_9_stepII2_8 & opcode_1_7=(0xC4>>1) & R01_9_stepII2_0
+{
+	Abh_10 = MemR01_9;
+	Abl_10 = MemR45_9;
+	build R01_9_stepII2_0;
+	build R45_9_stepII2_8;
+}
 # D292h TL2 mov  MemR0425@10_MemR0425@10offsZIDZ@5, Px@0
 #            || R0425@10stepII2D2S@5
+op:"mov" MemR0425_10^"_"^MemR0425_10_offsZIDZ_5, Px_0 || R0425_10_stepII2D2S_5
+	is opcode_12_15=0xD & MemR0425_10 & opcode_7_9=(0x29>>3) & MemR0425_10_offsZIDZ_5 & R0425_10_stepII2D2S_5 & opcode_1_4=(0x12>>1) & Px_0
+unimpl  # TODO: Presumably requires p0l and p0h? Also what if the offset is 0?
 # D7D4h TL2 mov  MemR04@1, repc || R04@1stepII2@0
+op:"mov" MemR04_1, repc || R04_1_stepII2_0 is opcode_2_15=(0xD7D4>>2) & MemR04_1 & R04_1_stepII2_0 & repc { repc = MemR04_1; build R04_1_stepII2_0; }
 # 5F4Ch TL2 mov  MemR04@1, sv || sub3 MemR04@1, p0, p1, b0 || R04@1stepII2@0
+op:"mov" MemR04_1, sv || "sub3" MemR04_1_copy, p0, p1, b0 || R04_1_stepII2_0 is opcode_2_15=(0x5F4C>>2) & MemR04_1 & MemR04_1_copy & R04_1_stepII2_0 & sv & p0 & p1 & b0 unimpl
 # D4B4h TL2 mov  MemR04@1, sv || sub3rnd MemR04@1, p0, p1, b1 || R04@1stepII2@0
+op:"mov" MemR04_1, sv || "sub3rnd" MemR04_1_copy, p0, p1, b1 || R04_1_stepII2_0 is opcode_2_15=(0xD4B4>>2) & MemR04_1 & MemR04_1_copy & R04_1_stepII2_0 & sv & p0 & p1 & b1 unimpl
 # DE9Ch TL2 mov  MemR04@1, sv || sub3rnd MemR04@1, p0, p1, b0 || R04@1stepII2@0
+op:"mov" MemR04_1, sv || "sub3rnd" MemR04_1_copy, p0, p1, b0 || R04_1_stepII2_0 is opcode_2_15=(0xDE9C>>2) & MemR04_1 & MemR04_1_copy & R04_1_stepII2_0 & sv & p0 & p1 & b0 unimpl
 # 4B40h TL2 mov  MemR04@3, sv || addsub    MemR04@3, p1, p0, Bx@0
 #            || R04@3stepII2@2
+op:"mov" MemR04_3, sv || "addsub"    MemR04_3_copy, p1, p0, Bx_0 || R04_3_stepII2_2
+	is opcode_4_15=0x4B4 & MemR04_3 & MemR04_3_copy & R04_3_stepII2_2 & opcode_1_1=0 & Bx_0 & sv & p1 & p0
+unimpl
 # 4B42h TL2 mov  MemR04@3, sv || addsubrnd MemR04@3, p1, p0, Bx@0
 #            || R04@3stepII2@2
+op:"mov" MemR04_3, sv || "addsubrnd" MemR04_3_copy, p1, p0, Bx_0 || R04_3_stepII2_2
+	is opcode_4_15=0x4B4 & MemR04_3 & MemR04_3_copy & R04_3_stepII2_2 & opcode_1_1=1 & Bx_0 & sv & p1 & p0
+unimpl
 # 8062h TL2 mov  MemR04@4, ArArp@8  || R04@4stepII2@3
+op:"mov" MemR04_4, ArArp_8 || R04_4_stepII2_3 is opcode_11_15=(0x80>>3) & ArArp_8 & opcode_5_7=(0x6>>1) & MemR04_4 & R04_4_stepII2_3 & opcode_0_2=2 {
+	ArArp_8 = MemR04_4;
+	build R04_4_stepII2_3;
+}
 # 8063h TL2 mov  MemR04@4, SttMod@8 || R04@4stepII2@3
+op:"mov" MemR04_4, SttMod_8 || R04_4_stepII2_3 is opcode_11_15=(0x80>>3) & SttMod_8 & opcode_5_7=(0x6>>1) & MemR04_4 & R04_4_stepII2_3 & opcode_0_2=3 {
+	SttMod_8 = MemR04_4;
+	build R04_4_stepII2_3;
+}
 # 9960h TL2 mov  MemR04@4, sv || addsub    MemR04@4, p1, p0, Bx@2
 #            || R04@4stepD2S@3  ;<-- ordered p1, p0 here !
+# TODO: why the order warning here but not 4B40 / 4B42? (Maybe to contrast with 9860?)
+op:"mov" MemR04_4, sv || "addsub"    MemR04_4_copy, p1, p0, Bx_2 || R04_4_stepD2S_3
+	is opcode_5_15=(0x996>>1) & MemR04_4 & MemR04_4_copy & R04_4_stepD2S_3 & Bx_2 & opcode_0_1=0 & sv & p1 & p0
+unimpl
 # 99E0h TL2 mov  MemR04@4, sv || addsubrnd MemR04@4, p1, p0, Bx@2
 #            || R04@4stepD2S@3  ;<-- ordered p1, p0 here !
+op:"mov" MemR04_4, sv || "addsubrnd" MemR04_4_copy, p1, p0, Bx_2 || R04_4_stepD2S_3
+	is opcode_5_15=(0x99E>>1) & MemR04_4 & MemR04_4_copy & R04_4_stepD2S_3 & Bx_2 & opcode_0_1=0 & sv & p1 & p0
+unimpl
 # 9860h TL2 mov  MemR04@4, sv || sub3      MemR04@4, p0, p1, Bx@2
 #            || R04@4stepD2S@3
+op:"mov" MemR04_4, sv || "addsub"    MemR04_4_copy, p0, p1, Bx_2 || R04_4_stepD2S_3
+	is opcode_5_15=(0x986>>1) & MemR04_4 & MemR04_4_copy & R04_4_stepD2S_3 & Bx_2 & opcode_0_1=0 & sv & p0 & p1
+unimpl
 # 98E0h TL2 mov  MemR04@4, sv || sub3rnd   MemR04@4, p0, p1, Bx@2
 #            || R04@4stepD2S@3
+op:"mov" MemR04_4, sv || "addsubrnd" MemR04_4_copy, p0, p1, Bx_2 || R04_4_stepD2S_3
+	is opcode_5_15=(0x98E>>1) & MemR04_4 & MemR04_4_copy & R04_4_stepD2S_3 & Bx_2 & opcode_0_1=0 & sv & p0 & p1
+unimpl
 # 8873h TL2 mov  MemR04@8, sv || sub3 MemR04@8, p0, p1, b1 || R04@8stepII2@3
+op:"mov" MemR04_8, sv || "sub3" MemR04_8_copy, p0, p1, b1 || R04_8_stepII2_3
+	is opcode_9_15=(0x88>>1) & MemR04_8 & MemR04_8_copy & opcode_4_7=7 & R04_8_stepII2_3 & opcode_0_2=3 & sv & p0 & p1 & b1
+unimpl
 # D4C0h TL2 mov  MemR45@5, Abh@2 || mov MemR01@5, Abl@2
 #            || R01@5stepII2@0, R45@5stepII2@1
+op:"mov" MemR45_5, Abh_2 || "mov" MemR01_5, Abl_2 || R01_5_stepII2_0, R45_5_stepII2_1
+	is opcode_6_15=(0xD4C>>2) & MemR45_5 & MemR01_5 & opcode_4_4=0 & Abh_2 & Abl_2 & R45_5_stepII2_1 & R01_5_stepII2_0
+{
+	Abh_2 = MemR45_5;
+	Abl_2 = MemR01_5;
+	build R01_5_stepII2_0;
+	build R45_5_stepII2_1;
+}
 # 4D90h TL2 mov  MemR7Imm16@16, ArArpSttMod@0
+op:"mov" MemR7Imm16, ArArpSttMod_0 is opcode_4_15=0x4D9 & ArArpSttMod_0; MemR7Imm16 { ArArpSttMod_0 = MemR7Imm16; }
 # D2DCh TL2 mov  MemR7Imm16@16, repc, Unused2@0, Unused1@10
+op:"mov" MemR7Imm16, repc is opcode_11_15=(0xD2>>3) & unused_10_10 & opcode_2_9=(0x2DC>>2) & unused_0_1 & repc; MemR7Imm16 { repc = MemR7Imm16; }
 # 1B20h TL2 mov  MemRn@0, r6 || Rn@0stepZIDS@3 ;override 1800h (mov a1,MemRn@0)
+op:"mov" MemRn_0, r6 || Rn_0_stepZIDS_3 is opcode_5_15=(0x1B2>>1) & Rn_0_stepZIDS_3 & MemRn_0 & r6 { r6 = MemRn_0; build Rn_0_stepZIDS_3; }
 # D29Ch TL2 mov  MemSp, r6, Unused2@0, Unused1@10
+op:"mov" MemSp, r6 is opcode_11_15=(0xD2>>3) & unused_10_10 & opcode_2_9=(0x29C>>2) & unused_0_1 & r6 & MemSp { r6 = MemSp; }
 # 8A73h TL2 mov  mixp, Bx@3
+op:"mov" mixp, Bx_3 is opcode_4_15=0x8A7 & Bx_3 & opcode_0_2=3 & mixp { Bx_3 = zext(mixp); } # TODO: extension
 # 4381h TL2 mov  mixp, r6
+op:"mov" mixp, r6 is opcode_0_15=0x4381 & mixp & r6 { r6 = mixp; }
 # 4382h TL2 mov  p0h, Bx@0
+op:"mov" p0h, Bx_0 is opcode_1_15=(0x4382>>1) & Bx_0 & p0h { Bx_0 = zext(p0h); } # TODO: extension
 # D3C2h TL2 mov  p0h, r6
+op:"mov" p0h, r6 is opcode_0_15=0xD3C2 & p0h & r6 { r6 = p0h; }
 # 4B60h TL2 mov  p0h, Register@0     ;<-- here "p0h" as source
+# TODO: ... as opposed to the other ones, where p0h isn't the source? Is this supposed to indicate NoReverse or something?
+# Or is this supposed to be something related to Register_0 vs Register_P_0?
+op:"mov" p0h, Register_0 is opcode_5_15=(0x4B6>>1) & Register_0 & p0h { Register_0 = p0h; }
 # 8FD8h TL2 mov  p1, Ab@0
+op:"mov" p1, Ab_0 is opcode_2_15=(0x8FD8>>2) & Ab_0 & p1 { Ab_0 = zext(p1); } # TODO: extension? If it's actually even needed?
 # 88D0h TL2 mov  Px@1, MemR0425@8_MemR0425@8offsZIDZ@2   || R0425@8stepII2D2S@2
+op:"mov" Px_1, MemR0425_8^"_"^MemR0425_8_offsZIDZ_2 || R0425_8_stepII2D2S_2
+	is opcode_10_15=(0x88>>2) & MemR0425_8 & opcode_4_7=0xD & MemR0425_8_offsZIDZ_2 & R0425_8_stepII2D2S_2 & Px_1 & opcode_0_0=0
+unimpl
 # 88D1h TL2 mov  Px@1, MemR0425@8_MemR0425@8offsZIDZ@2,s || R0425@8stepII2D2S@2
+op:"mov" Px_1, MemR0425_8^"_"^MemR0425_8_offsZIDZ_2^",s" || R0425_8_stepII2D2S_2
+	is opcode_10_15=(0x88>>2) & MemR0425_8 & opcode_4_7=0xD & MemR0425_8_offsZIDZ_2 & R0425_8_stepII2D2S_2 & Px_1 & opcode_0_0=1
+unimpl
+# TODO: what is ",s"?
 # D481h TL2 mov  r6, Bx@8
+op:"mov" r6, Bx_8 is opcode_9_15=(0xD4>>1) & Bx_8 & opcode_0_7=0x81 & r6 { Bx_8 = zext(r6); } # TODO: extension
 # 1B00h TL2 mov  r6, MemRn@0 || Rn@0stepZIDS@3 ;override 1800h (mov a0,MemRn@0)
+op:"mov" r6, MemRn_0 || Rn_0_stepZIDS_3 is opcode_5_15=(0x1B0>>1) & Rn_0_stepZIDS_3 & MemRn_0 & r6 { MemRn_0 = r6; build Rn_0_stepZIDS_3; }
 # 43C1h TL2 mov  r6, mixp
+op:"mov" r6, mixp is opcode_0_15=0x43C1 & r6 & mixp { mixp = r6; }
 # 5F00h TL2 mov  r6, Register@0
+op:"mov" r6, Register_0 is opcode_5_15=(0x5F0>>1) & Register_0 & r6 { Register_0 = r6; }
 # 5F60h TL2 mov  Register@0, r6
+op:"mov" Register_0, r6 is opcode_5_15=(0x5F6>>1) & Register_0 & r6 { r6 = Register_0; }
 # D2D9h TL2 mov  repc, Abl@10
+op:"mov" repc, Abl_10 is opcode_12_15=0xD & Abl_10 & opcode_0_9=0x2D9 & repc { Abl_10 = repc; }
 # D7D0h TL2 mov  repc, MemR04@1 || R04@1stepII2@0
+op:"mov" repc, MemR04_1 || R04_1_stepII2_0 is opcode_2_15=(0xD7D0>>2) & MemR04_1 & R04_1_stepII2_0 & repc { MemR04_1 = repc; build R04_1_stepII2_0; }
 # D3C8h TL2 mov  repc, MemR7Imm16@16, Unused3@0
+op:"mov" repc, MemR7Imm16 is opcode_3_15=(0xD3C8>>3) & unused_0_2 & repc; MemR7Imm16 { MemR7Imm16 = repc; }
 # D482h TL2 mov  stepi0, a0h
+op:"mov" stepi0, a0h is opcode_0_15=0xD482 & stepi0 & a0h { a0h = stepi0; }
 # D582h TL2 mov  stepj0, a0h
+op:"mov" stepj0, a0h is opcode_0_15=0xD582 & stepj0 & a0h { a0h = stepj0; }
 # D2F8h TL2 mov  SttMod@0, Abl@10
+op:"mov" SttMod_0, Abl_10 is opcode_12_15=0xD & Abl_10 & opcode_3_9=(0x2F8>>3) & SttMod_0 { Abl_10 = SttMod_0; }
 # 49C1h TL2 mov  x1, Ab@4
+op:"mov" x1, Ab_4 is opcode_6_15=(0x49C>>2) & Ab_4 & opcode_0_3=1 & x1 { Ab_4 = zext(x1); } # TODO: extension
 # D299h TL2 mov  y1, Ab@10
+op:"mov" y1, Ab_10 is opcode_12_15=0xD & Ab_10 & opcode_0_9=0x299 & y1 { Ab_10 = zext(y1); } # TODO: extension
 # 5EB0h TL2 mov  prpage, Abl@0
+op:"mov" prpage, Abl_0 is opcode_2_15=(0x5EB0>>2) & Abl_0 & prpage { Abl_0 = prpage; }
 # 49A0h TL2 mov  SttMod@0, MemR04@4 || R04@4stepII2@3
+op:"mov" SttMod_0, MemR04_4 || R04_4_stepII2_3 is opcode_5_15=(0x49A>>1) & MemR04_4 & R04_4_stepII2_3 & SttMod_0 { MemR04_4 = SttMod_0; build R04_4_stepII2_3; }
 # 4DC0h TL2 mova Ab@4, MemR0425@2_MemR0425@2offsZIDZ@0 || R0425@2stepII2D2S@0
 # 4BC0h TL2 mova MemR0425@2_MemR0425@2offsZIDZ@0, Ab@4 || R0425@2stepII2D2S@0
 @endif
