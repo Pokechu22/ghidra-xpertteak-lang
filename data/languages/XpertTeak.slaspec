@@ -177,6 +177,7 @@ define token opcode (16)
 	opcode_2_2   = (2, 2)
 	opcode_2_4   = (2, 4)
 	opcode_2_5   = (2, 5)
+	opcode_2_7   = (2, 7)
 	opcode_2_9   = (2, 9)
 	opcode_2_15  = (2, 15)
 	opcode_3_4   = (3, 4)
@@ -2417,28 +2418,53 @@ op:"movsi" Imm5s_0, R0123457y0_9, Ab_5 is opcode_12_15=4 & R0123457y0_9 & opcode
 # 8264h TL2 msusu y0, MemR0425@3, Ax@8 || R0425@3stepII2D2S@0
 @endif
 # 6790h TL  neg  Ax@12, Cond@0 ;aX=0-aX
+op:"neg" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x79 & Cond_0 {
+	if (!Cond_0) goto inst_next;
+	Ax_12 = -Ax_12;
+}
 # 0000h TL  nop
 op:"nop" is opcode_0_15=0x0000 {}
 # 94C0h TL  norm Ax@8, Bogus MemRn@0 || Rn@0stepZIDS@3  ;if N=0 (aX=aX*2,rN+/-)
+op:"norm" Ax_8, MemRn_0 || Rn_0_stepZIDS_3 is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0xC>>1) & Rn_0_stepZIDS_3 & MemRn_0 unimpl
 # 6780h TL  not  Ax@12, Cond@0 ;aX=not aX
+op:"not" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x78 & Cond_0 {
+	if (!Cond_0) goto inst_next;
+	Ax_12 = ~Ax_12;
+}
 # D4F8h TL  or   MemImm16@16, Ax@8
+op:"or" MemImm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xF8; MemImm16 { Ax_8 = Ax_8 | zext(MemImm16); }
 # A000h TL  or   MemImm8@0, Ax@8
+op:"or" MemImm8_0, Ax_8 is opcode_9_15=(0xA0>>1) & Ax_8 & MemImm8_0 { Ax_8 = Ax_8 | zext(MemImm8_0); }
 # 80C0h TL  or   Imm16@16, Ax@8
+op:"or" Imm16, Ax_8 is opcode_9_15=(0x80>>1) & Ax_8 & opcode_0_7=0xC0; Imm16 { Ax_8 = Ax_8 | zext(Imm16); }
 # C000h TL  or   Imm8u@0, Ax@8
+op:"or" Imm8u_0, Ax_8 is opcode_9_15=(0xC0>>1) & Ax_8 & Imm8u_0 { Ax_8 = Ax_8 | zext(Imm8u_0); }
 # D4D8h TL  or   MemR7Imm16@16, Ax@8
+op:"or" MemR7Imm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xD8; MemR7Imm16 { Ax_8 = Ax_8 | zext(MemR7Imm16); }
 # 4000h TL  or   MemR7Imm7s@0, Ax@8
+op:"or" MemR7Imm7s_0, Ax_8 is opcode_9_15=(0x40>>1) & Ax_8 & opcode_7_7=0 & MemR7Imm7s_0 { Ax_8 = Ax_8 | zext(MemR7Imm7s_0); }
 # 8080h TL  or   MemRn@0, Ax@8 || Rn@0stepZIDS@3
+op:"or" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x80>>1) & Ax_8 & opcode_5_7=(8>>1) & Rn_0_stepZIDS_3 & MemRn_0 { Ax_8 = Ax_8 | zext(MemRn_0); build Rn_0_stepZIDS_3; }
 # 80A0h TL  or   RegisterP0@0, Ax@8
+op:"or" Register_P_0, Ax_8 is opcode_9_15=(0x80>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_P_0 { Ax_8 = Ax_8 | zext(Register_P_0); }
 @ifdef TEAK_LITE_2
 # D291h TL2 or   Ab@10, Ax@6, Ax@5
+# TODO: which are the sources and which is the destination?
+op:"or" Ab_10, Ax_6, Ax_5 is opcode_12_15=0xD & Ab_10 & opcode_7_9=(0x29>>3) & Ax_6 & Ax_5 & opcode_0_4=0x11 unimpl
 # D4A4h TL2 or   Ax@8, Bx@1, Ax@0
+op:"or" Ax_8, Bx_1, Ax_0 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_2_7=(0xA4>>2) & Bx_1 & Ax_0 unimpl
 # D3C4h TL2 or   b0, Bx@1, Ax@0
+op:"or" b0, Bx_1, Ax_0 is opcode_2_15=(0xD3C4>>2) & Bx_1 & Ax_0 & b0 unimpl
 # D7C4h TL2 or   b1, Bx@1, Ax@0
+op:"or" b1, Bx_1, Ax_0 is opcode_2_15=(0xD7C4>>2) & Bx_1 & Ax_0 & b1 unimpl
 # D388h TL2 or   r6, Ax@4
+op:"or" r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=8 & r6 unimpl
 @endif
 # 67B0h TL  pacr Implied Const8000h, Implied p0, Ax@12, Cond@0 ;aX=shfP+8000h
+op:"pacr" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x7B & Cond_0 unimpl
 @ifdef TEAK_LITE_2
 # D7C2h TL2 pacr1 Implied Const8000h, Implied p1, Ax@0
+op:"pacrl" Ax_0 is opcode_1_15=(0xD7C2>>1) & Ax_0 unimpl
 @endif
 # 5E60h TL  pop  Register@0
 op:"pop" Register_0 is opcode_5_15=(0x5E60>>5) & Register_0 unimpl
