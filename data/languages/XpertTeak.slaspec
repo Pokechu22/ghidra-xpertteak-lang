@@ -562,37 +562,39 @@ Axh_4_copy:Axh_4 is Axh_4 {}
 Axh_6_copy:Axh_6 is Axh_6 {}
 
 # Always
-Cond_0:"true" is cond_0=0x0 { local always:1 = 1; export always; }
+# Excluded because this makes analysis messy - instead specialze every instruction that uses conditions
+#Cond_0:"true" is cond_0=0x0 { local always:1 = 1; export always; }
 # Equal to zero             (Z=1)
-Cond_0:"eq"   is cond_0=0x1 unimpl
+define pcodeop tmp_maybe; # TODO; using unimpl for all of these gives errors due to no exports
+Cond_0:"eq"   is cond_0=0x1 { local maybe:1 = tmp_maybe(); export maybe; }
 # Not equal to zero         (Z=0)
-Cond_0:"neq"  is cond_0=0x2 unimpl
+Cond_0:"neq"  is cond_0=0x2 { local maybe:1 = tmp_maybe(); export maybe; }
 # Greater than zero         (M=0 and Z=0)
-Cond_0:"gt"   is cond_0=0x3 unimpl
+Cond_0:"gt"   is cond_0=0x3 { local maybe:1 = tmp_maybe(); export maybe; }
 # Greater or equal to zero  (M=0)
-Cond_0:"ge"   is cond_0=0x4 unimpl
+Cond_0:"ge"   is cond_0=0x4 { local maybe:1 = tmp_maybe(); export maybe; }
 # Less than zero            (M=1)
-Cond_0:"lt"   is cond_0=0x5 unimpl
+Cond_0:"lt"   is cond_0=0x5 { local maybe:1 = tmp_maybe(); export maybe; }
 # Less or equal to zero     (M=1 or Z=1)
-Cond_0:"le"   is cond_0=0x6 unimpl
+Cond_0:"le"   is cond_0=0x6 { local maybe:1 = tmp_maybe(); export maybe; }
 # Normalize flag is cleared (N=0)
-Cond_0:"nn"   is cond_0=0x7 unimpl
+Cond_0:"nn"   is cond_0=0x7 { local maybe:1 = tmp_maybe(); export maybe; }
 # Carry flag is set         (C=1)
-Cond_0:"c"    is cond_0=0x8 unimpl
+Cond_0:"c"    is cond_0=0x8 { local maybe:1 = tmp_maybe(); export maybe; }
 # Overflow flag is set      (V=1)
-Cond_0:"v"    is cond_0=0x9 unimpl
+Cond_0:"v"    is cond_0=0x9 { local maybe:1 = tmp_maybe(); export maybe; }
 # Extension flag is set     (E=1)
-Cond_0:"e"    is cond_0=0xa unimpl
+Cond_0:"e"    is cond_0=0xa { local maybe:1 = tmp_maybe(); export maybe; }
 # Limit flag is set         (L=1)
-Cond_0:"l"    is cond_0=0xb unimpl
+Cond_0:"l"    is cond_0=0xb { local maybe:1 = tmp_maybe(); export maybe; }
 # R flag is cleared         (R=0)
-Cond_0:"nr"   is cond_0=0xc unimpl
+Cond_0:"nr"   is cond_0=0xc { local maybe:1 = tmp_maybe(); export maybe; }
 # Input user pin 0 cleared  (IUSER0=0)
-Cond_0:"niu0" is cond_0=0xd unimpl
+Cond_0:"niu0" is cond_0=0xd { local maybe:1 = tmp_maybe(); export maybe; }
 # Input user pin 0 set      (IUSER0=1)
-Cond_0:"iu0"  is cond_0=0xe unimpl
+Cond_0:"iu0"  is cond_0=0xe { local maybe:1 = tmp_maybe(); export maybe; }
 # Input user pin 1 set      (IUSER1=1)
-Cond_0:"iu1"  is cond_0=0xf unimpl
+Cond_0:"iu1"  is cond_0=0xf { local maybe:1 = tmp_maybe(); export maybe; }
 
 MemRn_0:$(OB)Rn_0$(CB) is Rn_0 { export *[data]:2 Rn_0; }
 MemSp:$(OB)sp$(CB) is sp { export *[data]:2 sp; }
@@ -1356,6 +1358,7 @@ op:"bkrepsto" MemSp is opcode_3_15=(0x9468>>3) & unused_0_2 & MemSp {
 op:"br" Address18_16and4, Cond_0 is opcode_6_15=(0x418>>2) ... & Cond_0 ... & Address18_16and4 {
 	if (Cond_0) goto Address18_16and4;
 }
+op:"br" Address18_16and4 is opcode_6_15=(0x418>>2) ... & cond_0=0 ... & Address18_16and4 { goto Address18_16and4; }
 # D3C0h TL  break               ;break
 # Only changes the loop stack depth; no jumping
 # https://github.com/wwylele/teakra/blob/01db7cdd00aabcce559a8dddce8798dabb71949b/src/interpreter.h#L1111-L1116
@@ -1367,11 +1370,13 @@ op:"break" is opcode_0_15=0xD3C0 [
 op:"brr" RelAddr7_4, Cond_0 is opcode_11_15=(0x50>>3) & RelAddr7_4 & Cond_0 {
 	if (Cond_0) goto RelAddr7_4;
 }
+op:"brr" RelAddr7_4 is opcode_11_15=(0x50>>3) & RelAddr7_4 & cond_0=0 { goto RelAddr7_4; }
 # 41C0h TL  call Address18@16and4, Cond@0
 op:"call" Address18_16and4, Cond_0 is opcode_6_15=(0x41C>>2) ... & Cond_0 ... & Address18_16and4 {
 	if (!Cond_0) goto inst_next;
 	call Address18_16and4;
 }
+op:"call" Address18_16and4 is opcode_6_15=(0x41C>>2) ... & cond_0=0 ... & Address18_16and4 { call Address18_16and4; }
 # D480h TL  calla Axl@8
 op:"calla" Axl_8 is opcode_9_15=(0xD4>>1) & Axl_8 & opcode_0_7=0x80 {
 	call [Axl_8];
@@ -1387,6 +1392,7 @@ op:"brr" RelAddr7_4, Cond_0 is opcode_11_15=(0x10>>3) & RelAddr7_4 & Cond_0 {
 	if (!Cond_0) goto inst_next;
 	call RelAddr7_4;
 }
+op:"brr" RelAddr7_4 is opcode_11_15=(0x10>>3) & RelAddr7_4 & cond_0=0 { call RelAddr7_4; }
 @ifdef TEAK_LITE_2
 # 9068h TL2 cbs  Axh@0, Axh@not0, r0, ge
 op:"cbs" Axh_0, Axh_Not0, r0, "ge" is opcode_1_15=(0x9068>>1) & Axh_0 & Axh_Not0 & r0 unimpl
@@ -1418,11 +1424,13 @@ op:"clr" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=(0x76) & Con
 	if (!Cond_0) goto inst_next;
 	Ax_12 = 0;
 }
+op:"clr" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=(0x76) & cond_0=0 { Ax_12 = 0; }
 # 6F60h TL  clr  Implied ConstZero, Bx@12, Cond@0  ;bX=0
 op:"clr" Bx_12, Cond_0 is opcode_13_15=(6>>1) & Bx_12 & opcode_4_11=(0xF6) & Cond_0 {
 	if (!Cond_0) goto inst_next;
 	Bx_12 = 0;
 }
+op:"clr" Bx_12 is opcode_13_15=(6>>1) & Bx_12 & opcode_4_11=(0xF6) & cond_0=0 { Bx_12 = 0; }
 @ifdef TEAK_LITE_2
 # 8ED0h TL2 clr  Implied ConstZero, Ab@2, Ab@0
 # TODO: What if Ab_2 == Ab_0? Is that something else?
@@ -1449,12 +1457,14 @@ op:"clrr" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x7C & Cond
 	if (!Cond_0) goto inst_next;
 	Ax_12 = 0x8000;
 }
+op:"clrr" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x7C & cond_0=0 { Ax_12 = 0x8000; }
 @ifdef TEAK_LITE_2
 # 6F70h TL2 clrr Implied Const8000h, Bx@12, Cond@0 ;bX=8000h
 op:"clrr" Bx_12, Cond_0 is opcode_13_15=(6>>1) & Bx_12 & opcode_4_11=0xF7 & Cond_0 {
 	if (!Cond_0) goto inst_next;
 	Bx_12 = 0x8000;
 }
+op:"clrr" Bx_12 is opcode_13_15=(6>>1) & Bx_12 & opcode_4_11=0xF7 & cond_0=0 { Bx_12 = 0x8000; }
 # 8DD0h TL2 clrr Implied Const8000h, Ab@2, Ab@0
 op:"clrr" Ab_2, Ab_0 is opcode_4_15=0x8DD & Ab_2 & Ab_0 {
 	Ab_2 = 0x8000;
@@ -1520,11 +1530,13 @@ op:"copy" Ax_Not12, Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & Ax_Not12 & op
 	if (!Cond_0) goto inst_next;
 	Ax_Not12 = Ax_12;
 }
+op:"copy" Ax_Not12, Ax_12 is opcode_13_15=(6>>1) & Ax_12 & Ax_Not12 & opcode_4_11=0x7F & cond_0=0 { Ax_Not12 = Ax_12; }
 # 67E0h TL  dec  Implied Const1,     Ax@12, Cond@0 ;aX=aX-1
 op:"dec" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x7E & Cond_0 {
 	if (!Cond_0) goto inst_next;
 	Ax_12 = Ax_12 - 1;
 }
+op:"dec" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x7E & cond_0=0 { Ax_12 = Ax_12 - 1; }
 # 43C0h TL  dint        ;IE=0, interrupt disable
 op:"dint" is opcode_0_15=0x43C0 unimpl
 # 0E00h TL  divs MemImm8@0, Ax@8
@@ -1554,6 +1566,7 @@ op:"inc" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x7D & Cond_
 	if (!Cond_0) goto inst_next;
 	Ax_12 = Ax_12 + 1;
 }
+op:"inc" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x7D & cond_0=0 { Ax_12 = Ax_12 + 1; }
 # 49C0h TL  lim  a0     ;aka a0,a0
 # Probably related to the limit flag that is one of the condition codes (0xB)?
 op:"lim" a0 is opcode_0_15=0x49C0 & a0 unimpl
@@ -2422,6 +2435,7 @@ op:"neg" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x79 & Cond_
 	if (!Cond_0) goto inst_next;
 	Ax_12 = -Ax_12;
 }
+op:"neg" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x79 & cond_0=0 { Ax_12 = -Ax_12; }
 # 0000h TL  nop
 op:"nop" is opcode_0_15=0x0000 {}
 # 94C0h TL  norm Ax@8, Bogus MemRn@0 || Rn@0stepZIDS@3  ;if N=0 (aX=aX*2,rN+/-)
@@ -2431,6 +2445,7 @@ op:"not" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x78 & Cond_
 	if (!Cond_0) goto inst_next;
 	Ax_12 = ~Ax_12;
 }
+op:"not" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x78 & cond_0=0 { Ax_12 = ~Ax_12; }
 # D4F8h TL  or   MemImm16@16, Ax@8
 op:"or" MemImm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xF8; MemImm16 { Ax_8 = Ax_8 | zext(MemImm16); }
 # A000h TL  or   MemImm8@0, Ax@8
@@ -2462,6 +2477,7 @@ op:"or" r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=8 & r6 unimpl
 @endif
 # 67B0h TL  pacr Implied Const8000h, Implied p0, Ax@12, Cond@0 ;aX=shfP+8000h
 op:"pacr" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x7B & Cond_0 unimpl
+op:"pacr" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x7B & cond_0=0 unimpl
 @ifdef TEAK_LITE_2
 # D7C2h TL2 pacr1 Implied Const8000h, Implied p1, Ax@0
 op:"pacrl" Ax_0 is opcode_1_15=(0xD7C2>>1) & Ax_0 unimpl
@@ -2642,6 +2658,10 @@ op:"ret" Cond_0 is opcode_4_15=0x458 & Cond_0 {
 	# TODO: proper stack
 	return [sp];
 }
+op:"ret" is opcode_4_15=0x458 & cond_0=0 {
+	# TODO: proper stack
+	return [sp];
+}
 # D780h TL  retd    ;delayed return (after 2 clks)
 # TODO: This assumes every instruction is 1 clock, but http://problemkaputt.de/gbatek-dsi-teak-misc.htm says there are a few exceptions
 op:"retd" is opcode_0_15=0xD780 {
@@ -2655,9 +2675,17 @@ op:"reti" Cond_0 is opcode_4_15=0x45C & Cond_0 {
 	# TODO: proper stack
 	return [sp];
 }
+op:"reti" is opcode_4_15=0x45C & cond_0=0 {
+	# TODO: proper stack
+	return [sp];
+}
 # 45D0h TL  reti Cond@0, context ;Do context switch
 op:"reti" Cond_0, "context" is opcode_4_15=0x45D & Cond_0 {
 	if (!Cond_0) goto inst_next;
+	# TODO: proper stack
+	return [sp];
+}
+op:"reti" "context" is opcode_4_15=0x45D & cond_0=0 {
 	# TODO: proper stack
 	return [sp];
 }
