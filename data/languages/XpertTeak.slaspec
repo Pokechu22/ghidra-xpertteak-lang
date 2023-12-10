@@ -251,6 +251,7 @@ define token opcode (16)
 	Axl_1  = (1, 1)
 	Axl_3  = (3, 3)
 	Axl_4  = (4, 4)
+	Axl_5  = (5, 5)
 	Axl_6  = (6, 6)
 	Axl_8  = (8, 8)
 	Axl_11 = (11, 11)
@@ -489,7 +490,7 @@ define token expanded (16)
 attach variables [ Ax_0 Ax_1 Ax_3 Ax_4 Ax_5 Ax_6 Ax_8 Ax_10 Ax_11 Ax_12 ] [ a0 a1 ];
 attach variables [ Ax_Not8 Ax_Not12 ] [ a1 a0 ];
 
-attach variables [ Axl_0 Axl_1 Axl_3 Axl_4 Axl_6 Axl_8 Axl_11 Axl_12 ] [ a0l a1l ];
+attach variables [ Axl_0 Axl_1 Axl_3 Axl_4 Axl_5 Axl_6 Axl_8 Axl_11 Axl_12 ] [ a0l a1l ];
 attach variables [ Axl_Not0 Axl_Not3 Axl_Not4 Axl_Not6 Axl_Not11 ] [ a1l a0l ];
 
 attach variables [ Axh_0 Axh_1 Axh_3 Axh_4 Axh_6 Axh_8 Axh_9 Axh_11 Axh_12 ] [ a0h a1h ];
@@ -604,12 +605,12 @@ ProgMemRn_0:(Rn_0) is Rn_0
 }
 
 @ifdef NOCASH_SYNTAX
-ProgMemAxl_0:[^"code:movpd":Axl_0] is Axl_0
+ProgMemAxl_5:[^"code:movpd":Axl_5] is Axl_5
 @else
-ProgMemAxl_0:(Axl_0) is Axl_0
+ProgMemAxl_5:(Axl_5) is Axl_5
 @endif
 {
-	export *[code]:2 Axl_0;
+	export *[code]:2 Axl_5;
 }
 
 @ifdef NOCASH_SYNTAX
@@ -621,8 +622,6 @@ ProgMemAx_5:(Ax_5) is Ax_5
 	export *[code]:2 Ax_5;
 }
 
-# TODO: this is actually ProgMemAx@8_ProgMemAx@8offsI which is two in one,
-# with the second offset by one?
 @ifdef NOCASH_SYNTAX
 ProgMemAx_8:[^"code:movpd":Ax_8] is Ax_8
 @else
@@ -631,6 +630,27 @@ ProgMemAx_8:(Ax_8) is Ax_8
 {
 	export *[code]:2 Ax_8;
 }
+
+# offsI doesn't seem to be configurable
+@ifdef NOCASH_SYNTAX
+ProgMemAx_8_offsI:[^"code:movpd":Ax_8+] is Ax_8
+@else
+ProgMemAx_8_offsI:(Ax_8+) is Ax_8
+@endif
+{
+	addr = Ax_8 + 1;
+	export *[code]:2 addr;
+}
+
+@ifdef NOCASH_SYNTAX
+ProgMemR45_2:[^"code:movpd":R45_2] is R45_2
+@else
+ProgMemR45_2:(R45_2) is R45_2
+@endif
+{
+	export *[code]:2 R45_2;
+}
+
 
 @ifdef NOCASH_SYNTAX
 MemImm8_0:[^"page":imm8_0] is imm8_0
@@ -2144,16 +2164,40 @@ op:"mov" prpage, Abl_0 is opcode_2_15=(0x5EB0>>2) & Abl_0 & prpage { Abl_0 = prp
 # 49A0h TL2 mov  SttMod@0, MemR04@4 || R04@4stepII2@3
 op:"mov" SttMod_0, MemR04_4 || R04_4_stepII2_3 is opcode_5_15=(0x49A>>1) & MemR04_4 & R04_4_stepII2_3 & SttMod_0 { MemR04_4 = SttMod_0; build R04_4_stepII2_3; }
 # 4DC0h TL2 mova Ab@4, MemR0425@2_MemR0425@2offsZIDZ@0 || R0425@2stepII2D2S@0
+op:"mova" Ab_4, MemR0425_2^"_"^MemR0425_2_offsZIDZ_0 || R0425_2_stepII2D2S_0
+	is opcode_6_15=(0x4DC>>2) & Ab_4 & MemR0425_2 & MemR0425_2_offsZIDZ_0 & R0425_2_stepII2D2S_0
+unimpl
 # 4BC0h TL2 mova MemR0425@2_MemR0425@2offsZIDZ@0, Ab@4 || R0425@2stepII2D2S@0
+op:"mova" MemR0425_2^"_"^MemR0425_2_offsZIDZ_0, Ab_4 || R0425_2_stepII2D2S_0
+	is opcode_6_15=(0x4BC>>2) & Ab_4 & MemR0425_2 & MemR0425_2_offsZIDZ_0 & R0425_2_stepII2D2S_0
+unimpl
 @endif
 # 5F80h TL  movd MemR0123@0,ProgMemR45@2 || R0123@0stepZIDS@3, R45@2stepZIDS@5
+# TODO: write to progmem?
+op:"movd" MemR0123_0, ProgMemR45_2 || R0123_0_stepZIDS_3, R45_2_stepZIDS_5
+	is opcode_7_15=(0x5F8>>3) & R45_2_stepZIDS_5 & R0123_0_stepZIDS_3 & ProgMemR45_2 & MemR0123_0
+{
+	ProgMemR45_2 = MemR0123_0;
+	build R0123_0_stepZIDS_3;
+	build R45_2_stepZIDS_5;
+}
 # 0040h TL  movp ProgMemAxl@5, Register@0
+op:"movp" ProgMemAxl_5, Register_0 is opcode_6_15=(0x004>>2) & ProgMemAxl_5 & Register_0 { Register_0 = ProgMemAxl_5; }
 @ifdef TEAK_LITE_2
 # 0D40h TL2 movp ProgMemAx@5, Register@0
+op:"movp" ProgMemAx_5, Register_0 is opcode_6_15=(0x064>>2) & ProgMemAx_5 & Register_0 { Register_0 = ProgMemAx_5; }
 @endif
 # 0600h TL  movp ProgMemRn@0, MemR0123@5 || R0123@5stepZIDS@7, Rn@0stepZIDS@3
+op:"movp" ProgMemRn_0, MemR0123_5 || R0123_5_stepZIDS_7, Rn_0_stepZIDS_3
+	is opcode_9_15=(0x06>>1) & R0123_5_stepZIDS_7 & MemR0123_5 & Rn_0_stepZIDS_3 & ProgMemRn_0
+{
+	MemR0123_5 = ProgMemRn_0;
+	build R0123_5_stepZIDS_7;
+	build Rn_0_stepZIDS_3;
+}
 @ifdef TEAK_LITE_2
 # D499h TL2 movpdw ProgMemAx@8_ProgMemAx@8offsI, pc
+op:"movpdw" ProgMemAx_8^"_"^ProgMemAx_8_offsI, pc is opcode_9_15=(0xD4>>1) & ProgMemAx_8 & ProgMemAx_8_offsI & opcode_0_7=0x99 & pc unimpl
 @endif
 # 8864h TL  movr MemR0425@3, Abh@8 || R0425@3stepII2D2S@0   ;op*10000h+8000h
 # 9CE0h TL  movr MemRn@0, Ax@8 || Rn@0stepZIDS@3
@@ -2354,6 +2398,7 @@ op:"mov" SttMod_0, MemR04_4 || R04_4_stepII2_3 is opcode_5_15=(0x49A>>1) & MemR0
 @endif
 # 6790h TL  neg  Ax@12, Cond@0 ;aX=0-aX
 # 0000h TL  nop
+op:"nop" is opcode_0_15=0x0000 {}
 # 94C0h TL  norm Ax@8, Bogus MemRn@0 || Rn@0stepZIDS@3  ;if N=0 (aX=aX*2,rN+/-)
 # 6780h TL  not  Ax@12, Cond@0 ;aX=not aX
 # D4F8h TL  or   MemImm16@16, Ax@8
