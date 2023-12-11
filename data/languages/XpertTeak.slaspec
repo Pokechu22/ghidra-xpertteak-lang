@@ -3193,6 +3193,141 @@ op:"subv" Imm16, Register_0 is opcode_5_15=(0x8FE>>1) & Register_0; Imm16 unimpl
 op:"subv" Imm16, r6 is opcode_0_15=0x47BF & r6; Imm16 unimpl
 @endif
 # 4980h TL  swap SwapTypes4@0
+#
+# SwapTypes:
+# val native           nocash         ;meaning
+# 0:  (a0,b0)          a0,b0          ;a0 <--> b0                ;flags(a0)
+# 1:  (a0,b1)          a0,b1          ;a0 <--> b1                ;flags(a0)
+# 2:  (a1,b0)          a1,b0          ;a1 <--> b0                ;flags(a1)
+# 3:  (a1,b1)          a1,b1          ;a1 <--> b1                ;flags(a1)
+# 4:  (a0,b0),(a1,b1)  a0:a1,b0:b1    ;a0 <--> b0 and a1 <--> b1 ;flags(a0)
+# 5:  (a0,b1),(a1,b0)  a0:a1,b1:b0    ;a0 <--> b1 and a1 <--> b0 ;flags(a0)
+# 6:  (a0,b0,a1)       a1,b0,a0       ;a0 --> b0 --> a1          ;flags(a1)
+# 7:  (a0,b1,a1)       a1,b1,a0       ;a0 --> b1 --> a1          ;flags(a1)
+# 8:  (a1,b0,a0)       a0,b0,a1       ;a1 --> b0 --> a0          ;flags(a0)
+# 9:  (a1,b1,a0)       a0,b1,a1       ;a1 --> b1 --> a0          ;flags(a0)
+# A:  (b0,a0,b1)       b1,a0,b0       ;b0 --> a0 --> b1          ;flags(a0)!
+# B:  (b0,a1,b1)       b1,a1,b0       ;b0 --> a1 --> b1          ;flags(a1)!
+# C:  (b1,a0,b0)       b0,a0,b1       ;b1 --> a0 --> b0          ;flags(a0)!
+# D:  (b1,a1,b0)       b0,a1,b1       ;b1 --> a1 --> b0          ;flags(a1)!
+# E:  reserved         reserved       ;-                         ;-
+# F:  reserved         reserved       ;-                         ;-
+#
+# Note that nocash vs native is not just a punctuation difference; it reorders things too.
+
+macro swap_2(x, y) { # x <--> y
+	local tmp = x;
+	x = y;
+	y = tmp;
+}
+macro swap_3(x, y, z) { # x --> y --> z
+	local tmp = z;
+	z = y;
+	y = x;
+	x = tmp;
+}
+macro swap_flags(register) {} # TODO
+
+# 0:  (a0,b0)          a0,b0          ;a0 <--> b0                ;flags(a0)
+@ifndef NOCASH_SYNTAX
+SwapTypes:(a0,b0) is SwapTypes_0=0 & a0 & b0
+@else
+SwapTypes:a0,b0 is SwapTypes_0=0 & a0 & b0
+@endif
+{ swap_2(a0, b0); swap_flags(a0); }
+# 1:  (a0,b1)          a0,b1          ;a0 <--> b1                ;flags(a0)
+@ifndef NOCASH_SYNTAX
+SwapTypes:(a0,b1) is SwapTypes_0=1 & a0 & b1
+@else
+SwapTypes:a0,b1 is SwapTypes_0=1 & a0 & b1
+@endif
+{ swap_2(a0, b1); swap_flags(a0); }
+# 2:  (a1,b0)          a1,b0          ;a1 <--> b0                ;flags(a1)
+@ifndef NOCASH_SYNTAX
+SwapTypes:(a1,b0) is SwapTypes_0=2 & a1 & b0
+@else
+SwapTypes:a1,b0 is SwapTypes_0=2 & a1 & b0
+@endif
+{ swap_2(a1, b0); swap_flags(a1); }
+# 3:  (a1,b1)          a1,b1          ;a1 <--> b1                ;flags(a1)
+@ifndef NOCASH_SYNTAX
+SwapTypes:(a1,b1) is SwapTypes_0=3 & a1 & b1
+@else
+SwapTypes:a1,b1 is SwapTypes_0=3 & a1 & b1
+@endif
+{ swap_2(a1, b1); swap_flags(a1); }
+# 4:  (a0,b0),(a1,b1)  a0:a1,b0:b1    ;a0 <--> b0 and a1 <--> b1 ;flags(a0)
+@ifndef NOCASH_SYNTAX
+SwapTypes:(a0,b0),(a1,b1) is SwapTypes_0=4 & a0 & a1 & b0 & b1
+@else
+SwapTypes:a0:a1,b0:b1 is SwapTypes_0=4 & a0 & a1 & b0 & b1
+@endif
+{ swap_2(a0, b0); swap_2(a1, b1); swap_flags(a0); }
+# 5:  (a0,b1),(a1,b0)  a0:a1,b1:b0    ;a0 <--> b1 and a1 <--> b0 ;flags(a0)
+@ifndef NOCASH_SYNTAX
+SwapTypes:(a0,b1),(a1,b0) is SwapTypes_0=5 & a0 & a1 & b0 & b1
+@else
+SwapTypes:a0:a1,b1:b0 is SwapTypes_0=5 & a0 & a1 & b0 & b1
+@endif
+{ swap_2(a0, b1); swap_2(a1, b0); swap_flags(a0); }
+# 6:  (a0,b0,a1)       a1,b0,a0       ;a0 --> b0 --> a1          ;flags(a1)
+@ifndef NOCASH_SYNTAX
+SwapTypes:(a0,b0,a1) is SwapTypes_0=6 & a0 & b0 & a1
+@else
+SwapTypes:a1,b0,a0 is SwapTypes_0=6 & a0 & b0 & a1
+@endif
+{ swap_3(a0, b0, a1); swap_flags(a1); }
+# 7:  (a0,b1,a1)       a1,b1,a0       ;a0 --> b1 --> a1          ;flags(a1)
+@ifndef NOCASH_SYNTAX
+SwapTypes:(a0,b1,a1) is SwapTypes_0=7 & a0 & b1 & a1
+@else
+SwapTypes:a1,b1,a0 is SwapTypes_0=7 & a0 & b1 & a1
+@endif
+{ swap_3(a0, b1, a1); swap_flags(a1); }
+# 8:  (a1,b0,a0)       a0,b0,a1       ;a1 --> b0 --> a0          ;flags(a0)
+@ifndef NOCASH_SYNTAX
+SwapTypes:(a1,b0,a0) is SwapTypes_0=8 & a0 & b0 & a1
+@else
+SwapTypes:a0,b0,a1 is SwapTypes_0=8 & a0 & b0 & a1
+@endif
+{ swap_3(a1, b0, a0); swap_flags(a0); }
+# 9:  (a1,b1,a0)       a0,b1,a1       ;a1 --> b1 --> a0          ;flags(a0)
+@ifndef NOCASH_SYNTAX
+SwapTypes:(a1,b1,a0) is SwapTypes_0=9 & a0 & b1 & a1
+@else
+SwapTypes:a0,b1,a1 is SwapTypes_0=9 & a0 & b1 & a1
+@endif
+{ swap_3(a1, b1, a0); swap_flags(a0); }
+# A:  (b0,a0,b1)       b1,a0,b0       ;b0 --> a0 --> b1          ;flags(a0)!
+@ifndef NOCASH_SYNTAX
+SwapTypes:(b0,a0,b1) is SwapTypes_0=0xA & b0 & b1 & a0
+@else
+SwapTypes:b1,a0,b0 is SwapTypes_0=0xA & b0 & b1 & a0
+@endif
+{ swap_3(b0, a0, b1); swap_flags(a0); }
+# B:  (b0,a1,b1)       b1,a1,b0       ;b0 --> a1 --> b1          ;flags(a1)!
+@ifndef NOCASH_SYNTAX
+SwapTypes:(b0,a1,b1) is SwapTypes_0=0xB & b0 & b1 & a1
+@else
+SwapTypes:b1,a1,b0 is SwapTypes_0=0xB & b0 & b1 & a1
+@endif
+{ swap_3(b0, a1, b1); swap_flags(a1); }
+# C:  (b1,a0,b0)       b0,a0,b1       ;b1 --> a0 --> b0          ;flags(a0)!
+@ifndef NOCASH_SYNTAX
+SwapTypes:(b1,a0,b0) is SwapTypes_0=0xC & b0 & b1 & a0
+@else
+SwapTypes:b0,a0,b1 is SwapTypes_0=0xC & b0 & b1 & a0
+@endif
+{ swap_3(b1, a0, b0); swap_flags(a0); }
+# D:  (b1,a1,b0)       b0,a1,b1       ;b1 --> a1 --> b0          ;flags(a1)!
+@ifndef NOCASH_SYNTAX
+SwapTypes:(b1,a1,b0) is SwapTypes_0=0xD & b0 & b1 & a1
+@else
+SwapTypes:b0,a1,b1 is SwapTypes_0=0xD & b0 & b1 & a1
+@endif
+{ swap_3(b1, a1, b0); swap_flags(a1); }
+
+op:"swap" SwapTypes is opcode_4_15=0x498 & SwapTypes { build SwapTypes; }
 # 0020h TL  trap                  ;software interrupt
 # A800h TL  tst0 Axl@8, MemImm8@0
 # 8880h TL  tst0 Axl@8, MemRn@0 || Rn@0stepZIDS@3
