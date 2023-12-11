@@ -229,6 +229,7 @@ define token opcode (16)
 	imm2u_0 = (0, 1)
 	imm2u_1 = (1, 2)
 	imm4u_0 = (0, 3)
+	imm4_8  = (8, 11)
 	imm5u_0 = (0, 4)
 	imm5s_0 = (0, 4) signed
 	imm6s_0 = (0, 5) signed
@@ -494,6 +495,8 @@ attach variables [ Register_P_0 ] [
 
 define token expanded (16)
 	expanded_imm = (0, 15)
+	expanded_imm4_16 = (0, 3)
+	expanded_unused_20_31 = (4, 15)
 ;
 
 attach variables [ Ax_0 Ax_1 Ax_3 Ax_4 Ax_5 Ax_6 Ax_8 Ax_10 Ax_11 Ax_12 ] [ a0 a1 ];
@@ -704,6 +707,10 @@ MemR7Imm16:(r7+##expanded_imm) is expanded_imm & r7
 	addr:2 = r7 + expanded_imm;
 	export *[data]:2 addr;
 }
+
+# TODO: is this the intended way for this to be displayed?
+Imm4bitno_8:shifted_bit is imm4_8 [ shifted_bit = 1 << imm4_8; ] { export *[data]:2 shifted_bit; }
+Imm4bitno_16:shifted_bit is expanded_imm4_16 [ shifted_bit = 1 << expanded_imm4_16; ] { export *[data]:2 shifted_bit; }
 
 Address18_16and0:full_addr is address18_2bits_0; expanded_imm
 [ full_addr = (address18_2bits_0 << 16) + expanded_imm; ]
@@ -3371,14 +3378,21 @@ op:"tst1" Imm16, r6 is opcode_0_15=0x47BD & r6; Imm16 unimpl
 # 9478h TL2 tst1 Imm16@16, SttMod@0 Implied Not
 op:"tst1" Imm16, SttMod_0 is opcode_3_15=(0x9478>>3) & SttMod_0; Imm16 unimpl
 # 80C1h TL2 tst4b a0l, MemR0425@10 || R0425@10stepII2D2S@8
+op:"tst4b" a0l, MemR0425_10 || R0425_10_stepII2D2S_8 is opcode_12_15=8 & MemR0425_10 & R0425_10_stepII2D2S_8 & opcode_0_7=0xC1 & a0l unimpl
 # 4780h TL2 tst4b a0l, MemR0425@2, Ax@4 || R0425@2stepII2D2S@0
+op:"tst4b" a0l, MemR0425_2, Ax_4 || R0425_2_stepII2D2S_0 is opcode_5_15=(0x478>>1) & Ax_4 & MemR0425_2 & R0425_2_stepII2D2S_0 & a0l unimpl
 @endif
 # F000h TL  tstb NoReverse, Implied Not MemImm8@0, Imm4bitno@8
+op:"tstb" MemImm8_0, Imm4bitno_8 is opcode_11_15=0xF & Imm4bitno_8 & MemImm8_0 unimpl
 # 9020h TL  tstb NoReverse, Implied Not MemRn@0, Imm4bitno@8 || Rn@0stepZIDS@3
+op:"tstb" MemRn_0, Imm4bitno_8 || Rn_0_stepZIDS_3 is opcode_11_15=9 & Imm4bitno_8 & opcode_5_7=(2>>1) & Rn_0_stepZIDS_3 & MemRn_0 unimpl
 # 9000h TL  tstb NoReverse, Implied Not Register@0, Imm4bitno@8
+op:"tstb" Register_0, Imm4bitno_8 is opcode_11_15=9 & Imm4bitno_8 & opcode_5_7=0 & Register_0 unimpl
 @ifdef TEAK_LITE_2
 # 9018h TL2 tstb NoReverse, Implied Not r6, Imm4bitno@8  ;override tstb a0,Imm4
+op:"tstb" r6, Imm4bitno_8 is opcode_11_15=9 & Imm4bitno_8 & opcode_0_7=0x18 & r6 unimpl
 # 0028h TL2 tstb NoReverse, Implied Not SttMod@0, Imm4bitno@16, Unused12@20
+op:"tstb" SttMod_0, Imm4bitno_16 is opcode_3_15=(0x0028>>3) & SttMod_0; Imm4bitno_16 & expanded_unused_20_31 unimpl
 # 5F45h TL2 vtrclr vtr0         ;vtr0=0           ;for Viterbi decoding...
 # 5F47h TL2 vtrclr vtr0, vtr1   ;vtr0=0, vtr1=0   ;(saved C/C1 carry flags)
 # 5F46h TL2 vtrclr vtr1         ;vtr1=0
