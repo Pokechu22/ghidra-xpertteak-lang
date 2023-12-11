@@ -3394,12 +3394,20 @@ op:"tstb" r6, Imm4bitno_8 is opcode_11_15=9 & Imm4bitno_8 & opcode_0_7=0x18 & r6
 # 0028h TL2 tstb NoReverse, Implied Not SttMod@0, Imm4bitno@16, Unused12@20
 op:"tstb" SttMod_0, Imm4bitno_16 is opcode_3_15=(0x0028>>3) & SttMod_0; Imm4bitno_16 & expanded_unused_20_31 unimpl
 # 5F45h TL2 vtrclr vtr0         ;vtr0=0           ;for Viterbi decoding...
+op:"vtrclr" vtr0 is opcode_0_15=0x5F45 & vtr0 { vtr0 = 0; }
 # 5F47h TL2 vtrclr vtr0, vtr1   ;vtr0=0, vtr1=0   ;(saved C/C1 carry flags)
+# TODO: C/C1 carry flags?
+op:"vtrclr" vtr0, vtr1 is opcode_0_15=0x5F47 & vtr0 & vtr1 { vtr0 = 0; vtr1 = 0; }
 # 5F46h TL2 vtrclr vtr1         ;vtr1=0
+op:"vtrclr" vtr1 is opcode_0_15=0x5F46 & vtr1 { vtr1 = 0; }
 # D383h TL2 vtrmov Axl@4        ;Axl=(vtr1 and FF00h)+(vtr0/100h)
+op:"vtrmov" Axl_4 is opcode_5_15=(0xD38>>1) & Axl_4 & opcode_0_3=3 { Axl_4 = (vtr1 & 0xFF00) | ((vtr0 & 0xFF00) >> 8); }
 # D29Ah TL2 vtrmov vtr0, Axl@0  ;Axl=vtr0
+op:"vtrmov" vtr0, Axl_0 is opcode_1_15=(0xD29A>>1) & Axl_0 & vtr0 { Axl_0 = vtr0; }
 # D69Ah TL2 vtrmov vtr1, Axl@0  ;Axl=vtr1
+op:"vtrmov" vtr1, Axl_0 is opcode_1_15=(0xD69A>>1) & Axl_0 & vtr1 { Axl_0 = vtr1; }
 # D781h TL2 vtrshr              ;vtr0=vtr0/2+C*8000h, vtr1=vtr1/2+C1*8000h
+op:"vtrshr" is opcode_0_15=0xD781 unimpl
 @endif
 # D4FAh TL  xor  MemImm16@16, Ax@8
 # A400h TL  xor  MemImm8@0, Ax@8
