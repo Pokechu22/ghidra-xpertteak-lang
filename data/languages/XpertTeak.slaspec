@@ -3410,15 +3410,24 @@ op:"vtrmov" vtr1, Axl_0 is opcode_1_15=(0xD69A>>1) & Axl_0 & vtr1 { Axl_0 = vtr1
 op:"vtrshr" is opcode_0_15=0xD781 unimpl
 @endif
 # D4FAh TL  xor  MemImm16@16, Ax@8
+op:"xor" MemImm16, Ax_8 is opcode_9_15=(0xDA>>1) & Ax_8 & opcode_0_7=0xFA; MemImm16 { Ax_8 = Ax_8 ^ zext(MemImm16); }
 # A400h TL  xor  MemImm8@0, Ax@8
+op:"xor" MemImm8_0, Ax_8 is opcode_9_15=(0xA4>>1) & Ax_8 & MemImm8_0 { Ax_8 = Ax_8 ^ zext(MemImm8_0); }
 # 84C0h TL  xor  Imm16@16, Ax@8
+op:"xor" Imm16, Ax_8 is opcode_9_15=(0x84>>1) & Ax_8 & opcode_0_7=0xC0; Imm16 { Ax_8 = Ax_8 ^ zext(Imm16); }
 # C400h TL  xor  Imm8u@0, Ax@8
+op:"xor" Imm8u_0, Ax_8 is opcode_9_15=(0xC4>>1) & Ax_8 & Imm8u_0 { Ax_8 = Ax_8 ^ zext(Imm8u_0); }
 # D4DAh TL  xor  MemR7Imm16@16, Ax@8
+op:"xor" MemR7Imm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xDA; MemR7Imm16 { Ax_8 = Ax_8 ^ zext(MemR7Imm16); }
 # 4400h TL  xor  MemR7Imm7s@0, Ax@8
+op:"xor" MemR7Imm7s_0, Ax_8 is opcode_9_15=(0x44>>1) & Ax_8 & opcode_7_7=0 & MemR7Imm7s_0 { Ax_8 = Ax_8 ^ zext(MemR7Imm7s_0); }
 # 8480h TL  xor  MemRn@0, Ax@8 || Rn@0stepZIDS@3
+op:"xor" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x84>>1) & Ax_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 { Ax_8 = Ax_8 ^ zext(MemRn_0); build Rn_0_stepZIDS_3; }
 # 84A0h TL  xor  RegisterP0@0, Ax@8
+op:"xor" Register_P_0, Ax_8 is opcode_9_15=(0x84>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_P_0 { Ax_8 = Ax_8 ^ zext(Register_P_0); }
 @ifdef TEAK_LITE_2
 # D38Ah TL2 xor  r6, Ax@4
+op:"xor" r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=0xA & r6 { Ax_4 = Ax_4 ^ zext(r6); }
 @endif
 # 8800h TL  undefined Unused5@0, Unused1@8 ;(mpy/mpys without A in bit11)
 # 8820h TL  undefined Unused5@0, Unused1@8 ;(mpy/mpys without A in bit11)
