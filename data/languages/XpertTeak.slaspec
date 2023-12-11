@@ -566,6 +566,7 @@ attach values [ stepII2_0 stepII2_1 stepII2_2 stepII2_3 stepII2_4 stepII2_5 step
 Abl_2_copy:Abl_2 is Abl_2 {}
 Abh_4_copy:Abh_4 is Abh_4 {}
 sv_copy:sv is sv {}
+sv_copy_2:sv is sv {}
 Axh_4_copy:Axh_4 is Axh_4 {}
 Axh_6_copy:Axh_6 is Axh_6 {}
 
@@ -3096,54 +3097,100 @@ op:"sqra" Register_0, Ax_8 is opcode_9_15=(0x9C>>1) & Ax_8 & opcode_5_7=(0xA>>1)
 op:"sqra" r6, Ax_8 is opcode_9_15=(0x90>>1) & Ax_8 & opcode_1_7=(0x62>>1) & unused_0_0 & r6 unimpl
 @endif
 # D4FFh TL  sub  MemImm16@16, Ax@8
+op:"sub" MemImm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xFF; MemImm16 { Ax_8 = Ax_8 - sext(MemImm16); }
 # AE00h TL  sub  MemImm8@0, Ax@8
+op:"sub" MemImm8_0, Ax_8 is opcode_9_15=(0xAE>>1) & Ax_8 & MemImm8_0 { Ax_8 = Ax_8 - sext(MemImm8_0); }
 # 8EC0h TL  sub  Imm16@16, Ax@8
+op:"sub" Imm16, Ax_8 is opcode_9_15=(0x8E>>1) & Ax_8 & opcode_0_7=0xC0; Imm16 { Ax_8 = Ax_8 - sext(Imm16); }
 # CE00h TL  sub  Imm8u@0, Ax@8
+op:"sub" Imm8u_0, Ax_8 is opcode_9_15=(0xCE>>1) & Ax_8 & Imm8u_0 { Ax_8 = Ax_8 - zext(Imm8u_0); }
 # D4DFh TL  sub  MemR7Imm16@16, Ax@8
+op:"sub" MemR7Imm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xDF; MemR7Imm16 { Ax_8 = Ax_8 - sext(MemR7Imm16); }
 # 4E00h TL  sub  MemR7Imm7s@0, Ax@8
+op:"sub" MemR7Imm7s_0, Ax_8 is opcode_9_15=(0x4E>>1) & Ax_8 & opcode_7_7=0 & MemR7Imm7s_0 { Ax_8 = Ax_8 - sext(MemR7Imm7s_0); }
 # 8E80h TL  sub  MemRn@0, Ax@8 || Rn@0stepZIDS@3
+op:"sub" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x8E>>1) & Ax_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 { Ax_8 = Ax_8 - sext(MemRn_0); build Rn_0_stepZIDS_3; }
 # 8EA0h TL  sub  RegisterP0@0, Ax@8
+op:"sub" Register_P_0, Ax_8 is opcode_9_15=(0x8E>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_P_0 { Ax_8 = Ax_8 - sext(Register_P_0); }
 @ifdef TEAK_LITE_2
 # 8A61h TL2 sub  Ab@3, Bx@8
+op:"sub" Ab_3, Bx_8 is opcode_9_15=(0x8A>>1) & Bx_8 & opcode_5_7=(6>>1) & Ab_3 & opcode_0_2=1 { Bx_8 = Bx_8 - Ab_3; }
 # 8861h TL2 sub  Bx@4, Ax@3
+op:"sub" Bx_4, Ax_3 is opcode_5_15=(0x886>>1) & Bx_4 & Ax_3 & opcode_0_2=1 { Ax_3 = Ax_3 - Bx_4; }
 # 8064h TL2 sub  MemR01@8, sv, Abh@3 || add MemR01@8offsZI@0, sv, Abl@3
 #            || mov MemR45@8, sv || R01@8stepII2@0, R45@8stepII2@1
+op:"sub" MemR01_8, sv, Abh_3 || "add" MemR01_8_offsZI_0, sv_copy, Abl_3 || "mov" MemR45_8, sv_copy_2 || R01_8_stepII2_0, R45_8_stepII2_1
+	is opcode_9_15=(0x80>>1) & MemR01_8 & MemR45_8 & opcode_4_7=6 & Abh_3 & Abl_3 & opcode_2_2=1 & MemR01_8_offsZI_0 & R01_8_stepII2_0 & R45_8_stepII2_1 & sv & sv_copy & sv_copy_2
+unimpl
 # 5DE0h TL2 sub  MemR04@1, sv, Abh@2 || add MemR04@1offsZI@0, sv, Abl@2
 #            || R04@1stepII2@0
+op:"sub" MemR04_1, sv, Abh_2 || "add" MemR04_1_offsZI_0, sv_copy, Abl_2 || R04_1_stepII2_0
+	is opcode_4_15=0x5DE & Abh_2 & Abl_2 & MemR04_1 & MemR04_1_offsZI_0 & R04_1_stepII2_0 & sv & sv_copy
+unimpl
 # 6FC0h TL2 sub  MemR45@2, MemR01@2, Abh@3
 #            || add MemR45@2offsZI@1, MemR01@2offsZI@0, Abl@3
 #            || R01@2stepII2@0, R45@2stepII2@1
+op:"sub" MemR45_2, MemR01_2, Abh_3 || "add" MemR45_2_offsZI_1, MemR01_2_offsZI_0, Abl_3 || R01_2_stepII2_0, R45_2_stepII2_1
+	is opcode_5_15=(0x6FC>>1) & Abh_3 & Abl_3 & MemR45_2 & MemR01_2 & MemR45_2_offsZI_1 & R45_2_stepII2_1 & MemR01_2_offsZI_0 & R01_2_stepII2_0
+unimpl
 # 6FE0h TL2 sub  MemR45@2, MemR01@2, Abh@3
 #            || sub MemR45@2offsZI@1, MemR01@2offsZI@0, Abl@3
 #            || R01@2stepII2@0, R45@2stepII2@1
+op:"sub" MemR45_2, MemR01_2, Abh_3 || "sub" MemR45_2_offsZI_1, MemR01_2_offsZI_0, Abl_3 || R01_2_stepII2_0, R45_2_stepII2_1
+	is opcode_5_15=(0x6FE>>1) & Abh_3 & Abl_3 & MemR45_2 & MemR01_2 & MemR45_2_offsZI_1 & R45_2_stepII2_1 & MemR01_2_offsZI_0 & R01_2_stepII2_0
+unimpl
 # 5D80h TL2 sub  MemR45@2, sv, Abh@3 || add MemR45@2offsZI@1, sv, Abl@3
 #            || mov MemR01@2, sv || R01@2stepII2@0, R45@2stepII2@1
+op:"sub" MemR45_2, sv, Abh_3 || "add" MemR45_2_offsZI_1, sv_copy, Abl_3 || "mov" MemR01_2, sv_copy_2 || R01_2_stepII2_0, R45_2_stepII2_1
+	is opcode_5_15=(0x5D8>>1) & Abh_3 & Abl_3 & MemR45_2 & MemR01_2 & MemR45_2_offsZI_1 & R45_2_stepII2_1 & R01_2_stepII2_0 & sv & sv_copy & sv_copy_2
+unimpl
 # 5DC2h TL2 sub  p0, p1, Ab@2
+# TODO: Should this just be sub  p0, Ab@2? Or how does it differ from sub3?
+op:"sub" p0, p1, Ab_2 is opcode_4_15=0x5DC & Ab_2 & opcode_0_1=2 & p0 & p1 unimpl
 # D4B9h TL2 sub  p1, Ax@8
+op:"sub" p1, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xB9 & p1 { Ax_8 = Ax_8 - sext(p1); }
 # 8FD0h TL2 sub  Px@1, Bx@0
+op:"sub" Px_1, Bx_0 is opcode_2_15=(0x8FD0>>2) & Px_1 & Bx_0 { Bx_0 = Bx_0 - sext(Px_1); }
 # D38Fh TL2 sub  r6, Ax@4
+op:"sub" r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=0xF & r6 { Ax_4 = Ax_4 - sext(r6); }
 # 80C6h TL2 sub3 p0, p1, Ab@10
+op:"sub3" p0, p1, Ab_10 is opcode_12_15=8 & Ab_10 & opcode_0_9=0x0C6 & p0 & p1 unimpl
 # 82C6h TL2 sub3a p0, p1, Ab@10
+op:"sub3a" p0, p1, Ab_10 is opcode_12_15=8 & Ab_10 & opcode_0_9=0x2C6 & p0 & p1 unimpl
 # 83C6h TL2 sub3aa p0, p1, Ab@10
+op:"sub3aa" p0, p1, Ab_10 is opcode_12_15=8 & Ab_10 & opcode_0_9=0x3C6 & p0 & p1 unimpl
 # 5DC3h TL2 suba p0, p1, Ab@2
+op:"suba" p0, p1, Ab_2 is opcode_4_15=0x5DC & Ab_2 & opcode_0_1=3 & p0 & p1 unimpl
 @endif
 # B600h TL  subh MemImm8@0, Ax@8
+op:"subh" MemImm8_0, Ax_8 is opcode_9_15=(0xB6>>1) & Ax_8 & MemImm8_0 unimpl
 # 9680h TL  subh MemRn@0, Ax@8 || Rn@0stepZIDS@3
+op:"subh" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x96>>1) & Ax_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 unimpl
 # 96A0h TL  subh Register@0, Ax@8
+op:"subh" Register_0, Ax_8 is opcode_9_15=(0x96>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0 unimpl
 @ifdef TEAK_LITE_2
 # 5E23h TL2 subh r6, Ax@8
+op:"subh" r6, Ax_8 is opcode_9_15=(0x5E>>2) & Ax_8 & opcode_0_7=0x23 & r6 unimpl
 @endif
 # B800h TL  subl MemImm8@0, Ax@8
+op:"subl" MemImm8_0, Ax_8 is opcode_9_15=(0xB8>>1) & Ax_8 & MemImm8_0 unimpl
 # 9880h TL  subl MemRn@0, Ax@8 || Rn@0stepZIDS@3
+op:"subl" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x98>>1) & Ax_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 unimpl
 # 98A0h TL  subl Register@0, Ax@8
+op:"subl" Register_0, Ax_8 is opcode_9_15=(0x98>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0 unimpl
 @ifdef TEAK_LITE_2
 # 5E22h TL2 subl r6, Ax@8
+op:"subl" r6, Ax_8 is opcode_9_15=(0x5E>>2) & Ax_8 & opcode_0_7=0x22 & r6 unimpl
 @endif
 # EF00h TL  subv Imm16@16, MemImm8@0
+op:"subv" Imm16, MemImm8_0 is opcode_8_15=0xEF & MemImm8_0; Imm16 unimpl
 # 8EE0h TL  subv Imm16@16, MemRn@0 || Rn@0stepZIDS@3
+op:"subv" Imm16, MemRn_0 || Rn_0_stepZIDS_3 is opcode_5_15=(0x8EE>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 unimpl
 # 8FE0h TL  subv Imm16@16, Register@0
+op:"subv" Imm16, Register_0 is opcode_5_15=(0x8FE>>1) & Register_0; Imm16 unimpl
 @ifdef TEAK_LITE_2
 # 47BFh TL2 subv Imm16@16, r6
+op:"subv" Imm16, r6 is opcode_0_15=0x47BF & r6; Imm16 unimpl
 @endif
 # 4980h TL  swap SwapTypes4@0
 # 0020h TL  trap                  ;software interrupt
