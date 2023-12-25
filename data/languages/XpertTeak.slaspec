@@ -747,7 +747,7 @@ CodeAddress16:expanded_imm is expanded_imm
 
 CodeAddress16After:new_imm is expanded_imm [ new_imm = expanded_imm + 1; ]
 {
-	export *[code]:2 expanded_imm;
+	export *[code]:2 new_imm;
 }
 
 RelCodeAddr7_4:full_addr is imm7_4
@@ -3464,6 +3464,7 @@ loopjumpback:LoopJumpBackAddrWrapper is hasloopjumpback=1 & LoopJumpBackAddrWrap
 	build op;
 }
 :^" "^op^loopjumpback is op & hasloopjumpback=1 & loopjumpback {
+	build op;
 	build loopjumpback;
 }
 
