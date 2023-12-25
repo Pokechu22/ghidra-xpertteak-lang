@@ -234,7 +234,7 @@ define token opcode (16)
 	imm5s_0 = (0, 4) signed
 	imm6s_0 = (0, 5) signed
 	imm7s_0 = (0, 6) signed
-	imm7_4  = (4, 10)
+	imm7s_4 = (4, 10) signed
 	imm8_0  = (0, 7)
 	imm8s_0 = (0, 7) signed
 	imm8u_0 = (0, 7)
@@ -750,8 +750,8 @@ CodeAddress16After:new_imm is expanded_imm [ new_imm = expanded_imm + 1; ]
 	export *[code]:2 new_imm;
 }
 
-RelCodeAddr7_4:full_addr is imm7_4
-[ full_addr = inst_next + imm7_4; ]  # TODO: inst_next or inst_start?
+RelCodeAddr7_4:full_addr is imm7s_4
+[ full_addr = inst_next + imm7s_4; ]  # TODO: inst_next or inst_start?
 {
 	export *[code]:2 full_addr;  # TODO: do we want to dereference this?
 }
