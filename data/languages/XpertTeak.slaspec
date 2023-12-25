@@ -2229,7 +2229,7 @@ op:"movd" MemR0123_0, ProgMemR45_2 || R0123_0_stepZIDS_3, R45_2_stepZIDS_5
 op:"movp" ProgMemAxl_5, Register_0 is opcode_6_15=(0x004>>2) & ProgMemAxl_5 & Register_0 { Register_0 = ProgMemAxl_5; }
 @ifdef TEAK_LITE_2
 # 0D40h TL2 movp ProgMemAx@5, Register@0
-op:"movp" ProgMemAx_5, Register_0 is opcode_6_15=(0x064>>2) & ProgMemAx_5 & Register_0 { Register_0 = ProgMemAx_5; }
+op:"movp" ProgMemAx_5, Register_0 is opcode_6_15=(0x0D4>>2) & ProgMemAx_5 & Register_0 { Register_0 = ProgMemAx_5; }
 @endif
 # 0600h TL  movp ProgMemRn@0, MemR0123@5 || R0123@5stepZIDS@7, Rn@0stepZIDS@3
 op:"movp" ProgMemRn_0, MemR0123_5 || R0123_5_stepZIDS_7, Rn_0_stepZIDS_3
@@ -2805,7 +2805,7 @@ op:"push" Register_0 is opcode_5_15=(0x5E40>>5) & Register_0 {
 }
 @ifdef TEAK_LITE_2
 # D7C8h TL2 push Abe@1, Unused1@0
-op:"push" Abe_1 is opcode_2_15=(0xD7C8>>2) & Abe_1 & unused_0_0 {
+op:"push" Abe_1 is opcode_3_15=(0xD7C8>>3) & Abe_1 & unused_0_0 {
 	sp = sp - 1;
 	*[data]:2 sp = Abe_1;
 }
