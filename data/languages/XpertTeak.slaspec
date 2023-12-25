@@ -1165,20 +1165,20 @@ op:"adda" p0, p1, Ab_2 is opcode_3_15=(0x5DC1>>3) & Ab_2 & opcode_0_1=1 & p0 & p
 # B200h TL  addh MemImm8@0, Ax@8
 op:"addh" MemImm8_0, Ax_8 is opcode_9_15=(0xB2>>1) & Ax_8 & MemImm8_0 { Ax_8 = Ax_8 + sext(MemImm8_0); }
 # 9280h TL  addh MemRn@0, Ax@8 || Rn@0stepZIDS@3
-# TODO
+op:"addh" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x92>>1) & Ax_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 { Ax_8 = Ax_8 + sext(MemRn_0); build Rn_0_stepZIDS_3; }
 # 92A0h TL  addh Register@0, Ax@8
 op:"addh" Register_0, Ax_8 is opcode_9_15=(0x92>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0 { Ax_8 = Ax_8 + sext(Register_0); }
 @ifdef TEAK_LITE_2
 # 9464h TL2 addh r6, Ax@0
 op:"addh" r6, Ax_0 is opcode_1_15=(0x9464>>1) & Ax_0 & r6 { Ax_0 = Ax_0 + sext(r6); }
 # 90E0h TL2 addhp MemR0425@2, Px@4, Ax@8 || R0425@2stepII2D2S@0 ;p=ProgMem? Px?
-# TODO
+op:"addhp" MemR0425_2, Px_4, Ax_8 || R0425_2_stepII2D2S_0 is opcode_9_15=(0x90>>1) & Ax_8 & opcode_5_7=(0xE>>1) & Px_4 & MemR0425_2 & R0425_2_stepII2D2S_0 unimpl
 @endif
 # TODO: how does addl differ from add? Does it target the low part of the accumulator?
 # B400h TL  addl MemImm8@0, Ax@8
 op:"addl" MemImm8_0, Ax_8 is opcode_9_15=(0xB4>>1) & Ax_8 & MemImm8_0 { Ax_8 = Ax_8 + sext(MemImm8_0); }
 # 9480h TL  addl MemRn@0, Ax@8 || Rn@0stepZIDS@3
-# TODO
+op:"addl" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 { Ax_8 = Ax_8 + sext(MemRn_0); build Rn_0_stepZIDS_3; }
 # 94A0h TL  addl Register@0, Ax@8
 op:"addl" Register_0, Ax_8 is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0 { Ax_8 = Ax_8 + sext(Register_0); }
 @ifdef TEAK_LITE_2
@@ -1196,7 +1196,7 @@ op:"addsub" p1, p0, Ab_4 is opcode_6_15=(0x49C>>2) & Ab_4 & opcode_0_3=3 & p1 & 
 # E700h TL  addv Imm16@16, MemImm8@0
 op:"addv" Imm16, MemImm8_0 is opcode_8_15=0xE7 & MemImm8_0; Imm16 { MemImm8_0 = MemImm8_0 + Imm16; }
 # 86E0h TL  addv Imm16@16, MemRn@0 || Rn@0stepZIDS@3
-# TODO
+op:"addv" Imm16, MemRn_0 || Rn_0_stepZIDS_3 is opcode_5_15=(0x86E>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 { MemRn_0 = MemRn_0 + Imm16; build Rn_0_stepZIDS_3; }
 # 87E0h TL  addv Imm16@16, Register@0
 op:"addv" Imm16, Register_0 is opcode_5_15=(0x87E>>1) & Register_0; Imm16 { Register_0 = Register_0 + Imm16; }
 @ifdef TEAK_LITE_2
@@ -1217,7 +1217,7 @@ op:"and" MemR7Imm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xD9; Mem
 # 4200h TL  and  MemR7Imm7s@0, Ax@8
 op:"and" MemR7Imm7s_0, Ax_8 is opcode_9_15=(0x42>>1) & Ax_8 & opcode_7_7=0 & MemR7Imm7s_0 { Ax_8 = Ax_8 & zext(MemR7Imm7s_0); }
 # 8280h TL  and  MemRn@0, Ax@8 || Rn@0stepZIDS@3
-# TODO
+op:"and" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x82>>1) & Ax_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 { Ax_8 = Ax_8 & zext(MemRn_0); build Rn_0_stepZIDS_3; }
 # 82A0h TL  and  RegisterP0@0, Ax@8
 op:"and" Register_P_0, Ax_8 is opcode_9_15=(0x82>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_P_0 { Ax_8 = Ax_8 & zext(Register_P_0); }
 @ifdef TEAK_LITE_2
