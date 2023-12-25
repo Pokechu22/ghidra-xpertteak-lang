@@ -2011,7 +2011,7 @@ op:"mov" ArArp_0, MemR04_8 || R04_8_stepII2_5 is opcode_9_15=(0xD4>>1) & MemR04_
 # 5F50h TL2 mov  ArArpSttMod@0, MemR7Imm16@16
 op:"mov" ArArpSttMod_0, MemR7Imm16 is opcode_4_15=0x5F5 & ArArpSttMod_0; MemR7Imm16 { MemR7Imm16 = ArArpSttMod_0; }
 # 886Bh TL2 mov  Ax@8, pc
-op:"mov" Ax_8, pc is opcode_9_15=(0x88>>1) & Ax_8 & opcode_0_7=0x6B & pc { goto Ax_8; }
+op:"mov" Ax_8, pc is opcode_9_15=(0x88>>1) & Ax_8 & opcode_0_7=0x6B & pc { goto [Ax_8]; }
 # 8C60h TL2 mov  Axh@4, MemR4567@8 || mov MemR0123@8, Axh@4
 #            || R0123@8stepII2D2S@0, R4567@8stepII2D2S@2
 op:"mov" Axh_4, MemR4567_8 || "mov" MemR0123_8, Axh_4_copy || R0123_8_stepII2D2S_0, R4567_8_stepII2D2S_2
@@ -2053,7 +2053,7 @@ op:"mov" Axh_6, MemR4567_4 || "movr" MemR0123_4, Axh_6_copy || R0123_4_stepII2D2
 	build R4567_4_stepII2D2S_2;
 }
 # 8863h TL2 mov  Bx@8, pc
-op:"mov" Bx_8, pc is opcode_9_15=(0x88>>1) & Bx_8 & opcode_0_7=0x63 & pc { goto Bx_8; }
+op:"mov" Bx_8, pc is opcode_9_15=(0x88>>1) & Bx_8 & opcode_0_7=0x63 & pc { goto [Bx_8]; }
 # 0008h TL2 mov  Imm16@16, ArArp@0
 op:"mov" Imm16, ArArp_0 is opcode_3_15=(0x0008>>3) & ArArp_0; Imm16 { ArArp_0 = Imm16; }
 # 0023h TL2 mov  Imm16@16, r6
