@@ -1920,7 +1920,7 @@ op:"mov" MemR7Imm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0x98; Mem
 # D880h TL  mov  MemR7Imm7s@0, Ax@8
 op:"mov" MemR7Imm7s_0, Ax_8 is opcode_9_15=(0xD8>>1) & Ax_8 & opcode_7_7=1 & MemR7Imm7s_0 { Ax_8 = sext(MemR7Imm7s_0); }
 # 98C0h TL  mov  MemRn@0, Bx@8 || Rn@0stepZIDS@3
-op:"mov" MemRn_0, Bx_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0xD8>>1) & Bx_8 & opcode_5_7=(0xC>>1) & Rn_0_stepZIDS_3 & MemRn_0 { Bx_8 = sext(MemRn_0); build Rn_0_stepZIDS_3; }
+op:"mov" MemRn_0, Bx_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x98>>1) & Bx_8 & opcode_5_7=(0xC>>1) & Rn_0_stepZIDS_3 & MemRn_0 { Bx_8 = sext(MemRn_0); build Rn_0_stepZIDS_3; }
 # 1C00h TL  mov  MemRn@0, Register@5 || Rn@0stepZIDS@3
 op:"mov" MemRn_0, Register_5 || Rn_0_stepZIDS_3 is opcode_10_15=(0x1C>>2) & Register_5 & Rn_0_stepZIDS_3 & MemRn_0 { Register_5 = MemRn_0; build Rn_0_stepZIDS_3; }
 # 47E0h TL  mov  MemSp, Register@0
@@ -2264,7 +2264,7 @@ op:"movr" r6, Ax_3 is opcode_4_15=0x896 & Ax_3 & opcode_0_2=1 & r6 { Ax_3 = zext
 @endif
 # 6300h TL  movs Implied sv, MemImm8@0, Ab@11
 # TODO: what does this do and what does sv do?
-op:"movs" MemImm8_0, Ab_11 is opcode_12_15=6 & Ab_11 & opcode_8_10=3 & MemImm8_0 { Ab_11 = zext(MemImm8_0); }
+op:"movs" MemImm8_0, Ab_11 is opcode_13_15=(6>>1) & Ab_11 & opcode_8_10=3 & MemImm8_0 { Ab_11 = zext(MemImm8_0); }
 # 0180h TL  movs Implied sv, MemRn@0, Ab@5 || Rn@0stepZIDS@3
 op:"movs" MemRn_0, Ab_5 || Rn_0_stepZIDS_3 is opcode_7_15=(0x018>>3) & Ab_5 & Rn_0_stepZIDS_3 & MemRn_0 { Ab_5 = zext(MemRn_0); build Rn_0_stepZIDS_3; }
 # 0100h TL  movs Implied sv, RegisterP0@0, Ab@5
@@ -3383,14 +3383,14 @@ op:"tst4b" a0l, MemR0425_10 || R0425_10_stepII2D2S_8 is opcode_12_15=8 & MemR042
 op:"tst4b" a0l, MemR0425_2, Ax_4 || R0425_2_stepII2D2S_0 is opcode_5_15=(0x478>>1) & Ax_4 & MemR0425_2 & R0425_2_stepII2D2S_0 & a0l unimpl
 @endif
 # F000h TL  tstb NoReverse, Implied Not MemImm8@0, Imm4bitno@8
-op:"tstb" MemImm8_0, Imm4bitno_8 is opcode_11_15=0xF & Imm4bitno_8 & MemImm8_0 unimpl
+op:"tstb" MemImm8_0, Imm4bitno_8 is opcode_12_15=0xF & Imm4bitno_8 & MemImm8_0 unimpl
 # 9020h TL  tstb NoReverse, Implied Not MemRn@0, Imm4bitno@8 || Rn@0stepZIDS@3
-op:"tstb" MemRn_0, Imm4bitno_8 || Rn_0_stepZIDS_3 is opcode_11_15=9 & Imm4bitno_8 & opcode_5_7=(2>>1) & Rn_0_stepZIDS_3 & MemRn_0 unimpl
+op:"tstb" MemRn_0, Imm4bitno_8 || Rn_0_stepZIDS_3 is opcode_12_15=9 & Imm4bitno_8 & opcode_5_7=(2>>1) & Rn_0_stepZIDS_3 & MemRn_0 unimpl
 # 9000h TL  tstb NoReverse, Implied Not Register@0, Imm4bitno@8
-op:"tstb" Register_0, Imm4bitno_8 is opcode_11_15=9 & Imm4bitno_8 & opcode_5_7=0 & Register_0 unimpl
+op:"tstb" Register_0, Imm4bitno_8 is opcode_12_15=9 & Imm4bitno_8 & opcode_5_7=0 & Register_0 unimpl
 @ifdef TEAK_LITE_2
 # 9018h TL2 tstb NoReverse, Implied Not r6, Imm4bitno@8  ;override tstb a0,Imm4
-op:"tstb" r6, Imm4bitno_8 is opcode_11_15=9 & Imm4bitno_8 & opcode_0_7=0x18 & r6 unimpl
+op:"tstb" r6, Imm4bitno_8 is opcode_12_15=9 & Imm4bitno_8 & opcode_0_7=0x18 & r6 unimpl
 # 0028h TL2 tstb NoReverse, Implied Not SttMod@0, Imm4bitno@16, Unused12@20
 op:"tstb" SttMod_0, Imm4bitno_16 is opcode_3_15=(0x0028>>3) & SttMod_0; Imm4bitno_16 & expanded_unused_20_31 unimpl
 # 5F45h TL2 vtrclr vtr0         ;vtr0=0           ;for Viterbi decoding...
