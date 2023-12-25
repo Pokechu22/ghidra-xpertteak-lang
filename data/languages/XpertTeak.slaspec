@@ -922,10 +922,10 @@ R0425_10_stepII2D2S_8:R0425_10+2      is R0425_10 & stepII2D2S_8=1          { R0
 R0425_10_stepII2D2S_8:R0425_10-2      is R0425_10 & stepII2D2S_8=2          { R0425_10 = R0425_10 - 2; }
 R0425_10_stepII2D2S_8:R0425_10+stepi0 is R0425_10 & stepII2D2S_8=3 & stepi0 { R0425_10 = R0425_10 + stepi0; }
 
-MemR4567_4:  $(OB)MemR4567_4$(CB)  is MemR4567_4  { export *[data]:2 MemR4567_4; }
-MemR4567_5:  $(OB)MemR4567_5$(CB)  is MemR4567_5  { export *[data]:2 MemR4567_5; }
-MemR4567_8:  $(OB)MemR4567_8$(CB)  is MemR4567_8  { export *[data]:2 MemR4567_8; }
-MemR4567_10: $(OB)MemR4567_10$(CB) is MemR4567_10 { export *[data]:2 MemR4567_10; }
+MemR4567_4:  $(OB)R4567_4$(CB)  is R4567_4  { export *[data]:2 R4567_4; }
+MemR4567_5:  $(OB)R4567_5$(CB)  is R4567_5  { export *[data]:2 R4567_5; }
+MemR4567_8:  $(OB)R4567_8$(CB)  is R4567_8  { export *[data]:2 R4567_8; }
+MemR4567_10: $(OB)R4567_10$(CB) is R4567_10 { export *[data]:2 R4567_10; }
 
 # TODO: brackets; stepi0 or stepj0?
 MemR4567_5_modrstepII2D2S0_3:MemR4567_5+       is MemR4567_5 & modrstepII2D2S0_3=0 & R4567_5          { R4567_5 = R4567_5 + 1; }
