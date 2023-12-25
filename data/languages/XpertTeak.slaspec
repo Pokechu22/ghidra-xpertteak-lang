@@ -1153,13 +1153,13 @@ op:"add" Px_1, Bx_0 is opcode_2_15=(0x5DF8>>2) & Px_1 & Bx_0 { Bx_0 = Bx_0 + zex
 op:"add" r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=0xB & r6 { Ax_4 = Ax_4 + sext(r6); }
 # 4590h TL2 add3 p0, p1, Ab@2
 # TODO: what do these actually do?
-op:"add3" p0, p1, Ab_2 is opcode_3_15=(0x4590>>3) & Ab_2 & opcode_0_1=0 & p0 & p1 unimpl
+op:"add3" p0, p1, Ab_2 is opcode_4_15=0x459 & Ab_2 & opcode_0_1=0 & p0 & p1 unimpl
 # 4592h TL2 add3a p0, p1, Ab@2
-op:"add3a" p0, p1, Ab_2 is opcode_3_15=(0x4592>>3) & Ab_2 & opcode_0_1=2 & p0 & p1 unimpl
+op:"add3a" p0, p1, Ab_2 is opcode_4_15=0x459 & Ab_2 & opcode_0_1=2 & p0 & p1 unimpl
 # 4593h TL2 add3aa p0, p1, Ab@2
-op:"add3aa" p0, p1, Ab_2 is opcode_3_15=(0x4593>>3) & Ab_2 & opcode_0_1=3 & p0 & p1 unimpl
+op:"add3aa" p0, p1, Ab_2 is opcode_4_15=0x459 & Ab_2 & opcode_0_1=3 & p0 & p1 unimpl
 # 5DC1h TL2 adda p0, p1, Ab@2
-op:"adda" p0, p1, Ab_2 is opcode_3_15=(0x5DC1>>3) & Ab_2 & opcode_0_1=1 & p0 & p1 unimpl
+op:"adda" p0, p1, Ab_2 is opcode_4_15=0x5DC & Ab_2 & opcode_0_1=1 & p0 & p1 unimpl
 @endif
 # TODO: how does addh differ from add? Does it target the high part of the accumulator?
 # B200h TL  addh MemImm8@0, Ax@8
