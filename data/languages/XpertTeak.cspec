@@ -7,7 +7,7 @@
   </global>
   <stackpointer register="sp" space="code" growth="negative"/>
   <default_proto>
-    <prototype name="__stdcall" extrapop="0" stackshift="0">
+    <prototype name="__stdcall" extrapop="0" stackshift="0" strategy="register">
       <input>
         <!-- This is a guess -->
         <!--<pentry minsize="5" maxsize="5">
