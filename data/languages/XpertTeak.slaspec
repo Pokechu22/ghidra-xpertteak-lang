@@ -3,9 +3,9 @@
 # untested with this disabled, probably incorrect currently
 @define TEAK_LITE_2
 
-# Directly mutate the sr register instead of a set of fake registers
+# Directly mutate the st0 register instead of a set of fake registers
 # The fake registers provide better decompilation
-#@define USE_REAL_SR_REGISTER
+#@define USE_REAL_ST0_REGISTER
 
 @define NOCASH_SYNTAX
 
@@ -121,43 +121,36 @@ CurLC: is loopstackdepth=7 { export lc_6; }
 CurLC: is loopstackdepth=8 { export lc_7; }
 
 # Regular and hacky implementation of status register
-@ifdef USE_REAL_SR_REGISTER
-@define SR_CARRY            "sr[0,1]"
-@define SR_OVERFLOW         "sr[1,1]"
-@define SR_ARITH_ZERO       "sr[2,1]"
-@define SR_SIGN             "sr[3,1]"
-@define SR_OVER_32          "sr[4,1]"
-@define SR_TOP2BITS         "sr[5,1]"
-@define SR_LOGIC_ZERO       "sr[6,1]"
-@define SR_OVERFLOW_STICKY  "sr[7,1]"
-@define SR_100              "sr[8,1]"
-@define SR_INT_ENABLE       "sr[9,1]"
-@define SR_400              "sr[10,1]"
-@define SR_EXT_INT_ENABLE   "sr[11,1]"
-@define SR_1000             "sr[12,1]"
-@define SR_MUL_MODIFY       "sr[13,1]"
-@define SR_40_MODE          "sr[14,1]"
-@define SR_MUL_UNSIGNED     "sr[15,1]"
+@ifdef USE_REAL_ST0_REGISTER
+# TODO: st0 and stt0 both exist, what to do with that?
+@define FLAG_R "st0[4,1]" # stt1[4,1]
+# TODO: how do we handle writes to this?
+@define FLAG_L "st0[5,1]" # stt0[0,1] | stt0[1,1]
+@define FLAG_LM "stt0[0,0]"
+@define FLAG_VL "stt0[1,0]"
+@define FLAG_E "st0[6,1]" # stt0[2,1]
+@define FLAG_C "st0[7,1]" # stt0[3,1]
+@define FLAG_V "st0[8,1]" # stt0[4,1]
+@define FLAG_N "st0[9,1]" # stt0[5,1]
+@define FLAG_M "st0[10,1]" # stt0[6,1]
+@define FLAG_Z "st0[11,1]" # stt0[7,1]
+@define FLAG_C1 "stt0[11,1]"
 @else
 define space hack_register type=ram_space size=1;
-define hack_register offset=0 size=1 [ SR_CARRY_ SR_OVERFLOW_ SR_ARITH_ZERO_ SR_SIGN_ SR_OVER_32_ SR_TOP2BITS_ SR_LOGIC_ZERO_ SR_OVERFLOW_STICKY_ SR_100_ SR_INT_ENABLE_ SR_400_ SR_EXT_INT_ENABLE_ SR_1000_ SR_MUL_MODIFY_ SR_40_MODE_ SR_MUL_UNSIGNED_ ];
+define hack_register offset=0 size=1 [ FLAG_R_ FLAG_LM_ FLAG_VL_ FLAG_E_ FLAG_C_ FLAG_V_ FLAG_N_ FLAG_M_ FLAG_Z_ FLAG_C1_ ];
 # Note: forcing to only a single bit.  Also, we need to use macros in both cases for consistent syntax.
-@define SR_CARRY "SR_CARRY_[0,1]"
-@define SR_OVERFLOW "SR_OVERFLOW_[0,1]"
-@define SR_ARITH_ZERO "SR_ARITH_ZERO_[0,1]"
-@define SR_SIGN "SR_SIGN_[0,1]"
-@define SR_OVER_32 "SR_OVER_32_[0,1]"
-@define SR_TOP2BITS "SR_TOP2BITS_[0,1]"
-@define SR_LOGIC_ZERO "SR_LOGIC_ZERO_[0,1]"
-@define SR_OVERFLOW_STICKY "SR_OVERFLOW_STICKY_[0,1]"
-@define SR_100 "SR_100_[0,1]"
-@define SR_INT_ENABLE "SR_INT_ENABLE_[0,1]"
-@define SR_400 "SR_400_[0,1]"
-@define SR_EXT_INT_ENABLE "SR_EXT_INT_ENABLE_[0,1]"
-@define SR_1000 "SR_1000_[0,1]"
-@define SR_MUL_MODIFY "SR_MUL_MODIFY_[0,1]"
-@define SR_40_MODE "SR_40_MODE_[0,1]"
-@define SR_MUL_UNSIGNED "SR_MUL_UNSIGNED_[0,1]"
+@define FLAG_R "FLAG_R_[0,1]"
+# TODO: how do we handle writes to this?
+@define FLAG_L "(FLAG_LM_[0,1] | FLAG_VL_[0,1])"
+@define FLAG_LM "FLAG_LM_[0,1]"
+@define FLAG_VL "FLAG_VL_[0,1]"
+@define FLAG_E "FLAG_E_[0,1]"
+@define FLAG_C "FLAG_C_[0,1]"
+@define FLAG_V "FLAG_V_[0,1]"
+@define FLAG_N "FLAG_N_[0,1]"
+@define FLAG_M "FLAG_M_[0,1]"
+@define FLAG_Z "FLAG_Z_[0,1]"
+@define FLAG_C1 "FLAG_C1_[0,1]"
 @endif
 
 define token opcode (16)
@@ -574,39 +567,40 @@ Axh_4_copy:Axh_4 is Axh_4 {}
 Axh_6_copy:Axh_6 is Axh_6 {}
 
 # Always
-# Excluded because this makes analysis messy - instead specialze every instruction that uses conditions
+# Excluded because this makes analysis messy - instead specialize every instruction that uses conditions
 #Cond_0:"true" is cond_0=0x0 { local always:1 = 1; export always; }
 # Equal to zero             (Z=1)
-define pcodeop tmp_maybe; # TODO; using unimpl for all of these gives errors due to no exports
-Cond_0:"eq"   is cond_0=0x1 { local maybe:1 = tmp_maybe(); export maybe; }
+Cond_0:"eq"   is cond_0=0x1 { local c:1 = $(FLAG_Z); export c; }
 # Not equal to zero         (Z=0)
-Cond_0:"neq"  is cond_0=0x2 { local maybe:1 = tmp_maybe(); export maybe; }
+Cond_0:"neq"  is cond_0=0x2 { local c:1 = !$(FLAG_Z); export c; }
 # Greater than zero         (M=0 and Z=0)
-Cond_0:"gt"   is cond_0=0x3 { local maybe:1 = tmp_maybe(); export maybe; }
+Cond_0:"gt"   is cond_0=0x3 { local c:1 = !$(FLAG_M) && !$(FLAG_Z); export c; }
 # Greater or equal to zero  (M=0)
-Cond_0:"ge"   is cond_0=0x4 { local maybe:1 = tmp_maybe(); export maybe; }
+Cond_0:"ge"   is cond_0=0x4 { local c:1 = !$(FLAG_M); export c; }
 # Less than zero            (M=1)
-Cond_0:"lt"   is cond_0=0x5 { local maybe:1 = tmp_maybe(); export maybe; }
+Cond_0:"lt"   is cond_0=0x5 { local c:1 = $(FLAG_M); export c; }
 # Less or equal to zero     (M=1 or Z=1)
-Cond_0:"le"   is cond_0=0x6 { local maybe:1 = tmp_maybe(); export maybe; }
+Cond_0:"le"   is cond_0=0x6 { local c:1 = $(FLAG_M) || $(FLAG_Z); export c; }
 # Normalize flag is cleared (N=0)
-Cond_0:"nn"   is cond_0=0x7 { local maybe:1 = tmp_maybe(); export maybe; }
+Cond_0:"nn"   is cond_0=0x7 { local c:1 = !$(FLAG_N); export c; }
 # Carry flag is set         (C=1)
-Cond_0:"c"    is cond_0=0x8 { local maybe:1 = tmp_maybe(); export maybe; }
+Cond_0:"c"    is cond_0=0x8 { local c:1 = $(FLAG_C); export c; }
 # Overflow flag is set      (V=1)
-Cond_0:"v"    is cond_0=0x9 { local maybe:1 = tmp_maybe(); export maybe; }
+Cond_0:"v"    is cond_0=0x9 { local c:1 = $(FLAG_V); export c; }
 # Extension flag is set     (E=1)
-Cond_0:"e"    is cond_0=0xa { local maybe:1 = tmp_maybe(); export maybe; }
+Cond_0:"e"    is cond_0=0xa { local c:1 = $(FLAG_E); export c; }
 # Limit flag is set         (L=1)
-Cond_0:"l"    is cond_0=0xb { local maybe:1 = tmp_maybe(); export maybe; }
+Cond_0:"l"    is cond_0=0xb { local c:1 = $(FLAG_L); export c; }
 # R flag is cleared         (R=0)
-Cond_0:"nr"   is cond_0=0xc { local maybe:1 = tmp_maybe(); export maybe; }
+Cond_0:"nr"   is cond_0=0xc { local c:1 = !$(FLAG_L); export c; }
 # Input user pin 0 cleared  (IUSER0=0)
-Cond_0:"niu0" is cond_0=0xd { local maybe:1 = tmp_maybe(); export maybe; }
+define pcodeop read_user_input_0;
+Cond_0:"niu0" is cond_0=0xd { local in:1 = read_user_input_0(); local c:1 = !in; export c; }
 # Input user pin 0 set      (IUSER0=1)
-Cond_0:"iu0"  is cond_0=0xe { local maybe:1 = tmp_maybe(); export maybe; }
+Cond_0:"iu0"  is cond_0=0xe { local c:1 = read_user_input_0(); export c; }
+define pcodeop read_user_input_1;
 # Input user pin 1 set      (IUSER1=1)
-Cond_0:"iu1"  is cond_0=0xf { local maybe:1 = tmp_maybe(); export maybe; }
+Cond_0:"iu1"  is cond_0=0xf { local c:1 = read_user_input_1(); export c; }
 
 MemRn_0:$(OB)Rn_0$(CB) is Rn_0 { export *[data]:2 Rn_0; }
 MemSp:$(OB)sp$(CB) is sp { export *[data]:2 sp; }
