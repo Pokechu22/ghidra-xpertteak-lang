@@ -463,117 +463,66 @@ define token expanded (16)
 # uses Register_0 when reading in addl (94A0h) and addh (92A0h) but Register_0 in add (86A0h).
 # I've used p0h for all reads and p0 for writes here (I don't think teakra's disassembler uses p0h
 # at all for Register_0).
-# TODO: Surely there's a nicer way to write something like this? (attach variables doesn't work
-# because we need specific actions in some cases)
-Register_0_Read:r0 is Register_0_=0x00 & r0 { export r0; }
-Register_5_Read:r0 is Register_5_=0x00 & r0 { export r0; }
-Register_0_Read:r1 is Register_0_=0x01 & r1 { export r1; }
-Register_5_Read:r1 is Register_5_=0x01 & r1 { export r1; }
-Register_0_Read:r2 is Register_0_=0x02 & r2 { export r2; }
-Register_5_Read:r2 is Register_5_=0x02 & r2 { export r2; }
-Register_0_Read:r3 is Register_0_=0x03 & r3 { export r3; }
-Register_5_Read:r3 is Register_5_=0x03 & r3 { export r3; }
-Register_0_Read:r4 is Register_0_=0x04 & r4 { export r4; }
-Register_5_Read:r4 is Register_5_=0x04 & r4 { export r4; }
-Register_0_Read:r5 is Register_0_=0x05 & r5 { export r5; }
-Register_5_Read:r5 is Register_5_=0x05 & r5 { export r5; }
-Register_0_Read:r6 is Register_0_=0x06 & r6 { export r6; }
-Register_5_Read:r6 is Register_5_=0x06 & r6 { export r6; }
-Register_0_Read:r7 is Register_0_=0x07 & r7 { export r7; }
-Register_5_Read:r7 is Register_5_=0x07 & r7 { export r7; }
+attach variables [ Register_0_ Register_5_ ] [
+       r0 r1 r2 r3
+       r4 r5 r7 y0 # NOTE: no r6
+       # 08
+       st0 st1 st2 _ # TODO: might need special logic here for st0/st1/st2 too
+       _ sp cfgi cfgj
+       # 10
+       _ _ _ _
+       _ _ _ _
+       # 18
+       _ _ _ _
+       _ _ _ sv
+];
 
-Register_0_Read:st0 is Register_0_=0x08 & st0 { export st0; }
-Register_5_Read:st0 is Register_5_=0x08 & st0 { export st0; }
-Register_0_Read:st1 is Register_0_=0x09 & st1 { export st1; }
-Register_5_Read:st1 is Register_5_=0x09 & st1 { export st1; }
-Register_0_Read:st2 is Register_0_=0x0A & st2 { export st2; }
-Register_5_Read:st2 is Register_5_=0x0A & st2 { export st2; }
+# For registers in the "attach variables" statement above that don't need any special behavior:
+Register_0_Read_Impl:Register_0_ is Register_0_ { export Register_0_; }
+Register_5_Read_Impl:Register_5_ is Register_5_ { export Register_5_; }
+Register_0_Write:Register_0_ is Register_0_ { export Register_0_; }
+Register_5_Write:Register_5_ is Register_5_ { export Register_5_; }
+Register_0_Write_After:Register_0_ is Register_0_ {}
+Register_5_Write_After:Register_5_ is Register_5_ {}
+
+# ... and the rest, which are a lot messier
+
 Register_0_Read:p0h is Register_0_=0x0B & p0h { export p0h; }
 Register_5_Read:p0h is Register_5_=0x0B & p0h { export p0h; }
-Register_0_Read:pc is Register_0_=0x0C & pc { export pc; }
-Register_5_Read:pc is Register_5_=0x0C & pc { export pc; }
-Register_0_Read:sp is Register_0_=0x0D & sp { export sp; }
-Register_5_Read:sp is Register_5_=0x0D & sp { export sp; }
-Register_0_Read:cfgi is Register_0_=0x0E & cfgi { export cfgi; }
-Register_5_Read:cfgi is Register_5_=0x0E & cfgi { export cfgi; }
-Register_0_Read:cfgj is Register_0_=0x0F & cfgj { export cfgj; }
-Register_5_Read:cfgj is Register_5_=0x0F & cfgj { export cfgj; }
+Register_0_Write:p0 is Register_0_=0x0B & p0 { export p0h; }
+Register_5_Write:p0 is Register_5_=0x0B & p0 { export p0h; }
+Register_0_Write_After:p0 is Register_0_=0x0B & p0 { p0 = sext(p0h) << 16; }
+Register_5_Write_After:p0 is Register_5_=0x0B & p0 { p0 = sext(p0h) << 16; }
 
-Register_0_Read:b0h is Register_0_=0x10 & b0h { export b0h; }
-Register_5_Read:b0h is Register_5_=0x10 & b0h { export b0h; }
-Register_0_Read:b1h is Register_0_=0x11 & b1h { export b1h; }
-Register_5_Read:b1h is Register_5_=0x11 & b1h { export b1h; }
-Register_0_Read:b0l is Register_0_=0x12 & b0l { export b0l; }
-Register_5_Read:b0l is Register_5_=0x12 & b0l { export b0l; }
-Register_0_Read:b1l is Register_0_=0x13 & b1l { export b1l; }
-Register_5_Read:b1l is Register_5_=0x13 & b1l { export b1l; }
+# Marked as UNREACHABLE() in teakra, even though it definitely exists...
+Register_0_Read:pc is Register_0_=0x0C & pc unimpl
+Register_5_Read:pc is Register_5_=0x0C & pc unimpl
+Register_0_Write:pc is Register_0_=0x0C & pc unimpl
+Register_5_Write:pc is Register_5_=0x0C & pc unimpl
+Register_0_Write_After:pc is Register_0_=0x0C & pc unimpl
+Register_5_Write_After:pc is Register_5_=0x0C & pc unimpl
 
-define pcodeop read_ext0;
-Register_0_Read:ext0 is Register_0_=0x14 & ext0 { ext0 = read_ext0(); export ext0; }
-Register_5_Read:ext0 is Register_5_=0x14 & ext0 { ext0 = read_ext0(); export ext0; }
-define pcodeop read_ext1;
-Register_0_Read:ext1 is Register_0_=0x15 & ext1 { ext1 = read_ext1(); export ext1; }
-Register_5_Read:ext1 is Register_5_=0x15 & ext1 { ext1 = read_ext1(); export ext1; }
-define pcodeop read_ext2;
-Register_0_Read:ext2 is Register_0_=0x16 & ext2 { ext2 = read_ext2(); export ext2; }
-Register_5_Read:ext2 is Register_5_=0x16 & ext2 { ext2 = read_ext2(); export ext2; }
-define pcodeop read_ext3;
-Register_0_Read:ext3 is Register_0_=0x17 & ext3 { ext3 = read_ext3(); export ext3; }
-Register_5_Read:ext3 is Register_5_=0x17 & ext3 { ext3 = read_ext3(); export ext3; }
+# Reads from [ab][01][lh] experience saturation on some instructions.
+# Writes will saturate on ALL instructions.
 
-# NOTE: these two never saturate
-Register_0_Read:a0 is Register_0_=0x18 & a0 & a0l { export a0l; }
-Register_5_Read:a0 is Register_5_=0x18 & a0 & a0l { export a0l; }
-Register_0_Read:a1 is Register_0_=0x19 & a1 & a1l { export a1l; }
-Register_5_Read:a1 is Register_5_=0x19 & a1 & a1l { export a1l; }
-# NOTE: these *sometimes* saturate... but only sometimes.
-Register_0_Read:a0l is Register_0_=0x1A & a0l { export a0l; }
-Register_5_Read:a0l is Register_5_=0x1A & a0l { export a0l; }
-Register_0_Read:a1l is Register_0_=0x1B & a1l { export a1l; }
-Register_5_Read:a1l is Register_5_=0x1B & a1l { export a1l; }
-Register_0_Read:a0h is Register_0_=0x1C & a0h { export a0h; }
-Register_5_Read:a0h is Register_5_=0x1C & a0h { export a0h; }
-Register_0_Read:a1h is Register_0_=0x1D & a1h { export a1h; }
-Register_5_Read:a1h is Register_5_=0x1D & a1h { export a1h; }
+Register_0_Read_No_Saturate:b0h is Register_0_=0x10 & b0h { export b0h; }
+Register_5_Read_No_Saturate:b0h is Register_5_=0x10 & b0h { export b0h; }
+Register_0_Read_No_Saturate:b1h is Register_0_=0x11 & b1h { export b1h; }
+Register_5_Read_No_Saturate:b1h is Register_5_=0x11 & b1h { export b1h; }
+Register_0_Read_No_Saturate:b0l is Register_0_=0x12 & b0l { export b0l; }
+Register_5_Read_No_Saturate:b0l is Register_5_=0x12 & b0l { export b0l; }
+Register_0_Read_No_Saturate:b1l is Register_0_=0x13 & b1l { export b1l; }
+Register_5_Read_No_Saturate:b1l is Register_5_=0x13 & b1l { export b1l; }
 
-Register_0_Read:CurLC is Register_0_=0x1E & CurLC { export CurLC; }
-Register_5_Read:CurLC is Register_5_=0x1E & CurLC { export CurLC; }
-Register_0_Read:sv is Register_0_=0x1F & sv { export sv; }
-Register_5_Read:sv is Register_5_=0x1F & sv { export sv; }
-
-Register_0_Write:r0 is Register_0_=0x00 & r0 { export r0; }
-Register_5_Write:r0 is Register_5_=0x00 & r0 { export r0; }
-Register_0_Write:r1 is Register_0_=0x01 & r1 { export r1; }
-Register_5_Write:r1 is Register_5_=0x01 & r1 { export r1; }
-Register_0_Write:r2 is Register_0_=0x02 & r2 { export r2; }
-Register_5_Write:r2 is Register_5_=0x02 & r2 { export r2; }
-Register_0_Write:r3 is Register_0_=0x03 & r3 { export r3; }
-Register_5_Write:r3 is Register_5_=0x03 & r3 { export r3; }
-Register_0_Write:r4 is Register_0_=0x04 & r4 { export r4; }
-Register_5_Write:r4 is Register_5_=0x04 & r4 { export r4; }
-Register_0_Write:r5 is Register_0_=0x05 & r5 { export r5; }
-Register_5_Write:r5 is Register_5_=0x05 & r5 { export r5; }
-Register_0_Write:r6 is Register_0_=0x06 & r6 { export r6; }
-Register_5_Write:r6 is Register_5_=0x06 & r6 { export r6; }
-Register_0_Write:r7 is Register_0_=0x07 & r7 { export r7; }
-Register_5_Write:r7 is Register_5_=0x07 & r7 { export r7; }
-
-Register_0_Write:st0 is Register_0_=0x08 & st0 { export st0; }
-Register_5_Write:st0 is Register_5_=0x08 & st0 { export st0; }
-Register_0_Write:st1 is Register_0_=0x09 & st1 { export st1; }
-Register_5_Write:st1 is Register_5_=0x09 & st1 { export st1; }
-Register_0_Write:st2 is Register_0_=0x0A & st2 { export st2; }
-Register_5_Write:st2 is Register_5_=0x0A & st2 { export st2; }
-Register_0_Write:p0h is Register_0_=0x0B & p0h { export p0h; }
-Register_5_Write:p0h is Register_5_=0x0B & p0h { export p0h; }
-Register_0_Write:pc is Register_0_=0x0C & pc { export pc; }
-Register_5_Write:pc is Register_5_=0x0C & pc { export pc; }
-Register_0_Write:sp is Register_0_=0x0D & sp { export sp; }
-Register_5_Write:sp is Register_5_=0x0D & sp { export sp; }
-Register_0_Write:cfgi is Register_0_=0x0E & cfgi { export cfgi; }
-Register_5_Write:cfgi is Register_5_=0x0E & cfgi { export cfgi; }
-Register_0_Write:cfgj is Register_0_=0x0F & cfgj { export cfgj; }
-Register_5_Write:cfgj is Register_5_=0x0F & cfgj { export cfgj; }
+# TODO: actually conditionally saturate
+Register_0_Read_Saturate:b0h is Register_0_=0x10 & b0h { export b0h; }
+Register_5_Read_Saturate:b0h is Register_5_=0x10 & b0h { export b0h; }
+Register_0_Read_Saturate:b1h is Register_0_=0x11 & b1h { export b1h; }
+Register_5_Read_Saturate:b1h is Register_5_=0x11 & b1h { export b1h; }
+Register_0_Read_Saturate:b0l is Register_0_=0x12 & b0l { export b0l; }
+Register_5_Read_Saturate:b0l is Register_5_=0x12 & b0l { export b0l; }
+Register_0_Read_Saturate:b1l is Register_0_=0x13 & b1l { export b1l; }
+Register_5_Read_Saturate:b1l is Register_5_=0x13 & b1l { export b1l; }
 
 Register_0_Write:b0h is Register_0_=0x10 & b0h { export b0h; }
 Register_5_Write:b0h is Register_5_=0x10 & b0h { export b0h; }
@@ -584,38 +533,115 @@ Register_5_Write:b0l is Register_5_=0x12 & b0l { export b0l; }
 Register_0_Write:b1l is Register_0_=0x13 & b1l { export b1l; }
 Register_5_Write:b1l is Register_5_=0x13 & b1l { export b1l; }
 
+Register_0_Write_After:b0h is Register_0_=0x10 & b0h { b0 = sext(b0h) << 16; }
+Register_5_Write_After:b0h is Register_5_=0x10 & b0h { b0 = sext(b0h) << 16; }
+Register_0_Write_After:b1h is Register_0_=0x11 & b1h { b1 = sext(b1h) << 16; }
+Register_5_Write_After:b1h is Register_5_=0x11 & b1h { b1 = sext(b1h) << 16; }
+Register_0_Write_After:b0l is Register_0_=0x12 & b0l { b0 = zext(b0l); }
+Register_5_Write_After:b0l is Register_5_=0x12 & b0l { b0 = zext(b0l); }
+Register_0_Write_After:b1l is Register_0_=0x13 & b1l { b1 = zext(b1l); }
+Register_5_Write_After:b1l is Register_5_=0x13 & b1l { b1 = zext(b1l); }
+
 define pcodeop read_ext0;
-Register_0_Write:ext0 is Register_0_=0x14 & ext0 { ext0 = read_ext0(); export ext0; }
-Register_5_Write:ext0 is Register_5_=0x14 & ext0 { ext0 = read_ext0(); export ext0; }
+define pcodeop write_ext0;
+Register_0_Read_Impl:ext0 is Register_0_=0x14 & ext0 { ext0 = read_ext0(); export ext0; }
+Register_5_Read_Impl:ext0 is Register_5_=0x14 & ext0 { ext0 = read_ext0(); export ext0; }
+Register_0_Write:ext0 is Register_0_=0x14 & ext0 { export ext0; }
+Register_5_Write:ext0 is Register_5_=0x14 & ext0 { export ext0; }
+Register_0_Write_After:ext0 is Register_0_=0x14 & ext0 { write_ext0(ext0); }
+Register_5_Write_After:ext0 is Register_5_=0x14 & ext0 { write_ext0(ext0); }
 define pcodeop read_ext1;
-Register_0_Write:ext1 is Register_0_=0x15 & ext1 { ext1 = read_ext1(); export ext1; }
-Register_5_Write:ext1 is Register_5_=0x15 & ext1 { ext1 = read_ext1(); export ext1; }
+define pcodeop write_ext1;
+Register_0_Read_Impl:ext1 is Register_0_=0x15 & ext1 { ext1 = read_ext1(); export ext1; }
+Register_5_Read_Impl:ext1 is Register_5_=0x15 & ext1 { ext1 = read_ext1(); export ext1; }
+Register_0_Write:ext1 is Register_0_=0x15 & ext1 { export ext1; }
+Register_5_Write:ext1 is Register_5_=0x15 & ext1 { export ext1; }
+Register_0_Write_After:ext1 is Register_0_=0x15 & ext1 { write_ext0(ext1); }
+Register_5_Write_After:ext1 is Register_5_=0x15 & ext1 { write_ext0(ext1); }
 define pcodeop read_ext2;
-Register_0_Write:ext2 is Register_0_=0x16 & ext2 { ext2 = read_ext2(); export ext2; }
-Register_5_Write:ext2 is Register_5_=0x16 & ext2 { ext2 = read_ext2(); export ext2; }
+define pcodeop write_ext2;
+Register_0_Read_Impl:ext2 is Register_0_=0x16 & ext2 { ext2 = read_ext2(); export ext2; }
+Register_5_Read_Impl:ext2 is Register_5_=0x16 & ext2 { ext2 = read_ext2(); export ext2; }
+Register_0_Write:ext2 is Register_0_=0x16 & ext2 { export ext2; }
+Register_5_Write:ext2 is Register_5_=0x16 & ext2 { export ext2; }
+Register_0_Write_After:ext2 is Register_0_=0x16 & ext2 { write_ext0(ext2); }
+Register_5_Write_After:ext2 is Register_5_=0x16 & ext2 { write_ext0(ext2); }
 define pcodeop read_ext3;
-Register_0_Write:ext3 is Register_0_=0x17 & ext3 { ext3 = read_ext3(); export ext3; }
-Register_5_Write:ext3 is Register_5_=0x17 & ext3 { ext3 = read_ext3(); export ext3; }
+define pcodeop write_ext3;
+Register_0_Read_Impl:ext3 is Register_0_=0x17 & ext3 { ext3 = read_ext3(); export ext3; }
+Register_5_Read_Impl:ext3 is Register_5_=0x17 & ext3 { ext3 = read_ext3(); export ext3; }
+Register_0_Write:ext3 is Register_0_=0x17 & ext3 { export ext3; }
+Register_5_Write:ext3 is Register_5_=0x17 & ext3 { export ext3; }
+Register_0_Write_After:ext3 is Register_0_=0x17 & ext3 { write_ext3(ext3); }
+Register_5_Write_After:ext3 is Register_5_=0x17 & ext3 { write_ext3(ext3); }
 
-# NOTE: these two never saturate
-Register_0_Write:a0 is Register_0_=0x18 & a0 & a0l { export a0l; }
-Register_5_Write:a0 is Register_5_=0x18 & a0 & a0l { export a0l; }
-Register_0_Write:a1 is Register_0_=0x19 & a1 & a1l { export a1l; }
-Register_5_Write:a1 is Register_5_=0x19 & a1 & a1l { export a1l; }
-# NOTE: these *sometimes* saturate... but only sometimes.
-Register_0_Write:a0l is Register_0_=0x1A & a0l { export a0l; }
-Register_5_Write:a0l is Register_5_=0x1A & a0l { export a0l; }
-Register_0_Write:a1l is Register_0_=0x1B & a1l { export a1l; }
-Register_5_Write:a1l is Register_5_=0x1B & a1l { export a1l; }
-Register_0_Write:a0h is Register_0_=0x1C & a0h { export a0h; }
-Register_5_Write:a0h is Register_5_=0x1C & a0h { export a0h; }
-Register_0_Write:a1h is Register_0_=0x1D & a1h { export a1h; }
-Register_5_Write:a1h is Register_5_=0x1D & a1h { export a1h; }
+# Note: a0/a1 never saturate on read
+# ... but I think there are some special cases where mov uses the whole a0/a1...
+Register_0_Read:a0 is Register_0_=0x18 & a0 { export a0l; }
+Register_5_Read:a0 is Register_5_=0x18 & a0 { export a0l; }
+Register_0_Read:a1 is Register_0_=0x19 & a1 { export a1l; }
+Register_5_Read:a1 is Register_5_=0x19 & a1 { export a1l; }
 
+Register_0_Write:a0 is Register_0_=0x18 & a0 { export a0l; }
+Register_5_Write:a0 is Register_5_=0x18 & a0 { export a0l; }
+Register_0_Write:a1 is Register_0_=0x19 & a1 { export a1l; }
+Register_5_Write:a1 is Register_5_=0x19 & a1 { export a1l; }
+
+Register_0_Write_After:a0 is Register_0_=0x18 & a0 { a0 = sext(a0l); }
+Register_5_Write_After:a0 is Register_5_=0x18 & a0 { a0 = sext(a0l); }
+Register_0_Write_After:a1 is Register_0_=0x19 & a1 { a1 = sext(a1l); }
+Register_5_Write_After:a1 is Register_5_=0x19 & a1 { a1 = sext(a1l); }
+
+Register_0_Read_No_Saturate:a0h is Register_0_=0x1A & a0h { export a0h; }
+Register_5_Read_No_Saturate:a0h is Register_5_=0x1A & a0h { export a0h; }
+Register_0_Read_No_Saturate:a1h is Register_0_=0x1B & a1h { export a1h; }
+Register_5_Read_No_Saturate:a1h is Register_5_=0x1B & a1h { export a1h; }
+Register_0_Read_No_Saturate:a0l is Register_0_=0x1C & a0l { export a0l; }
+Register_5_Read_No_Saturate:a0l is Register_5_=0x1C & a0l { export a0l; }
+Register_0_Read_No_Saturate:a1l is Register_0_=0x1D & a1l { export a1l; }
+Register_5_Read_No_Saturate:a1l is Register_5_=0x1D & a1l { export a1l; }
+
+# TODO: actually conditionally saturate
+Register_0_Read_Saturate:a0h is Register_0_=0x1A & a0h { export a0h; }
+Register_5_Read_Saturate:a0h is Register_5_=0x1A & a0h { export a0h; }
+Register_0_Read_Saturate:a1h is Register_0_=0x1B & a1h { export a1h; }
+Register_5_Read_Saturate:a1h is Register_5_=0x1B & a1h { export a1h; }
+Register_0_Read_Saturate:a0l is Register_0_=0x1C & a0l { export a0l; }
+Register_5_Read_Saturate:a0l is Register_5_=0x1C & a0l { export a0l; }
+Register_0_Read_Saturate:a1l is Register_0_=0x1D & a1l { export a1l; }
+Register_5_Read_Saturate:a1l is Register_5_=0x1D & a1l { export a1l; }
+
+Register_0_Write:a0h is Register_0_=0x1A & a0h { export a0h; }
+Register_5_Write:a0h is Register_5_=0x1A & a0h { export a0h; }
+Register_0_Write:a1h is Register_0_=0x1B & a1h { export a1h; }
+Register_5_Write:a1h is Register_5_=0x1B & a1h { export a1h; }
+Register_0_Write:a0l is Register_0_=0x1C & a0l { export a0l; }
+Register_5_Write:a0l is Register_5_=0x1C & a0l { export a0l; }
+Register_0_Write:a1l is Register_0_=0x1D & a1l { export a1l; }
+Register_5_Write:a1l is Register_5_=0x1D & a1l { export a1l; }
+
+Register_0_Write_After:a0h is Register_0_=0x1A & a0h { a0 = sext(a0h) << 16; }
+Register_5_Write_After:a0h is Register_5_=0x1A & a0h { a0 = sext(a0h) << 16; }
+Register_0_Write_After:a1h is Register_0_=0x1B & a1h { a1 = sext(a1h) << 16; }
+Register_5_Write_After:a1h is Register_5_=0x1B & a1h { a1 = sext(a1h) << 16; }
+Register_0_Write_After:a0l is Register_0_=0x1C & a0l { a0 = zext(a0l); }
+Register_5_Write_After:a0l is Register_5_=0x1C & a0l { a0 = zext(a0l); }
+Register_0_Write_After:a1l is Register_0_=0x1D & a1l { a1 = zext(a1l); }
+Register_5_Write_After:a1l is Register_5_=0x1D & a1l { a1 = zext(a1l); }
+
+# NOTE: CurLC is a table based on context, so we can't use it in attach variables.
+Register_0_Read:CurLC is Register_0_=0x1E & CurLC { export CurLC; }
+Register_5_Read:CurLC is Register_5_=0x1E & CurLC { export CurLC; }
 Register_0_Write:CurLC is Register_0_=0x1E & CurLC { export CurLC; }
 Register_5_Write:CurLC is Register_5_=0x1E & CurLC { export CurLC; }
-Register_0_Write:sv is Register_0_=0x1F & sv { export sv; }
-Register_5_Write:sv is Register_5_=0x1F & sv { export sv; }
+Register_0_Write_After:Register_0_=0x1E is Register_0_ {}
+Register_5_Write_After:Register_5_=0x1E is Register_5_ {}
+
+# Ignore saturation/no saturation for registers where it doesn't matter
+Register_0_Read_Saturate:Register_0_Read_Impl is Register_0_Read_Impl { export Register_0_Read_Impl; }
+Register_5_Read_Saturate:Register_5_Read_Impl is Register_5_Read_Impl { export Register_5_Read_Impl; }
+Register_0_Read_No_Saturate:Register_0_Read_Impl is Register_0_Read_Impl { export Register_0_Read_Impl; }
+Register_5_Read_No_Saturate:Register_5_Read_Impl is Register_5_Read_Impl { export Register_5_Read_Impl; }
 
 attach variables [ Ax_0 Ax_1 Ax_3 Ax_4 Ax_5 Ax_6 Ax_8 Ax_10 Ax_11 Ax_12 ] [ a0 a1 ];
 attach variables [ Ax_Not8 Ax_Not12 ] [ a1 a0 ];
