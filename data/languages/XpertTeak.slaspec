@@ -1051,6 +1051,45 @@ Imm8u_0:imm8u_0 is imm8u_0 { local tmp:2 = imm8u_0; export tmp; }
 Imm9u_0:imm9u_0 is imm9u_0 { local tmp:2 = imm9u_0; export tmp; }
 Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 
+macro FLAGS40X(result, overflow, carry) {
+	# Based on teakra SetAccFlag
+	local tmp:5 = result;  # requires 5-byte input
+	$(FLAG_Z) = (tmp == 0);
+	$(FLAG_M) = (tmp s< 0);
+	$(FLAG_E) = (tmp != sext(tmp:4));
+	# Interestingly, this is the same as GCDSP operation xB, which uses SR_TOP2BITS.
+	# There must be some common use for this operation, then...
+	local top2equal:1 = ((tmp & 0xc0000000) == 0) || ((tmp & 0xc0000000) == 0xc0000000);
+	$(FLAG_N) = $(FLAG_Z) || (!$(FLAG_E) && !top2equal);
+	$(FLAG_V) = overflow;
+	$(FLAG_VL) = $(FLAG_VL) | $(FLAG_V);
+	$(FLAG_C) = carry;
+}
+
+macro FLAGS40(result) {
+	FLAGS40X(result, 0, 0);
+}
+
+# Interestingly, based on teakra's AddSub, this is the same logic as FLAGS_ADD40 and FLAGS_SUB40
+# for GCDSP. (teakra does write it using more bit shifting, though, but I'm pretty sure they're equivalent.)
+macro FLAGS_ADD40(a, b) {
+	FLAGS40X(a + b, (a > (a + b)), scarry(a, b));
+}
+
+macro FLAGS_SUB40(a, b) {
+	FLAGS40X(a - b, (a >= (a - b)), scarry(a, -b));
+}
+
+macro ADD40_3(dest, a, b) {
+	FLAGS_ADD40(a, b);
+	# TODO: saturation would happen here
+	dest = a + b;
+}
+
+macro ADD40(a, b) {
+	ADD40_3(a, a, b);
+}
+
 # Comments are from http://problemkaputt.de/gbatek.htm#dsiteakliteiiinstructionsetencoding
 # Note that "add  MemRn@0, Ax@8 || Rn@0stepZIDS@3" means two actions are performed by the instruction:
 # First, it adds; then it applies a step (which is optional). The || does NOT indicate a choice of
@@ -1059,46 +1098,51 @@ Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 # Base  Ver Opcode (with parameter bits located at @bitnumber and up)
 
 # D4FBh TL  add  MemImm16@16, Ax@8
-op:"add" MemImm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xFB; MemImm16 { Ax_8 = Ax_8 + sext(MemImm16); }
+op:"add" MemImm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xFB; MemImm16 { ADD40(Ax_8, sext(MemImm16)); }
 # A600h TL  add  MemImm8@0, Ax@8
-op:"add" MemImm8_0, Ax_8 is opcode_9_15=(0xA6>>1) & Ax_8 & MemImm8_0 { Ax_8 = Ax_8 + sext(MemImm8_0); }
+op:"add" MemImm8_0, Ax_8 is opcode_9_15=(0xA6>>1) & Ax_8 & MemImm8_0 { ADD40(Ax_8, sext(MemImm8_0)); }
 # 86C0h TL  add  Imm16@16, Ax@8
-op:"add" Imm16, Ax_8 is opcode_9_15=(0x86>>1) & Ax_8 & opcode_0_7=0xC0; Imm16 { Ax_8 = Ax_8 + sext(Imm16); }
+op:"add" Imm16, Ax_8 is opcode_9_15=(0x86>>1) & Ax_8 & opcode_0_7=0xC0; Imm16 { ADD40(Ax_8, sext(Imm16)); }
 # C600h TL  add  Imm8u@0, Ax@8
-op:"add" Imm8u_0, Ax_8 is opcode_9_15=(0xC6>>1) & Ax_8 & Imm8u_0 { Ax_8 = Ax_8 + zext(Imm8u_0); } # Assuming u is for unsigned
+op:"add" Imm8u_0, Ax_8 is opcode_9_15=(0xC6>>1) & Ax_8 & Imm8u_0 { ADD40(Ax_8, zext(Imm8u_0)); }
 # D4DBh TL  add  MemR7Imm16@16, Ax@8
-op:"add" MemR7Imm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xDB; MemR7Imm16 { Ax_8 = Ax_8 + sext(MemR7Imm16); }
+op:"add" MemR7Imm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xDB; MemR7Imm16 { ADD40(Ax_8, sext(MemR7Imm16)); }
 # 4600h TL  add  MemR7Imm7s@0, Ax@8
-op:"add" MemR7Imm7s_0, Ax_8 is opcode_9_15=(0x46>>1) & Ax_8 & opcode_7_7=0 & MemR7Imm7s_0 { Ax_8 = Ax_8 + sext(MemR7Imm7s_0); }
+op:"add" MemR7Imm7s_0, Ax_8 is opcode_9_15=(0x46>>1) & Ax_8 & opcode_7_7=0 & MemR7Imm7s_0 { ADD40(Ax_8, sext(MemR7Imm7s_0)); }
 # 8680h TL  add  MemRn@0, Ax@8 || Rn@0stepZIDS@3
-op:"add" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x86>>1) & Ax_8 & opcode_5_7=(0x80>>5) & Rn_0_stepZIDS_3 & MemRn_0 { Ax_8 = Ax_8 + sext(MemRn_0); build Rn_0_stepZIDS_3; }
+op:"add" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x86>>1) & Ax_8 & opcode_5_7=(0x80>>5) & Rn_0_stepZIDS_3 & MemRn_0 { ADD40(Ax_8, sext(MemRn_0)); build Rn_0_stepZIDS_3; }
 # 86A0h TL  add  RegisterP0@0, Ax@8
-op:"add" Register_P_0, Ax_8 is opcode_9_15=(0x86>>1) & Ax_8 & opcode_5_7=(0xA0>>5) & Register_P_0 { Ax_8 = Ax_8 + sext(Register_P_0); }
+op:"add" Register_P_0, Ax_8 is opcode_9_15=(0x86>>1) & Ax_8 & opcode_5_7=(0xA0>>5) & Register_P_0 { ADD40(Ax_8, sext(Register_P_0)); }
 @ifdef TEAK_LITE_2
 # D2DAh TL2 add  Ab@10, Bx@0
-op:"add" Ab_10, Bx_0 is opcode_12_15=0xD & Ab_10 & opcode_1_9=(0x2DA>>1) & Bx_0 { Bx_0 = Bx_0 + Ab_10; }
+op:"add" Ab_10, Bx_0 is opcode_12_15=0xD & Ab_10 & opcode_1_9=(0x2DA>>1) & Bx_0 { ADD40(Bx_0, Ab_10); }
 # 5DF0h TL2 add  Bx@1, Ax@0
-op:"add" Bx_1, Ax_0 is opcode_2_15=(0x5DF0>>2) & Bx_1 & Ax_0 { Ax_0 = Ax_0 + Bx_1; }
+op:"add" Bx_1, Ax_0 is opcode_2_15=(0x5DF0>>2) & Bx_1 & Ax_0 { ADD40(Ax_0, Bx_1); }
 # 9070h TL2 add  MemR01@8, sv, Abh@2 || sub MemR01@8offsZI@0, sv, Abl@2
 #            || mov Abl@2, MemR45@8 || R01@8stepII2@0, R45@8stepII2@1
 op:"add" MemR01_8, sv, Abh_2 || "sub" MemR01_8_offsZI_0, sv_copy, Abl_2 || "mov" Abl_2_copy, MemR45_8 || R01_8_stepII2_0, R45_8_stepII2_1
 	is opcode_9_15=(0x90>>1) & MemR01_8 & opcode_3_7=(0x70>>3) & Abh_2 & R45_8_stepII2_1 & R01_8_stepII2_0
-	& MemR45_8 & Abl_2 & MemR01_8_offsZI_0 & sv & sv_copy & Abl_2_copy
+	& MemR45_8 & Abl_2 & MemR01_8_offsZI_0 & sv & sv_copy & Abl_2_copy & Ab_2
 {
-	Abh_2 = Abh_2 + MemR01_8; # TODO: sv?
-	Abl_2 = Abl_2 - MemR01_8_offsZI_0; # TODO: sv?
-	MemR45_8 = Abl_2;
+	# teakra add_sub_i_mov_j - no flags
+	local high:5 = sext(MemR01_8) + sext(sv);
+	local low:5 = zext(MemR01_8_offsZI_0 - sv);
+	MemR45_8 = Abl_2;  # TODO: saturation
+	Ab_2 = (high << 16) | low;
 	build R01_8_stepII2_0;
 	build R45_8_stepII2_1;
 }
 # 5DB0h TL2 add  MemR04@1, sv, Abh@2 || sub MemR04@1offsZI@0, sv, Abl@2
 #            || R04@1stepII2@0
 op:"add" MemR04_1, sv, Abh_2 || "sub" MemR04_1_offsZI_0, sv_copy, Abl_2 || R04_1_stepII2_0
-	is opcode_3_15=(0x5DB0>>3) & Abh_2 & MemR04_1 & MemR04_1_offsZI_0
+	is opcode_3_15=(0x5DB0>>3) & Abh_2 & MemR04_1 & MemR04_1_offsZI_0 & Ab_2
 	& Abl_2 & R04_1_stepII2_0 & sv & sv_copy
 {
-	Abh_2 = Abh_2 + MemR04_1; # TODO: sv?
-	Abl_2 = Abl_2 - MemR04_1_offsZI_0; # TODO: sv?
+	# teakra add_sub_sv - no flags
+	local high:5 = sext(MemR04_1) + sext(sv);
+	local low:5 = zext(MemR04_1_offsZI_0 + sv);
+	Ab_2 = (high << 16) | low;
+	# TODO: saturation/sign extension
 	build R04_1_stepII2_0;
 }
 # 6F80h TL2 add  MemR45@2, MemR01@2, Abh@3
@@ -1106,10 +1150,12 @@ op:"add" MemR04_1, sv, Abh_2 || "sub" MemR04_1_offsZI_0, sv_copy, Abl_2 || R04_1
 #            || R01@2stepII2@0, R45@2stepII2@1
 op:"add" MemR45_2, MemR01_2, Abh_3 || "add" MemR45_2_offsZI_1, MemR01_2_offsZI_0, Abl_3 || R01_2_stepII2_0, R45_2_stepII2_1
 	is opcode_4_15=0x6F8 & Abh_3 & MemR45_2 & MemR45_2_offsZI_1 & MemR01_2_offsZI_0
-	& Abl_3 & MemR01_2 & R45_2_stepII2_1 & R01_2_stepII2_0
+	& Abl_3 & MemR01_2 & R45_2_stepII2_1 & R01_2_stepII2_0 & Ab_2
 {
-	Abh_3 = MemR45_2 + MemR01_2;
-	Abl_3 = MemR45_2_offsZI_1 + MemR01_2_offsZI_0;
+	# teakra add_add - no flags
+	local high:5 = sext(MemR45_2) + sext(MemR01_2);
+	local low:5 = zext(MemR45_2_offsZI_1 + MemR01_2_offsZI_0);
+	Ab_2 = (high << 16) | low;
 	build R01_2_stepII2_0;
 	build R45_2_stepII2_1;
 }
@@ -1118,10 +1164,12 @@ op:"add" MemR45_2, MemR01_2, Abh_3 || "add" MemR45_2_offsZI_1, MemR01_2_offsZI_0
 #            || R01@2stepII2@0, R45@2stepII2@1
 op:"add" MemR45_2, MemR01_2, Abh_3 || "sub" MemR45_2_offsZI_1, MemR01_2_offsZI_0, Abl_3 || R01_2_stepII2_0, R45_2_stepII2_1
 	is opcode_4_15=0x6FA & Abh_3 & MemR45_2 & MemR45_2_offsZI_1 & MemR01_2_offsZI_0
-	& Abl_3 & MemR01_2 & R01_2_stepII2_0 & R45_2_stepII2_1
+	& Abl_3 & MemR01_2 & R01_2_stepII2_0 & R45_2_stepII2_1 & Ab_2
 {
-	Abh_3 = MemR45_2 + MemR01_2;
-	Abl_3 = MemR45_2_offsZI_1 - MemR01_2_offsZI_0;
+	# teakra add_sub - no flags
+	local high:5 = sext(MemR45_2) + sext(MemR01_2);
+	local low:5 = zext(MemR45_2_offsZI_1 - MemR01_2_offsZI_0);
+	Ab_2 = (high << 16) | low;
 	build R01_2_stepII2_0;
 	build R45_2_stepII2_1;
 }
@@ -1129,22 +1177,28 @@ op:"add" MemR45_2, MemR01_2, Abh_3 || "sub" MemR45_2_offsZI_1, MemR01_2_offsZI_0
 #            || mov Abl@2, MemR01@8 || R01@8stepII2@0, R45@8stepII2@1
 op:"add" MemR45_8, sv, Abh_2 || "sub" MemR45_8_offsZI_1, sv_copy, Abl_2 || "mov" Abl_2_copy, MemR01_8 || R01_8_stepII2_0, R45_8_stepII2_1
 	is opcode_9_15=(0x5E >> 1) & MemR45_8 & opcode_3_7=(0x30>>3) & Abh_2 & R01_8_stepII2_0 & R45_8_stepII2_1
-	& MemR45_8_offsZI_1 & MemR01_8 & Abl_2 & Abl_2_copy & sv & sv_copy
+	& MemR45_8_offsZI_1 & MemR01_8 & Abl_2 & Abl_2_copy & sv & sv_copy & Ab_2
 {
-	Abh_2 = Abh_2 + MemR45_8; # TODO: sv?
-	Abl_2 = Abl_2 - MemR45_8_offsZI_1; # TODO: sv?
-	MemR01_8 = Abl_2;
+	# teakra add_sub_j_mov_i - no flags
+	local high:5 = sext(MemR45_8) + sext(sv);
+	local low:5 = zext(MemR45_8_offsZI_1 - sv);
+	MemR01_8 = Abl_2;  # TODO: saturation
+	Ab_2 = (high << 16) | low;
 	build R01_8_stepII2_0;
 	build R45_8_stepII2_1;
 }
 # 5DC0h TL2 add  p0, p1, Ab@2
-op:"add" p0, p1, Ab_2 is opcode_4_15=0x5DC & Ab_2 & opcode_0_1=0 & p0 & p1 { Ab_2 = zext(p0 + p1); }  # TODO: truncation? and does this just add p0 and p1
+# teakra app/ProductSum for all of these
+# TODO: better handling of product registers - there's some additional shift stuff that needs to happen
+# NOTE: we don't need to do an ADD40(0, p0) call as that will never set FLAG_C or FLAG_V
+# (teakra's ProductSum is just too generalized)
+op:"add" p0, p1, Ab_2 is opcode_4_15=0x5DC & Ab_2 & opcode_0_1=0 & p0 & p1 { ADD40_3(Ab_2, sext(p0), sext(p1)); }
 # D782h TL2 add  p1, Ax@0
-op:"add" p1, Ax_0 is opcode_1_15=(0xD782>>1) & Ax_0 & p1 { Ax_0 = Ax_0 + zext(p1); }
+op:"add" p1, Ax_0 is opcode_1_15=(0xD782>>1) & Ax_0 & p1 { ADD40(Ax_0, sext(p1)); }
 # 5DF8h TL2 add  Px@1, Bx@0
-op:"add" Px_1, Bx_0 is opcode_2_15=(0x5DF8>>2) & Px_1 & Bx_0 { Bx_0 = Bx_0 + zext(Px_1); }
+op:"add" Px_1, Bx_0 is opcode_2_15=(0x5DF8>>2) & Px_1 & Bx_0 { ADD40(Bx_0, sext(Px_1)); }
 # D38Bh TL2 add  r6, Ax@4
-op:"add" r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=0xB & r6 { Ax_4 = Ax_4 + sext(r6); }
+op:"add" r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=0xB & r6 { ADD40(Ax_4, sext(r6)); }
 # 4590h TL2 add3 p0, p1, Ab@2
 # TODO: what do these actually do?
 op:"add3" p0, p1, Ab_2 is opcode_4_15=0x459 & Ab_2 & opcode_0_1=0 & p0 & p1 unimpl
