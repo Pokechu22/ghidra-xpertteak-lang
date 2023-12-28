@@ -1196,7 +1196,7 @@ Imm8u_0:imm8u_0 is imm8u_0 { local tmp:2 = imm8u_0; export tmp; }
 Imm9u_0:imm9u_0 is imm9u_0 { local tmp:2 = imm9u_0; export tmp; }
 Imm16:expanded_imm is expanded_imm { local tmp:2 = expanded_imm; export tmp; }
 
-macro FLAGS40X(result, overflow, carry) {
+macro FLAGS40(result) {
 	# Based on teakra SetAccFlag
 	local tmp:5 = result;  # requires 5-byte input
 	$(FLAG_Z) = (tmp == 0);
@@ -1206,19 +1206,15 @@ macro FLAGS40X(result, overflow, carry) {
 	# There must be some common use for this operation, then...
 	local top2equal:1 = ((tmp & 0xc0000000) == 0) || ((tmp & 0xc0000000) == 0xc0000000);
 	$(FLAG_N) = $(FLAG_Z) || (!$(FLAG_E) && !top2equal);
-	$(FLAG_V) = overflow;
-	$(FLAG_VL) = $(FLAG_VL) | $(FLAG_V);
-	$(FLAG_C) = carry;
-}
-
-macro FLAGS40(result) {
-	FLAGS40X(result, 0, 0);
 }
 
 # Interestingly, based on teakra's AddSub, this is the same logic as FLAGS_ADD40 and FLAGS_SUB40
 # for GCDSP. (teakra does write it using more bit shifting, though, but I'm pretty sure they're equivalent.)
 macro FLAGS_ADD40(a, b) {
-	FLAGS40X(a + b, (a > (a + b)), scarry(a, b));
+	FLAGS40(a + b);
+	$(FLAG_V) = (a > (a + b));
+	$(FLAG_VL) = $(FLAG_VL) | $(FLAG_V);
+	$(FLAG_C) = scarry(a, b);
 }
 
 macro ADD40_3(dest, a, b) {
@@ -1232,7 +1228,10 @@ macro ADD40(a, b) {
 }
 
 macro FLAGS_SUB40(a, b) {
-	FLAGS40X(a - b, (a >= (a - b)), scarry(a, -b));
+	FLAGS40(a - b);
+	$(FLAG_V) = (a >= (a - b));
+	$(FLAG_VL) = $(FLAG_VL) | $(FLAG_V);
+	$(FLAG_C) = scarry(a, -b);
 }
 
 macro SUB40_3(dest, a, b) {
@@ -1481,28 +1480,28 @@ op:"addv" Imm16, Register_0_Write is opcode_5_15=(0x87E>>1) & Register_0_Read_No
 op:"addv" Imm16, r6 is opcode_0_15=0x47BB & r6; Imm16 { ADDV(r6, r6, Imm16); }
 @endif
 # D4F9h TL  and  MemImm16@16, Ax@8
-# TODO: what parts are affected by the and? As-is this zeros most of the accumulator
-op:"and" MemImm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xF9; MemImm16 { Ax_8 = Ax_8 & zext(MemImm16); }
+# per teakra, and doesn't experience sign-extension (so this will kill most bits), nor does it experience saturation
+op:"and" MemImm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xF9; MemImm16 { Ax_8 = Ax_8 & zext(MemImm16); FLAGS40(Ax_8); }
 # A200h TL  and  MemImm8@0, Ax@8
-op:"and" MemImm8_0, Ax_8 is opcode_9_15=(0xA2>>1) & Ax_8 & MemImm8_0 { Ax_8 = Ax_8 & zext(MemImm8_0); }
+op:"and" MemImm8_0, Ax_8 is opcode_9_15=(0xA2>>1) & Ax_8 & MemImm8_0 { Ax_8 = Ax_8 & zext(MemImm8_0); FLAGS40(Ax_8); }
 # 82C0h TL  and  Imm16@16, Ax@8
-op:"and" Imm16, Ax_8 is opcode_9_15=(0x82>>1) & Ax_8 & opcode_0_7=0xC0; Imm16 { Ax_8 = Ax_8 & zext(Imm16); }
+op:"and" Imm16, Ax_8 is opcode_9_15=(0x82>>1) & Ax_8 & opcode_0_7=0xC0; Imm16 { Ax_8 = Ax_8 & zext(Imm16); FLAGS40(Ax_8); }
 # C200h TL  and  Imm8u@0, Ax@8
-op:"and" Imm8u_0, Ax_8 is opcode_9_15=(0xC2>>1) & Ax_8 & Imm8u_0 { Ax_8 = Ax_8 & zext(Imm8u_0); }
+op:"and" Imm8u_0, Ax_8 is opcode_9_15=(0xC2>>1) & Ax_8 & Imm8u_0 { Ax_8 = Ax_8 & zext(Imm8u_0); FLAGS40(Ax_8); }
 # D4D9h TL  and  MemR7Imm16@16, Ax@8
-op:"and" MemR7Imm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xD9; MemR7Imm16 { Ax_8 = Ax_8 & zext(MemR7Imm16); }
+op:"and" MemR7Imm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xD9; MemR7Imm16 { Ax_8 = Ax_8 & zext(MemR7Imm16); FLAGS40(Ax_8); }
 # 4200h TL  and  MemR7Imm7s@0, Ax@8
-op:"and" MemR7Imm7s_0, Ax_8 is opcode_9_15=(0x42>>1) & Ax_8 & opcode_7_7=0 & MemR7Imm7s_0 { Ax_8 = Ax_8 & zext(MemR7Imm7s_0); }
+op:"and" MemR7Imm7s_0, Ax_8 is opcode_9_15=(0x42>>1) & Ax_8 & opcode_7_7=0 & MemR7Imm7s_0 { Ax_8 = Ax_8 & zext(MemR7Imm7s_0); FLAGS40(Ax_8); }
 # 8280h TL  and  MemRn@0, Ax@8 || Rn@0stepZIDS@3
-op:"and" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x82>>1) & Ax_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 { Ax_8 = Ax_8 & zext(MemRn_0); build Rn_0_stepZIDS_3; }
+op:"and" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x82>>1) & Ax_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 { Ax_8 = Ax_8 & zext(MemRn_0); FLAGS40(Ax_8); build Rn_0_stepZIDS_3; }
 # 82A0h TL  and  RegisterP0@0, Ax@8
 # TODO: teakra alm indicates special behavior for Register_0 p, a0, and a1
-op:"and" Register_0_Read_No_Saturate, Ax_8 is opcode_9_15=(0x82>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0_Read_No_Saturate { Ax_8 = Ax_8 & zext(Register_0_Read_No_Saturate); }
+op:"and" Register_0_Read_No_Saturate, Ax_8 is opcode_9_15=(0x82>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0_Read_No_Saturate { Ax_8 = Ax_8 & zext(Register_0_Read_No_Saturate); FLAGS40(Ax_8); }
 @ifdef TEAK_LITE_2
 # 6770h TL2 and  Ab@2, Ab@0, Ax@12                ;TL2 only
-op:"and" Ab_2, Ab_0, Ax_12 is opcode_13_15=(0x6>>1) & Ax_12 & opcode_4_11=0x77 & Ab_2 & Ab_0 { Ax_12 = Ab_2 & Ab_0; }
+op:"and" Ab_2, Ab_0, Ax_12 is opcode_13_15=(0x6>>1) & Ax_12 & opcode_4_11=0x77 & Ab_2 & Ab_0 { Ax_12 = Ab_2 & Ab_0; FLAGS40(Ax_12); }
 # D389h TL2 and  r6, Ax@4
-op:"and" r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=9 & r6 { Ax_4 = Ax_4 & zext(r6); }
+op:"and" r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=9 & r6 { Ax_4 = Ax_4 & zext(r6); FLAGS40(Ax_4); }
 @endif
 # 4B80h TL  banke BankFlags6@0  ;{r0}{,r1}{,r4}{,cfgi}{,r7}{,cfgj}
 # Simplified to joining with spaces instead of commas, as that'd require extra checking.
