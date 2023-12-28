@@ -245,6 +245,7 @@ define token opcode (16)
 	Ax_10 = (10, 10)
 	Ax_11 = (11, 11)
 	Ax_12 = (12, 12)
+	Ax_Not0  = (0, 0)
 	Ax_Not8  = (8, 8)
 	Ax_Not12 = (12, 12)
 
@@ -261,6 +262,7 @@ define token opcode (16)
 	Axl_Not3  = (3, 3)
 	Axl_Not4  = (4, 4)
 	Axl_Not6  = (6, 6)
+	Axl_Not8  = (8, 8)
 	Axl_Not11 = (11, 11)
 
 	Axh_0  = (0, 0)
@@ -276,6 +278,7 @@ define token opcode (16)
 	Axh_Not3  = (3, 3)
 	Axh_Not4  = (4, 4)
 	Axh_Not6  = (6, 6)
+	Axh_Not8  = (8, 8)
 	Axh_Not11 = (11, 11)
 
 	Px_0 = (0, 0)
@@ -640,13 +643,13 @@ Register_5_Read_Saturate:Register_5_Read_Impl is Register_5_Read_Impl { export R
 Register_0_Read_No_Saturate:Register_0_Read_Impl is Register_0_Read_Impl { export Register_0_Read_Impl; }
 
 attach variables [ Ax_0 Ax_1 Ax_3 Ax_4 Ax_5 Ax_6 Ax_8 Ax_10 Ax_11 Ax_12 ] [ a0 a1 ];
-attach variables [ Ax_Not8 Ax_Not12 ] [ a1 a0 ];
+attach variables [ Ax_Not0 Ax_Not8 Ax_Not12 ] [ a1 a0 ];
 
 attach variables [ Axl_0 Axl_1 Axl_3 Axl_4 Axl_5 Axl_6 Axl_8 Axl_11 Axl_12 ] [ a0l a1l ];
-attach variables [ Axl_Not0 Axl_Not3 Axl_Not4 Axl_Not6 Axl_Not11 ] [ a1l a0l ];
+attach variables [ Axl_Not0 Axl_Not3 Axl_Not4 Axl_Not6 Axl_Not8 Axl_Not11 ] [ a1l a0l ];
 
 attach variables [ Axh_0 Axh_1 Axh_3 Axh_4 Axh_6 Axh_8 Axh_9 Axh_11 Axh_12 ] [ a0h a1h ];
-attach variables [ Axh_Not0 Axh_Not3 Axh_Not4 Axh_Not6 Axh_Not11 ] [ a1h a0h ];
+attach variables [ Axh_Not0 Axh_Not3 Axh_Not4 Axh_Not6 Axh_Not8 Axh_Not11 ] [ a1h a0h ];
 
 attach variables [ Px_0 Px_1 Px_4 ] [ p0 p1 ];
 
@@ -1295,6 +1298,12 @@ macro MULTIPLY(x, y, p) {
 	p = x_in * y_in;
 	# If x_in and y_in are already 40-bit sign-extended, I don't think we need to do anything after this
 	# (teakra's DoMultiplication does need to set pe if values are signed or not)
+}
+
+macro VTRSHR() {
+	# TODO: teakra says: "This instruction has one cycle delay on vtr0, but not on vtr1"
+	vtr0 = (vtr0 >> 1) | (zext($(FLAG_C)) << 15);
+	vtr1 = (vtr1 >> 1) | (zext($(FLAG_C)) << 15);
 }
 
 # Comments are from http://problemkaputt.de/gbatek.htm#dsiteakliteiiinstructionsetencoding
@@ -2290,102 +2299,281 @@ op:"macuu" y0, r6, Ax_0 is opcode_1_15=(0x5EAA>>1) & Ax_0 & y0 & r6 & Y0_input {
 @endif
 # 8460h TL  max  NoReverse, Ax@8, Implied Ax@not8, Bogus MemR0, ge,
 #            Implied mixp, Implied r0 || R0stepZIDS@3   ;when aY >= aX
-op:"max" Ax_8, Ax_Not8, r0, "ge", mixp || R0_stepZIDS_3 is opcode_9_15=(0x84>>1) & Ax_8 & Ax_Not8 & opcode_5_7=(6>>1) & R0_stepZIDS_3 & opcode_0_2=0 & r0 & mixp unimpl
+op:"max" Ax_8, Ax_Not8, r0, "ge", mixp || R0_stepZIDS_3 is opcode_9_15=(0x84>>1) & Ax_8 & Ax_Not8 & opcode_5_7=(6>>1) & R0_stepZIDS_3 & opcode_0_2=0 & r0 & mixp {
+	$(FLAG_M) = (Ax_Not8 s>= Ax_8);
+	if (!$(FLAG_M)) goto <done>;
+	Ax_8 = Ax_Not8;
+	mixp = r0;
+	<done>
+	build R0_stepZIDS_3;
+}
 # 8660h TL  max  NoReverse, Ax@8, Implied Ax@not8, Bogus MemR0, gt,
 #            Implied mixp, Implied r0 || R0stepZIDS@3   ;when aY > aX
-op:"max" Ax_8, Ax_Not8, r0, "gt", mixp || R0_stepZIDS_3 is opcode_9_15=(0x86>>1) & Ax_8 & Ax_Not8 & opcode_5_7=(6>>1) & R0_stepZIDS_3 & opcode_0_2=0 & r0 & mixp unimpl
+op:"max" Ax_8, Ax_Not8, r0, "gt", mixp || R0_stepZIDS_3 is opcode_9_15=(0x86>>1) & Ax_8 & Ax_Not8 & opcode_5_7=(6>>1) & R0_stepZIDS_3 & opcode_0_2=0 & r0 & mixp {
+	$(FLAG_M) = (Ax_Not8 s> Ax_8);
+	if (!$(FLAG_M)) goto <done>;
+	Ax_8 = Ax_Not8;
+	mixp = r0;
+	<done>
+	build R0_stepZIDS_3;
+}
 @ifdef TEAK_LITE_2
 # 5E21h TL2 max  a0h, a1h || max a0l, a1l || vtrshr
-op:"max" a0h, a1h || "max" a0l, a1l || "vtrshr" is opcode_0_15=0x5E21 & a0h & a1h & a0l & a1l unimpl
 # 5F21h TL2 max  a1h, a0h || max a1l, a0l || vtrshr
-op:"max" a1h, a0h || "max" a1l, a0l || "vtrshr" is opcode_0_15=0x5F21 & a0h & a1h & a0l & a1l unimpl
+# NOTE: nocash doesn't merge this, but it does merge 43C2h (the equivalent min instruction)
+macro MAX_VTRSHR(a, b) {
+	local a_high_tmp:5 = (a s>> 16);
+	local b_high_tmp:5 = (b s>> 16);
+	local a_high:3 = a_high_tmp:3;
+	local b_high:3 = b_high_tmp:3;
+	local a_low:2 = a:2;
+	local b_low:2 = b:2;
+
+	$(FLAG_C) = b_high s>= a_high;
+	$(FLAG_C1) = b_low s>= a_low;
+
+	local result_high:3 = b_high;
+	if ($(FLAG_C)) goto <b_high_greater>;
+	result_high = a_high;
+	<b_high_greater>
+
+	local result_low:2 = b_low;
+	if ($(FLAG_C1)) goto <b_low_greater>;
+	result_low = a_low;
+	<b_low_greater>
+
+	a = (sext(result_high) << 16) | zext(result_low);
+	VTRSHR();
+}
+op:"max" Axh_8, Axh_Not8 || "max" Axl_8, Axl_Not8 || "vtrshr" is opcode_9_15=(0x5E>>1) & Axh_8 & Axh_Not8 & Axl_8 & Axl_Not8 & Ax_8 & Ax_Not8 & opcode_0_7=0x21 { MAX_VTRSHR(Ax_8, Ax_Not8); }
 # D784h TL2 max  Axh@1, Bxh@0 || max Axl@1, Bxl@0 || vtrshr
-op:"max" Axh_1, Bxh_0 || "max" Axl_1, Bxl_0 || "vtrshr" is opcode_2_15=(0xD784>>2) & Axh_1 & Axl_1 & Bxh_0 & Bxl_0 unimpl
+op:"max" Axh_1, Bxh_0 || "max" Axl_1, Bxl_0 || "vtrshr" is opcode_2_15=(0xD784>>2) & Axh_1 & Axl_1 & Bxh_0 & Bxl_0 & Ax_1 & Bx_0 { MAX_VTRSHR(Ax_1, Bx_0); }
 # 4A40h TL2 max  Axh@3, Bxh@4 || max Axl@3, Bxl@4 || mov Axl@not3, MemR04@1
 #            || vtrshr || R04@1stepII2@0
-# NOTE: bit 2 chooses between Axl_Not3 and Axh_Not3 - this could be merged
+# NOTE: bit 2 chooses between Axl_Not3 and Axh_Not3 - this could be merged (teakra doesn't though)
 op:"max" Axh_3, Bxh_4 || "max" Axl_3, Bxl_4 || "mov" Axl_Not3, MemR04_1 || "vtrshr" || R04_1_stepII2_0
-	is opcode_5_15=(0x4A4>>1) & Bxh_4 & Bxl_4 & Axh_3 & Axl_3 & Axl_Not3 & opcode_2_2=0 & MemR04_1 & R04_1_stepII2_0 unimpl
+	is opcode_5_15=(0x4A4>>1) & Bxh_4 & Bxl_4 & Axh_3 & Axl_3 & Axl_Not3 & opcode_2_2=0 & MemR04_1 & R04_1_stepII2_0 & Ax_3 & Bx_4
+{
+	MAX_VTRSHR(Ax_3, Bx_4);
+	MemR04_1 = Axl_Not3; # TODO: saturation
+	build R04_1_stepII2_0;
+}
 # 4A44h TL2 max  Axh@3, Bxh@4 || max Axl@3, Bxl@4 || mov Axh@not3, MemR04@1
 #            || vtrshr || R04@1stepII2@0
 op:"max" Axh_3, Bxh_4 || "max" Axl_3, Bxl_4 || "mov" Axh_Not3, MemR04_1 || "vtrshr" || R04_1_stepII2_0
-	is opcode_5_15=(0x4A4>>1) & Bxh_4 & Bxl_4 & Axh_3 & Axl_3 & Axh_Not3 & opcode_2_2=1 & MemR04_1 & R04_1_stepII2_0 unimpl
+	is opcode_5_15=(0x4A4>>1) & Bxh_4 & Bxl_4 & Axh_3 & Axl_3 & Axh_Not3 & opcode_2_2=1 & MemR04_1 & R04_1_stepII2_0 & Ax_3 & Bx_4
+{
+	MAX_VTRSHR(Ax_3, Bx_4);
+	MemR04_1 = Axh_Not3; # TODO: saturation
+	build R04_1_stepII2_0;
+}
 # 45A0h TL2 max  Axh@4, Bxh@3 || max Axl@4, Bxl@3 || mov Axh@not4, MemR45@2
 #            || mov Axl@not4, MemR01@2 || vtrshr
 #            || R01@2stepII2@0, R45@2stepII2@1
 op:"max" Axh_4, Bxh_3 || "max" Axl_4, Bxl_3 || "mov" Axh_Not4, MemR45_2 || "mov" Axl_Not4, MemR01_2 || "vtrshr" || R01_2_stepII2_0, R45_2_stepII2_1
-	is opcode_5_15=(0x45A>>1) & Axh_4 & Axl_4 & Axh_Not4 & Axl_Not4 & Bxh_3 & Bxl_3 & MemR45_2 & MemR01_2 & R45_2_stepII2_1 & R01_2_stepII2_0 unimpl
+	is opcode_5_15=(0x45A>>1) & Axh_4 & Axl_4 & Axh_Not4 & Axl_Not4 & Bxh_3 & Bxl_3 & MemR45_2 & MemR01_2 & R45_2_stepII2_1 & R01_2_stepII2_0 & Ax_4 & Bx_3
+{
+	MAX_VTRSHR(Ax_4, Bx_3);
+	MemR45_2 = Axh_Not4; # TODO: saturation
+	MemR01_2 = Axl_Not4; # TODO: saturation
+	build R45_2_stepII2_1;
+	build R01_2_stepII2_0;
+}
 # D590h TL2 max  Axh@6, Bxh@5 || max Axl@6, Bxl@5 || mov Axh@not6, MemR01@2
 #            || mov Axl@not6, MemR45@2 || vtrshr
 #            || R01@2stepII2@0, R45@2stepII2@1
 op:"max" Axh_6, Bxh_5 || "max" Axl_6, Bxl_5 || "mov" Axh_Not6, MemR01_2 || "mov" Axl_Not6, MemR45_2 || "vtrshr" || R01_2_stepII2_0, R45_2_stepII2_1
-	is opcode_7_15=(0xD59>>3) & Axh_6 & Axl_6 & Axh_Not6 & Axl_Not6 & Bxh_5 & Bxl_5 & opcode_3_4=2 & MemR01_2 & MemR45_2 & R45_2_stepII2_1 & R01_2_stepII2_0 unimpl
+	is opcode_7_15=(0xD59>>3) & Axh_6 & Axl_6 & Axh_Not6 & Axl_Not6 & Bxh_5 & Bxl_5 & opcode_3_4=2 & MemR01_2 & MemR45_2 & R45_2_stepII2_1 & R01_2_stepII2_0 & Ax_6 & Bx_5
+{
+	MAX_VTRSHR(Ax_6, Bx_5);
+	MemR01_2 = Axh_Not6;
+	MemR45_2 = Axl_Not6;
+	build R45_2_stepII2_1;
+	build R01_2_stepII2_0;
+}
 # 4A60h TL2 max  Bxh@4, Axh@3 || max Bxl@4, Axl@3 || mov Bxl@not4, MemR04@1
 #            || vtrshr || R04@1stepII2@0
 op:"max" Bxh_4, Axh_3 || "max" Bxl_4, Axl_3 || "mov" Bxl_Not4, MemR04_1 || "vtrshr" || R04_1_stepII2_0
-	is opcode_5_15=(0x4A6>>1) & Bxh_4 & Bxl_4 & Bxl_Not4 & Axh_3 & Axl_3 & opcode_2_2=0 & MemR04_1 & R04_1_stepII2_0 unimpl
+	is opcode_5_15=(0x4A6>>1) & Bxh_4 & Bxl_4 & Bxl_Not4 & Axh_3 & Axl_3 & opcode_2_2=0 & MemR04_1 & R04_1_stepII2_0 & Bx_4 & Ax_3
+{
+	MAX_VTRSHR(Bx_4, Ax_3);
+	MemR04_1 = Bxl_Not4;
+	build R04_1_stepII2_0;
+}
 # 4A64h TL2 max  Bxh@4, Axh@3 || max Bxl@4, Axl@3 || mov Bxh@not4, MemR04@1
 #            || vtrshr || R04@1stepII2@0
 op:"max" Bxh_4, Axh_3 || "max" Bxl_4, Axl_3 || "mov" Bxh_Not4, MemR04_1 || "vtrshr" || R04_1_stepII2_0
-	is opcode_5_15=(0x4A6>>1) & Bxh_4 & Bxl_4 & Bxh_Not4 & Axh_3 & Axl_3 & opcode_2_2=1 & MemR04_1 & R04_1_stepII2_0 unimpl
+	is opcode_5_15=(0x4A6>>1) & Bxh_4 & Bxl_4 & Bxh_Not4 & Axh_3 & Axl_3 & opcode_2_2=1 & MemR04_1 & R04_1_stepII2_0 & Bx_4 & Ax_3
+{
+	MAX_VTRSHR(Bx_4, Ax_3);
+	MemR04_1 = Bxh_Not4;
+	build R04_1_stepII2_0;
+}
 @endif
 # 8060h TL  maxd NoReverse, Ax@8, MemR0, ge, Implied mixp, Implied r0
 #            || R0stepZIDS@3   ;when (r0) >= aX
-op:"maxd" Ax_8, MemR0, "ge", mixp || R0_stepZIDS_3 is opcode_9_15=(0x80>>1) & Ax_8 & opcode_5_7=(6>>1) & R0_stepZIDS_3 & opcode_0_2=0 & MemR0 & mixp unimpl
+op:"maxd" Ax_8, MemR0, "ge", mixp || R0_stepZIDS_3 is opcode_9_15=(0x80>>1) & Ax_8 & opcode_5_7=(6>>1) & R0_stepZIDS_3 & opcode_0_2=0 & MemR0 & mixp {
+	local other:5 = sext(MemR0);
+	$(FLAG_M) = (other s>= Ax_8);
+	if (!$(FLAG_M)) goto <done>;
+	Ax_8 = other;
+	mixp = r0;
+	<done>
+	build R0_stepZIDS_3;
+}
 # 8260h TL  maxd NoReverse, Ax@8, MemR0, gt, Implied mixp, Implied r0
 #            || R0stepZIDS@3   ;when (r0) > aX
-op:"maxd" Ax_8, MemR0, "gt", mixp || R0_stepZIDS_3 is opcode_9_15=(0x82>>1) & Ax_8 & opcode_5_7=(6>>1) & R0_stepZIDS_3 & opcode_0_2=0 & MemR0 & mixp unimpl
+op:"maxd" Ax_8, MemR0, "gt", mixp || R0_stepZIDS_3 is opcode_9_15=(0x82>>1) & Ax_8 & opcode_5_7=(6>>1) & R0_stepZIDS_3 & opcode_0_2=0 & MemR0 & mixp {
+	local other:5 = sext(MemR0);
+	$(FLAG_M) = (other s> Ax_8);
+	if (!$(FLAG_M)) goto <done>;
+	Ax_8 = other;
+	mixp = r0;
+	<done>
+	build R0_stepZIDS_3;
+}
 # 8860h TL  min  NoReverse, Ax@8, Implied Ax@not8, Bogus MemR0, le,
 #            Implied mixp, Implied r0 || R0stepZIDS@3   ;when aY <= aX
 # NOTE: matches 8460h
-op:"min" Ax_8, Ax_Not8, r0, "le", mixp || R0_stepZIDS_3 is opcode_9_15=(0x88>>1) & Ax_8 & Ax_Not8 & opcode_5_7=(6>>1) & R0_stepZIDS_3 & opcode_0_2=0 & r0 & mixp unimpl
+op:"min" Ax_8, Ax_Not8, r0, "le", mixp || R0_stepZIDS_3 is opcode_9_15=(0x88>>1) & Ax_8 & Ax_Not8 & opcode_5_7=(6>>1) & R0_stepZIDS_3 & opcode_0_2=0 & r0 & mixp {
+	$(FLAG_M) = (Ax_Not8 s<= Ax_8);
+	if (!$(FLAG_M)) goto <done>;
+	Ax_8 = Ax_Not8;
+	mixp = r0;
+	<done>
+	build R0_stepZIDS_3;
+}
 # 8A60h TL  min  NoReverse, Ax@8, Implied Ax@not8, Bogus MemR0, lt,
 #            Implied mixp, Implied r0 || R0stepZIDS@3   ;when aY < aX
 # NOTE: matches 8660h
-op:"min" Ax_8, Ax_Not8, r0, "lt", mixp || R0_stepZIDS_3 is opcode_9_15=(0x8A>>1) & Ax_8 & Ax_Not8 & opcode_5_7=(6>>1) & R0_stepZIDS_3 & opcode_0_2=0 & r0 & mixp unimpl
+op:"min" Ax_8, Ax_Not8, r0, "lt", mixp || R0_stepZIDS_3 is opcode_9_15=(0x8A>>1) & Ax_8 & Ax_Not8 & opcode_5_7=(6>>1) & R0_stepZIDS_3 & opcode_0_2=0 & r0 & mixp {
+	$(FLAG_M) = (Ax_Not8 s< Ax_8);
+	if (!$(FLAG_M)) goto <done>;
+	Ax_8 = Ax_Not8;
+	mixp = r0;
+	<done>
+	build R0_stepZIDS_3;
+}
 @ifdef TEAK_LITE_2
+macro MIN_VTRSHR(a, b) {
+	local a_high_tmp:5 = (a s>> 16);
+	local b_high_tmp:5 = (b s>> 16);
+	local a_high:3 = a_high_tmp:3;
+	local b_high:3 = b_high_tmp:3;
+	local a_low:2 = a:2;
+	local b_low:2 = b:2;
+
+	# NOTE: this (s<= instead of s>=) is the only difference from MAX_VTRSHR
+	$(FLAG_C) = b_high s<= a_high;
+	$(FLAG_C1) = b_low s<= a_low;
+
+	local result_high:3 = b_high;
+	if ($(FLAG_C)) goto <b_high_greater>;
+	result_high = a_high;
+	<b_high_greater>
+
+	local result_low:2 = b_low;
+	if ($(FLAG_C1)) goto <b_low_greater>;
+	result_low = a_low;
+	<b_low_greater>
+
+	a = (sext(result_high) << 16) | zext(result_low);
+	VTRSHR();
+}
 # 43C2h TL2 min  Axh@0, Axh@not0 || min Axl@0, Axl@not0 || vtrshr
-op:"min" Axh_0, Axh_Not0 || "min" Axl_0, Axl_Not0 || "vtrshr" is opcode_1_15=(0x43C2>>1) & Axh_0 & Axh_Not0 & Axl_0 & Axl_Not0 unimpl
+op:"min" Axh_0, Axh_Not0 || "min" Axl_0, Axl_Not0 || "vtrshr" is opcode_1_15=(0x43C2>>1) & Axh_0 & Axh_Not0 & Axl_0 & Axl_Not0 & Ax_0 & Ax_Not0 {
+	MIN_VTRSHR(Ax_0, Ax_Not0);
+}
 # D2B8h TL2 min  Axh@11, Bxh@10 || min Axl@11, Bxl@10
 #            || mov Axh@not11, MemR01@2 || mov Axl@not11, MemR45@2
 #            || vtrshr || R01@2stepII2@0, R45@2stepII2@1
 op:"min" Axh_11, Bxh_10 || "min" Axl_11, Bxl_10 || "mov" Axh_Not11, MemR01_2 || "mov" Axl_Not11, MemR45_2 || "vtrshr" || R01_2_stepII2_0 || R45_2_stepII2_1
-	is opcode_12_15=0xD & Axh_11 & Axl_11 & Axh_Not11 & Axl_Not11 & Bxh_10 & Bxl_10 & opcode_3_9=(0x2B8>>3) & MemR01_2 & MemR45_2 & R45_2_stepII2_1 & R01_2_stepII2_0 unimpl
+	is opcode_12_15=0xD & Axh_11 & Axl_11 & Axh_Not11 & Axl_Not11 & Bxh_10 & Bxl_10 & opcode_3_9=(0x2B8>>3) & MemR01_2 & MemR45_2 & R45_2_stepII2_1 & R01_2_stepII2_0 & Ax_11 & Bx_10
+{
+	MIN_VTRSHR(Ax_11, Bx_10);
+	MemR01_2 = Axh_Not11; # TODO: saturation
+	MemR45_2 = Axl_Not11; # TODO: saturation
+	build R01_2_stepII2_0;
+	build R45_2_stepII2_1;
+}
 # 4A00h TL2 min  Axh@3, Bxh@4 || min Axl@3, Bxl@4 || mov Axl@not3, MemR04@1
 #            || vtrshr || R04@1stepII2@0
 # NOTE: bit 2 chooses between Axl_Not3 and Axh_Not3 - this could be merged
 # NOTE: matches 4A40h
 op:"min" Axh_3, Bxh_4 || "min" Axl_3, Bxl_4 || "mov" Axl_Not3, MemR04_1 || "vtrshr" || R04_1_stepII2_0
-	is opcode_5_15=(0x4A0>>1) & Bxh_4 & Bxl_4 & Axh_3 & Axl_3 & Axl_Not3 & opcode_2_2=0 & MemR04_1 & R04_1_stepII2_0 unimpl
+	is opcode_5_15=(0x4A0>>1) & Bxh_4 & Bxl_4 & Axh_3 & Axl_3 & Axl_Not3 & opcode_2_2=0 & MemR04_1 & R04_1_stepII2_0 & Ax_3 & Bx_4
+{
+	MIN_VTRSHR(Ax_3, Bx_4);
+	MemR04_1 = Axl_Not3; # TODO: saturation
+	build R04_1_stepII2_0;
+}
 # 4A04h TL2 min  Axh@3, Bxh@4 || min Axl@3, Bxl@4 || mov Axh@not3, MemR04@1
 #            || vtrshr || R04@1stepII2@0
 # NOTE: matches 4A44h
 op:"min" Axh_3, Bxh_4 || "min" Axl_3, Bxl_4 || "mov" Axh_Not3, MemR04_1 || "vtrshr" || R04_1_stepII2_0
-	is opcode_5_15=(0x4A0>>1) & Bxh_4 & Bxl_4 & Axh_3 & Axl_3 & Axh_Not3 & opcode_2_2=1 & MemR04_1 & R04_1_stepII2_0 unimpl
+	is opcode_5_15=(0x4A0>>1) & Bxh_4 & Bxl_4 & Axh_3 & Axl_3 & Axh_Not3 & opcode_2_2=1 & MemR04_1 & R04_1_stepII2_0 & Ax_3 & Bx_4
+{
+	MIN_VTRSHR(Ax_3, Bx_4);
+	MemR04_1 = Axh_Not3; # TODO: saturation
+	build R04_1_stepII2_0;
+}
 # 45E0h TL2 min  Axh@4, Bxh@3 || min Axl@4, Bxl@3 || mov Axh@not4, MemR45@2
 #            || mov Axl@not4, MemR01@2 || vtrshr
 #            || R01@2stepII2@0, R45@2stepII2@1
 # NOTE: matches 45A0h
 op:"min" Axh_4, Bxh_3 || "min" Axl_4, Bxl_3 || "mov" Axh_Not4, MemR45_2 || "mov" Axl_Not4, MemR01_2 || "vtrshr" || R01_2_stepII2_0, R45_2_stepII2_1
-	is opcode_5_15=(0x45E>>1) & Axh_4 & Axl_4 & Axh_Not4 & Axl_Not4 & Bxh_3 & Bxl_3 & MemR45_2 & MemR01_2 & R45_2_stepII2_1 & R01_2_stepII2_0 unimpl
+	is opcode_5_15=(0x45E>>1) & Axh_4 & Axl_4 & Axh_Not4 & Axl_Not4 & Bxh_3 & Bxl_3 & MemR45_2 & MemR01_2 & R45_2_stepII2_1 & R01_2_stepII2_0 & Ax_4 & Bx_3
+{
+	MIN_VTRSHR(Ax_4, Bx_3);
+	MemR45_2 = Axh_Not4; # TODO: saturation
+	MemR01_2 = Axl_Not4; # TODO: saturation
+	build R01_2_stepII2_0;
+	build R45_2_stepII2_1;
+}
 # D4BAh TL2 min  Axh@8, Bxh@0 || min Axl@8, Bxl@0 || vtrshr
-op:"min" Axh_8, Bxh_0 || "min" Axl_8, Bxl_0 || "vtrshr" is opcode_9_15=(0xD4>>1) & Axh_8 & Axl_8 & opcode_1_7=(0xBA>>1) & Bxh_0 & Bxl_0 unimpl
+op:"min" Axh_8, Bxh_0 || "min" Axl_8, Bxl_0 || "vtrshr" is opcode_9_15=(0xD4>>1) & Axh_8 & Axl_8 & opcode_1_7=(0xBA>>1) & Bxh_0 & Bxl_0 & Ax_8 & Bx_0 { MIN_VTRSHR(Ax_8, Bx_0); }
 # 4A20h TL2 min  Bxh@4, Axh@3 || min Bxl@4, Axl@3 || mov Bxl@not4, MemR04@1
 #            || vtrshr || R04@1stepII2@0
 # NOTE: matches 4A60h
 op:"min" Bxh_4, Axh_3 || "min" Bxl_4, Axl_3 || "mov" Bxl_Not4, MemR04_1 || "vtrshr" || R04_1_stepII2_0
-	is opcode_5_15=(0x4A2>>1) & Bxh_4 & Bxl_4 & Bxl_Not4 & Axh_3 & Axl_3 & opcode_2_2=0 & MemR04_1 & R04_1_stepII2_0 unimpl
+	is opcode_5_15=(0x4A2>>1) & Bxh_4 & Bxl_4 & Bxl_Not4 & Axh_3 & Axl_3 & opcode_2_2=0 & MemR04_1 & R04_1_stepII2_0 & Bx_4 & Ax_3
+{
+	MIN_VTRSHR(Bx_4, Ax_3);
+	MemR04_1 = Bxl_Not4; # TODO: saturation
+	build R04_1_stepII2_0;
+}
 # 4A24h TL2 min  Bxh@4, Axh@3 || min Bxl@4, Axl@3 || mov Bxh@not4, MemR04@1
 #            || vtrshr || R04@1stepII2@0
 # NOTE: matches 4A64h
 op:"min" Bxh_4, Axh_3 || "min" Bxl_4, Axl_3 || "mov" Bxh_Not4, MemR04_1 || "vtrshr" || R04_1_stepII2_0
-	is opcode_5_15=(0x4A2>>1) & Bxh_4 & Bxl_4 & Bxh_Not4 & Axh_3 & Axl_3 & opcode_2_2=1 & MemR04_1 & R04_1_stepII2_0 unimpl
+	is opcode_5_15=(0x4A2>>1) & Bxh_4 & Bxl_4 & Bxh_Not4 & Axh_3 & Axl_3 & opcode_2_2=1 & MemR04_1 & R04_1_stepII2_0 & Bx_4 & Ax_3
+{
+	MIN_VTRSHR(Bx_4, Ax_3);
+	MemR04_1 = Bxh_Not4; # TODO: saturation
+	build R04_1_stepII2_0;
+}
 # 47A0h TL2 mind NoReverse, Ax@3, MemR0, le, Implied mixp, Implied r0
 #            || R0stepZIDS@0
-op:"mind" Ax_3, MemR0, "le", mixp || R0_stepZIDS_0 is opcode_4_15=0x47A & Ax_3 & opcode_2_2=0 & R0_stepZIDS_0 & MemR0 & mixp unimpl
+op:"mind" Ax_3, MemR0, "le", mixp || R0_stepZIDS_0 is opcode_4_15=0x47A & Ax_3 & opcode_2_2=0 & R0_stepZIDS_0 & MemR0 & mixp {
+	local other:5 = sext(MemR0);
+	$(FLAG_M) = (other s<= Ax_3);
+	if (!$(FLAG_M)) goto <done>;
+	Ax_3 = other;
+	mixp = r0;
+	<done>
+	build R0_stepZIDS_0;
+}
 # 47A4h TL2 mind NoReverse, Ax@3, MemR0, lt, Implied mixp, Implied r0
 #            || R0stepZIDS@0
-op:"mind" Ax_3, MemR0, "lt", mixp || R0_stepZIDS_0 is opcode_4_15=0x47A & Ax_3 & opcode_2_2=1 & R0_stepZIDS_0 & MemR0 & mixp unimpl
+op:"mind" Ax_3, MemR0, "lt", mixp || R0_stepZIDS_0 is opcode_4_15=0x47A & Ax_3 & opcode_2_2=1 & R0_stepZIDS_0 & MemR0 & mixp {
+	local other:5 = sext(MemR0);
+	$(FLAG_M) = (other s< Ax_3);
+	if (!$(FLAG_M)) goto <done>;
+	Ax_3 = other;
+	mixp = r0;
+	<done>
+	build R0_stepZIDS_0;
+}
 @endif
 # 0080h TL  modr MemRn@0stepZIDS@3
 op:"modr" MemRn_0_stepZIDS_3 is opcode_5_15=(0x008>>1) & MemRn_0_stepZIDS_3 { build MemRn_0_stepZIDS_3; }
