@@ -2790,12 +2790,21 @@ op:"mov" prpage, Abl_0 is opcode_2_15=(0x5EB0>>2) & Abl_0 & prpage { Abl_0 = prp
 op:"mov" SttMod_0, MemR04_4 || R04_4_stepII2_3 is opcode_5_15=(0x49A>>1) & MemR04_4 & R04_4_stepII2_3 & SttMod_0 { MemR04_4 = SttMod_0; build R04_4_stepII2_3; }
 # 4DC0h TL2 mova Ab@4, MemR0425@2_MemR0425@2offsZIDZ@0 || R0425@2stepII2D2S@0
 op:"mova" Ab_4, MemR0425_2^"_"^MemR0425_2_offsZIDZ_0 || R0425_2_stepII2D2S_0
-	is opcode_6_15=(0x4DC>>2) & Ab_4 & MemR0425_2 & MemR0425_2_offsZIDZ_0 & R0425_2_stepII2D2S_0
-unimpl
+	is opcode_6_15=(0x4DC>>2) & Ab_4 & MemR0425_2 & MemR0425_2_offsZIDZ_0 & R0425_2_stepII2D2S_0 & Abh_4 & Abl_4
+{
+	# TODO: saturation
+	# NOTE: teakra notes that the low part is overridden by the high part if the offset is 0
+	MemR0425_2_offsZIDZ_0 = Abl_4;
+	MemR0425 = Abh_4;
+	build R0425_2_stepII2D2S_0;
+}
 # 4BC0h TL2 mova MemR0425@2_MemR0425@2offsZIDZ@0, Ab@4 || R0425@2stepII2D2S@0
 op:"mova" MemR0425_2^"_"^MemR0425_2_offsZIDZ_0, Ab_4 || R0425_2_stepII2D2S_0
 	is opcode_6_15=(0x4BC>>2) & Ab_4 & MemR0425_2 & MemR0425_2_offsZIDZ_0 & R0425_2_stepII2D2S_0
-unimpl
+{
+	Ab_4 = (sext(MemR0425_2) << 16) | zext(MemR0425_2_offsZIDZ_0);
+	build R0425_2_stepII2D2S_0;
+}
 @endif
 # 5F80h TL  movd MemR0123@0,ProgMemR45@2 || R0123@0stepZIDS@3, R45@2stepZIDS@5
 # TODO: write to progmem?
