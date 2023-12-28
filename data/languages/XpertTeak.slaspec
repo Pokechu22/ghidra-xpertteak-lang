@@ -1218,18 +1218,28 @@ macro FLAGS_ADD40(a, b) {
 	FLAGS40X(a + b, (a > (a + b)), scarry(a, b));
 }
 
-macro FLAGS_SUB40(a, b) {
-	FLAGS40X(a - b, (a >= (a - b)), scarry(a, -b));
-}
-
 macro ADD40_3(dest, a, b) {
 	FLAGS_ADD40(a, b);
-	# TODO: saturation would happen here
+	# TODO: saturation would happen here (except for add3 and similar...)
 	dest = a + b;
 }
 
 macro ADD40(a, b) {
 	ADD40_3(a, a, b);
+}
+
+macro FLAGS_SUB40(a, b) {
+	FLAGS40X(a - b, (a >= (a - b)), scarry(a, -b));
+}
+
+macro SUB40_3(dest, a, b) {
+	FLAGS_SUB40(a, b);
+	# TODO: saturation would happen here (except for sub3 and similar...)
+	dest = a - b;
+}
+
+macro SUB40(a, b) {
+	SUB40_3(a, a, b);
 }
 
 # Comments are from http://problemkaputt.de/gbatek.htm#dsiteakliteiiinstructionsetencoding
@@ -1335,67 +1345,137 @@ op:"add" MemR45_8, sv, Abh_2 || "sub" MemR45_8_offsZI_1, sv_copy, Abl_2 || "mov"
 # TODO: better handling of product registers - there's some additional shift stuff that needs to happen
 # NOTE: we don't need to do an ADD40(0, p0) call as that will never set FLAG_C or FLAG_V
 # (teakra's ProductSum is just too generalized)
-op:"add" p0, p1, Ab_2 is opcode_4_15=0x5DC & Ab_2 & opcode_0_1=0 & p0 & p1 { ADD40_3(Ab_2, sext(p0), sext(p1)); }
+op:"add" p0, p1, Ab_2 is opcode_4_15=0x5DC & Ab_2 & opcode_0_1=0 & p0 & p1 { ADD40_3(Ab_2, p0, p1); }
 # D782h TL2 add  p1, Ax@0
-op:"add" p1, Ax_0 is opcode_1_15=(0xD782>>1) & Ax_0 & p1 { ADD40(Ax_0, sext(p1)); }
+op:"add" p1, Ax_0 is opcode_1_15=(0xD782>>1) & Ax_0 & p1 { ADD40(Ax_0, p1); }
 # 5DF8h TL2 add  Px@1, Bx@0
-op:"add" Px_1, Bx_0 is opcode_2_15=(0x5DF8>>2) & Px_1 & Bx_0 { ADD40(Bx_0, sext(Px_1)); }
+op:"add" Px_1, Bx_0 is opcode_2_15=(0x5DF8>>2) & Px_1 & Bx_0 { ADD40(Bx_0, Px_1); }
 # D38Bh TL2 add  r6, Ax@4
 op:"add" r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=0xB & r6 { ADD40(Ax_4, sext(r6)); }
 # 4590h TL2 add3 p0, p1, Ab@2
-# TODO: what do these actually do?
-op:"add3" p0, p1, Ab_2 is opcode_4_15=0x459 & Ab_2 & opcode_0_1=0 & p0 & p1 unimpl
+op:"add3" p0, p1, Ab_2 is opcode_4_15=0x459 & Ab_2 & opcode_0_1=0 & p0 & p1 {
+	# TODO: this means that we can't implement saturation in ADD40_3 since the intermediate value shouldn't be saturated here (probably)
+	ADD40(Ab_2, p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	ADD40(Ab_2, p1);
+	# TODO: teakra marks this as a TODO for different behavior regarding add/subtract
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+}
 # 4592h TL2 add3a p0, p1, Ab@2
-op:"add3a" p0, p1, Ab_2 is opcode_4_15=0x459 & Ab_2 & opcode_0_1=2 & p0 & p1 unimpl
+op:"add3a" p0, p1, Ab_2 is opcode_4_15=0x459 & Ab_2 & opcode_0_1=2 & p0 & p1 {
+	# TODOs shared with add3 above
+	ADD40(Ab_2, p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	ADD40(Ab_2, p1 s>> 16);
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+}
 # 4593h TL2 add3aa p0, p1, Ab@2
-op:"add3aa" p0, p1, Ab_2 is opcode_4_15=0x459 & Ab_2 & opcode_0_1=3 & p0 & p1 unimpl
+op:"add3aa" p0, p1, Ab_2 is opcode_4_15=0x459 & Ab_2 & opcode_0_1=3 & p0 & p1 {
+	# TODOs shared with add3 above
+	ADD40(Ab_2, p0 s>> 16);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	ADD40(Ab_2, p1 s>> 16);
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+}
 # 5DC1h TL2 adda p0, p1, Ab@2
-op:"adda" p0, p1, Ab_2 is opcode_4_15=0x5DC & Ab_2 & opcode_0_1=1 & p0 & p1 unimpl
+op:"adda" p0, p1, Ab_2 is opcode_4_15=0x5DC & Ab_2 & opcode_0_1=1 & p0 & p1 { ADD40_3(Ab_2, p0, p1 s>> 16); }
 @endif
-# TODO: how does addh differ from add? Does it target the high part of the accumulator?
 # B200h TL  addh MemImm8@0, Ax@8
-op:"addh" MemImm8_0, Ax_8 is opcode_9_15=(0xB2>>1) & Ax_8 & MemImm8_0 { Ax_8 = Ax_8 + sext(MemImm8_0); }
+# per teakra ExtendOperandForAlm, addh shifts its operand by 16
+op:"addh" MemImm8_0, Ax_8 is opcode_9_15=(0xB2>>1) & Ax_8 & MemImm8_0 { ADD40(Ax_8, sext(MemImm8_0) << 16); }
 # 9280h TL  addh MemRn@0, Ax@8 || Rn@0stepZIDS@3
-op:"addh" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x92>>1) & Ax_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 { Ax_8 = Ax_8 + sext(MemRn_0); build Rn_0_stepZIDS_3; }
+op:"addh" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x92>>1) & Ax_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 { ADD40(Ax_8, sext(MemRn_0) << 16); build Rn_0_stepZIDS_3; }
 # 92A0h TL  addh Register@0, Ax@8
 # TODO: teakra alm indicates special behavior for Register_0 p, a0, and a1
-op:"addh" Register_0_Read_No_Saturate, Ax_8 is opcode_9_15=(0x92>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0_Read_No_Saturate { Ax_8 = Ax_8 + sext(Register_0_Read_No_Saturate); }
+op:"addh" Register_0_Read_No_Saturate, Ax_8 is opcode_9_15=(0x92>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0_Read_No_Saturate { ADD40(Ax_8, sext(Register_0_Read_No_Saturate) << 16); }
 @ifdef TEAK_LITE_2
 # 9464h TL2 addh r6, Ax@0
-op:"addh" r6, Ax_0 is opcode_1_15=(0x9464>>1) & Ax_0 & r6 { Ax_0 = Ax_0 + sext(r6); }
+op:"addh" r6, Ax_0 is opcode_1_15=(0x9464>>1) & Ax_0 & r6 { ADD40(Ax_0, sext(r6) << 16); }
 # 90E0h TL2 addhp MemR0425@2, Px@4, Ax@8 || R0425@2stepII2D2S@0 ;p=ProgMem? Px?
-op:"addhp" MemR0425_2, Px_4, Ax_8 || R0425_2_stepII2D2S_0 is opcode_9_15=(0x90>>1) & Ax_8 & opcode_5_7=(0xE>>1) & Px_4 & MemR0425_2 & R0425_2_stepII2D2S_0 unimpl
+op:"addhp" MemR0425_2, Px_4, Ax_8 || R0425_2_stepII2D2S_0 is opcode_9_15=(0x90>>1) & Ax_8 & opcode_5_7=(0xE>>1) & Px_4 & MemR0425_2 & R0425_2_stepII2D2S_0 {
+	# per teakra addhp
+	ADD40_3(Ax_8, (sext(MemR0425_2) << 16) | 0x8000, Px_4);
+	build R0425_2_stepII2D2S_0;
+}
 @endif
-# TODO: how does addl differ from add? Does it target the low part of the accumulator?
 # B400h TL  addl MemImm8@0, Ax@8
-op:"addl" MemImm8_0, Ax_8 is opcode_9_15=(0xB4>>1) & Ax_8 & MemImm8_0 { Ax_8 = Ax_8 + sext(MemImm8_0); }
+# per teakra ExtendOperandForAlm (not having anything), addl zero-extends instead of sign-extending
+op:"addl" MemImm8_0, Ax_8 is opcode_9_15=(0xB4>>1) & Ax_8 & MemImm8_0 { ADD40(Ax_8, zext(MemImm8_0)); }
 # 9480h TL  addl MemRn@0, Ax@8 || Rn@0stepZIDS@3
-op:"addl" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 { Ax_8 = Ax_8 + sext(MemRn_0); build Rn_0_stepZIDS_3; }
+op:"addl" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 { ADD40(Ax_8, zext(MemRn_0)); build Rn_0_stepZIDS_3; }
 # 94A0h TL  addl Register@0, Ax@8
 # TODO: teakra alm indicates special behavior for Register_0 p, a0, and a1
-op:"addl" Register_0_Read_No_Saturate, Ax_8 is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0_Read_No_Saturate { Ax_8 = Ax_8 + sext(Register_0_Read_No_Saturate); }
+op:"addl" Register_0_Read_No_Saturate, Ax_8 is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0_Read_No_Saturate { ADD40(Ax_8, zext(Register_0_Read_No_Saturate)); }
 @ifdef TEAK_LITE_2
 # 9466h TL2 addl r6, Ax@0
-op:"addl" r6, Ax_0 is opcode_1_15=(0x9466>>1) & Ax_0 & r6 { Ax_0 = Ax_0 + sext(r6); }
+op:"addl" r6, Ax_0 is opcode_1_15=(0x9466>>1) & Ax_0 & r6 { ADD40(Ax_0, zext(r6)); }
 # 906Ch TL2 addsub  p0, p1, Ab@0
-op:"addsub" p0, p1, Ab_0 is opcode_2_15=(0x906C>>2) & Ab_0 & p0 & p1 unimpl
+op:"addsub" p0, p1, Ab_0 is opcode_2_15=(0x906C>>2) & Ab_0 & p0 & p1 {
+	# TODOs shared with add3 above
+	ADD40(Ab_0, p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	SUB40(Ab_0, p1);
+	$(FLAG_C) = $(FLAG_C) ^ tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) ^ tmp_flag_v;
+}
 # 49C2h TL2 addsub  p1, p0, Ab@4
-op:"addsub" p1, p0, Ab_4 is opcode_6_15=(0x49C>>2) & Ab_4 & opcode_0_3=2 & p1 & p0 unimpl
+op:"addsub" p1, p0, Ab_4 is opcode_6_15=(0x49C>>2) & Ab_4 & opcode_0_3=2 & p1 & p0 {
+	# TODOs shared with add3 above
+	SUB40(Ab_4, p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	ADD40(Ab_4, p1);
+	$(FLAG_C) = $(FLAG_C) ^ tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) ^ tmp_flag_v;
+}
 # 916Ch TL2 addsuba p0, p1, Ab@0
-op:"addsuba" p0, p1, Ab_0 is opcode_2_15=(0x916C>>2) & Ab_0 & p0 & p1 unimpl
+op:"addsuba" p0, p1, Ab_0 is opcode_2_15=(0x916C>>2) & Ab_0 & p0 & p1 {
+	# TODOs shared with add3 above
+	ADD40(Ab_0, p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	SUB40(Ab_0, p1 s>> 16);
+	$(FLAG_C) = $(FLAG_C) ^ tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) ^ tmp_flag_v;
+}
 # 49C3h TL2 addsuba p1, p0, Ab@4
-op:"addsub" p1, p0, Ab_4 is opcode_6_15=(0x49C>>2) & Ab_4 & opcode_0_3=3 & p1 & p0 unimpl
+op:"addsuba" p1, p0, Ab_4 is opcode_6_15=(0x49C>>2) & Ab_4 & opcode_0_3=3 & p1 & p0 {
+	# TODOs shared with add3 above
+	SUB40(Ab_4, p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	ADD40(Ab_4, p1 s>> 16);
+	$(FLAG_C) = $(FLAG_C) ^ tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) ^ tmp_flag_v;
+}
 @endif
 # E700h TL  addv Imm16@16, MemImm8@0
-op:"addv" Imm16, MemImm8_0 is opcode_8_15=0xE7 & MemImm8_0; Imm16 { MemImm8_0 = MemImm8_0 + Imm16; }
+macro ADDV(dest, a, b) {
+	# TODO: this is a weird operation. Perhaps the builtin carry and such checks would work,
+	# but I'm not sure of it.
+	local result_unsigned:4 = zext(a) + zext(b);
+	local result_signed:4 = sext(a) + sext(b);
+	dest = result_unsigned:2;
+	$(FLAG_C) = (result_unsigned >> 16) != 0;
+	$(FLAG_M) = result_signed s< 0;  # 32-bit operation, which is weird... does this actually differ for sign-extended values?
+	$(FLAG_Z) = dest == 0;
+}
+op:"addv" Imm16, MemImm8_0 is opcode_8_15=0xE7 & MemImm8_0; Imm16 { ADDV(MemImm8_0, MemImm8_0, Imm16); }
 # 86E0h TL  addv Imm16@16, MemRn@0 || Rn@0stepZIDS@3
-op:"addv" Imm16, MemRn_0 || Rn_0_stepZIDS_3 is opcode_5_15=(0x86E>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 { MemRn_0 = MemRn_0 + Imm16; build Rn_0_stepZIDS_3; }
+op:"addv" Imm16, MemRn_0 || Rn_0_stepZIDS_3 is opcode_5_15=(0x86E>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 { ADDV(MemRn_0, MemRn_0, Imm16); build Rn_0_stepZIDS_3; }
 # 87E0h TL  addv Imm16@16, Register@0
 # TODO: teakra alb indicates special behavior for Register_0 p, a0, and a1 AND also weird behavior for writing to [ab][01][lh], not currently implemented
-op:"addv" Imm16, Register_0_Write is opcode_5_15=(0x87E>>1) & Register_0_Read_No_Saturate & Register_0_Write & Register_0_Write_After; Imm16 { Register_0_Write = Register_0_Read_No_Saturate + Imm16; build Register_0_Write_After; }
+op:"addv" Imm16, Register_0_Write is opcode_5_15=(0x87E>>1) & Register_0_Read_No_Saturate & Register_0_Write & Register_0_Write_After; Imm16 { ADDV(Register_0_Write, Register_0_Read_No_Saturate, Imm16); build Register_0_Write_After; }
 @ifdef TEAK_LITE_2
 # 47BBh TL2 addv Imm16@16, r6
-op:"addv" Imm16, r6 is opcode_0_15=0x47BB & r6; Imm16 { r6 = r6 + Imm16; }
+op:"addv" Imm16, r6 is opcode_0_15=0x47BB & r6; Imm16 { ADDV(r6, r6, Imm16); }
 @endif
 # D4F9h TL  and  MemImm16@16, Ax@8
 # TODO: what parts are affected by the and? As-is this zeros most of the accumulator
