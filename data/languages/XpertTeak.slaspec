@@ -3327,30 +3327,40 @@ op:"ror" Bx_12 is opcode_13_15=(6>>1) & Bx_12 & opcode_4_11=(0xF4) & cond_0=0 {
 	Bx_12 = (Bx_12 >> 1) | ((Bx_12 & 1) << 37);
 }
 # E300h TL  rst  Imm16@16, MemImm8@0
-op:"rst" Imm16, MemImm8_0 is opcode_8_15=0xE3 & MemImm8_0; Imm16 unimpl
+macro RST(dest, a, b) {
+	local result:2 = a & ~b;
+	FLAGS16(result);
+	dest = result;
+}
+op:"rst" Imm16, MemImm8_0 is opcode_8_15=0xE3 & MemImm8_0; Imm16 { RST(MemImm8_0, MemImm8_0, Imm16); }
 # 82E0h TL  rst  Imm16@16, MemRn@0 || Rn@0stepZIDS@3
-op:"rst" Imm16, MemRn_0 || Rn_0_stepZIDS_3 is opcode_5_15=(0x82E>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 unimpl
+op:"rst" Imm16, MemRn_0 || Rn_0_stepZIDS_3 is opcode_5_15=(0x82E>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 { RST(MemRn_0, MemRn_0, Imm16); build Rn_0_stepZIDS_3; }
 # 83E0h TL  rst  Imm16@16, Register@0
 # TODO: teakra alb indicates special behavior for Register_0 p, a0, and a1 AND also weird behavior for writing to [ab][01][lh], not currently implemented
-op:"rst" Imm16, Register_0_Write is opcode_5_15=(0x83E>>1) & Register_0_Read_No_Saturate & Register_0_Write & Register_0_Write_After; Imm16 unimpl
+op:"rst" Imm16, Register_0_Write is opcode_5_15=(0x83E>>1) & Register_0_Read_No_Saturate & Register_0_Write & Register_0_Write_After; Imm16 { RST(Register_0_Write, Register_0_Read_No_Saturate, Imm16); build Register_0_Write_After; }
 @ifdef TEAK_LITE_2
 # 47B9h TL2 rst  Imm16@16, r6
-op:"rst" Imm16, r6 is opcode_0_15=0x47B9 & r6; Imm16 unimpl
+op:"rst" Imm16, r6 is opcode_0_15=0x47B9 & r6; Imm16 { RST(r6, r6, Imm16); }
 # 4388h TL2 rst  Imm16@16, SttMod@0
-op:"rst" Imm16, SttMod_0 is opcode_3_15=(0x4388>>3) & SttMod_0; Imm16 unimpl
+op:"rst" Imm16, SttMod_0 is opcode_3_15=(0x4388>>3) & SttMod_0; Imm16 { RST(SttMod_0, SttMod_0, Imm16); }
 @endif
 # E100h TL  set  Imm16@16, MemImm8@0
-op:"set" Imm16, MemImm8_0 is opcode_8_15=0xE1 & MemImm8_0; Imm16 unimpl
+macro SET(dest, a, b) {
+	local result:2 = a | b;
+	FLAGS16(result);
+	dest = result;
+}
+op:"set" Imm16, MemImm8_0 is opcode_8_15=0xE1 & MemImm8_0; Imm16 { SET(MemImm8_0, MemImm8_0, Imm16); }
 # 80E0h TL  set  Imm16@16, MemRn@0 || Rn@0stepZIDS@3
-op:"set" Imm16, MemRn_0 || Rn_0_stepZIDS_3 is opcode_5_15=(0x80E>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 unimpl
+op:"set" Imm16, MemRn_0 || Rn_0_stepZIDS_3 is opcode_5_15=(0x80E>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 { SET(MemRn_0, MemRn_0, Imm16); build Rn_0_stepZIDS_3; }
 # 81E0h TL  set  Imm16@16, Register@0
 # TODO: teakra alb indicates special behavior for Register_0 p, a0, and a1 AND also weird behavior for writing to [ab][01][lh], not currently implemented
-op:"set" Imm16, Register_0_Write is opcode_5_15=(0x81E>>1) & Register_0_Read_No_Saturate & Register_0_Write & Register_0_Write_After; Imm16 unimpl
+op:"set" Imm16, Register_0_Write is opcode_5_15=(0x81E>>1) & Register_0_Read_No_Saturate & Register_0_Write & Register_0_Write_After; Imm16 { SET(Register_0_Write, Register_0_Read_No_Saturate, Imm16); build Register_0_Write_After; }
 @ifdef TEAK_LITE_2
 # 47B8h TL2 set  Imm16@16, r6
-op:"set" Imm16, r6 is opcode_0_15=0x47B8 & r6; Imm16 unimpl
+op:"set" Imm16, r6 is opcode_0_15=0x47B8 & r6; Imm16 { SET(r6, r6, Imm16); }
 # 43C8h TL2 set  Imm16@16, SttMod@0
-op:"set" Imm16, SttMod_0 is opcode_3_15=(0x43C8>>3) & SttMod_0; Imm16 unimpl
+op:"set" Imm16, SttMod_0 is opcode_3_15=(0x43C8>>3) & SttMod_0; Imm16 { SET(SttMod_0, SttMod_0, Imm16); }
 @endif
 # D280h TL  shfc Implied sv, Ab@10, Ab@5, Cond@0
 op:"shfc" Ab_10, Ab_5, Cond_0 is opcode_12_15=0xD & Ab_10 & opcode_7_9=(0x28>>3) & Ab_5 & opcode_4_4=0 & Cond_0 unimpl
