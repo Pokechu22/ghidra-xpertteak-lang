@@ -1244,6 +1244,40 @@ macro SUB40(a, b) {
 	SUB40_3(a, a, b);
 }
 
+macro ADD16(dest, a, b) {
+	# TODO: this is a weird operation. Perhaps the builtin carry and such checks would work,
+	# but I'm not sure of it.
+	local result_unsigned:4 = zext(a) + zext(b);
+	local result_signed:4 = sext(a) + sext(b);
+	local result:2 = result_unsigned:2;
+	$(FLAG_C) = (result_unsigned >> 16) != 0;
+	$(FLAG_M) = result_signed s< 0;  # 32-bit operation, which is weird... does this actually differ for sign-extended values?
+	$(FLAG_Z) = result == 0;
+	dest = result;
+}
+
+macro FLAGS_SUB16(a, b) {
+	# TODO: this is a weird operation. Perhaps the builtin carry and such checks would work,
+	# but I'm not sure of it.
+	local result_unsigned:4 = zext(a) + zext(b);
+	local result_signed:4 = sext(a) + sext(b);
+	local result:2 = result_unsigned:2;
+	$(FLAG_C) = (result_unsigned >> 16) != 0;
+	$(FLAG_M) = result_signed s< 0;  # 32-bit operation, which is weird... does this actually differ for sign-extended values?
+	$(FLAG_Z) = result == 0;
+}
+
+macro SUB16(dest, a, b) {
+	FLAGS_SUB16(a, b);
+	dest = a - b;
+}
+
+macro FLAGS16(result) {
+	# This applies to set/rst/chng. It would apply to subv and addv, except that those seem to use 32-bit sign extension. That may still be equivalent though.
+	$(FLAG_M) = result s< 0;
+	$(FLAG_Z) = result == 0;
+}
+
 # Comments are from http://problemkaputt.de/gbatek.htm#dsiteakliteiiinstructionsetencoding
 # Note that "add  MemRn@0, Ax@8 || Rn@0stepZIDS@3" means two actions are performed by the instruction:
 # First, it adds; then it applies a step (which is optional). The || does NOT indicate a choice of
@@ -1459,25 +1493,15 @@ op:"addsuba" p1, p0, Ab_4 is opcode_6_15=(0x49C>>2) & Ab_4 & opcode_0_3=3 & p1 &
 }
 @endif
 # E700h TL  addv Imm16@16, MemImm8@0
-macro ADDV(dest, a, b) {
-	# TODO: this is a weird operation. Perhaps the builtin carry and such checks would work,
-	# but I'm not sure of it.
-	local result_unsigned:4 = zext(a) + zext(b);
-	local result_signed:4 = sext(a) + sext(b);
-	dest = result_unsigned:2;
-	$(FLAG_C) = (result_unsigned >> 16) != 0;
-	$(FLAG_M) = result_signed s< 0;  # 32-bit operation, which is weird... does this actually differ for sign-extended values?
-	$(FLAG_Z) = dest == 0;
-}
-op:"addv" Imm16, MemImm8_0 is opcode_8_15=0xE7 & MemImm8_0; Imm16 { ADDV(MemImm8_0, MemImm8_0, Imm16); }
+op:"addv" Imm16, MemImm8_0 is opcode_8_15=0xE7 & MemImm8_0; Imm16 { ADD16(MemImm8_0, MemImm8_0, Imm16); }
 # 86E0h TL  addv Imm16@16, MemRn@0 || Rn@0stepZIDS@3
-op:"addv" Imm16, MemRn_0 || Rn_0_stepZIDS_3 is opcode_5_15=(0x86E>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 { ADDV(MemRn_0, MemRn_0, Imm16); build Rn_0_stepZIDS_3; }
+op:"addv" Imm16, MemRn_0 || Rn_0_stepZIDS_3 is opcode_5_15=(0x86E>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 { ADD16(MemRn_0, MemRn_0, Imm16); build Rn_0_stepZIDS_3; }
 # 87E0h TL  addv Imm16@16, Register@0
 # TODO: teakra alb indicates special behavior for Register_0 p, a0, and a1 AND also weird behavior for writing to [ab][01][lh], not currently implemented
-op:"addv" Imm16, Register_0_Write is opcode_5_15=(0x87E>>1) & Register_0_Read_No_Saturate & Register_0_Write & Register_0_Write_After; Imm16 { ADDV(Register_0_Write, Register_0_Read_No_Saturate, Imm16); build Register_0_Write_After; }
+op:"addv" Imm16, Register_0_Write is opcode_5_15=(0x87E>>1) & Register_0_Read_No_Saturate & Register_0_Write & Register_0_Write_After; Imm16 { ADD16(Register_0_Write, Register_0_Read_No_Saturate, Imm16); build Register_0_Write_After; }
 @ifdef TEAK_LITE_2
 # 47BBh TL2 addv Imm16@16, r6
-op:"addv" Imm16, r6 is opcode_0_15=0x47BB & r6; Imm16 { ADDV(r6, r6, Imm16); }
+op:"addv" Imm16, r6 is opcode_0_15=0x47BB & r6; Imm16 { ADD16(r6, r6, Imm16); }
 @endif
 # D4F9h TL  and  MemImm16@16, Ax@8
 # per teakra, and doesn't experience sign-extension (so this will kill most bits), nor does it experience saturation
@@ -1714,36 +1738,45 @@ op:"cbs" MemR01_2, MemR45_2, "ge" || R01_2_stepII2_0, R45_2_stepII2_1 is opcode_
 op:"cbs" MemR01_2, MemR45_2, "gt" || R01_2_stepII2_0, R45_2_stepII2_1 is opcode_3_15=(0xD5C8>>3) & MemR01_2 & MemR45_2 & R45_2_stepII2_1 & R01_2_stepII2_0 unimpl
 @endif
 # E500h TL  chng Imm16@16, MemImm8@0
-op:"chng" Imm16, MemImm8_0 is opcode_8_15=0xE5 & MemImm8_0; Imm16 unimpl
+macro CHNG(dest, a, b) {
+	local result:2 = a ^ b;
+	FLAGS16(result);
+	dest = result;
+}
+op:"chng" Imm16, MemImm8_0 is opcode_8_15=0xE5 & MemImm8_0; Imm16 { CHNG(MemImm8_0, MemImm8_0, Imm16); }
 # 84E0h TL  chng Imm16@16, MemRn@0 || Rn@0stepZIDS@3
-op:"chng" Imm16, MemRn_0 || Rn_0_stepZIDS_3 is opcode_5_15=(0x84E>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 unimpl
+op:"chng" Imm16, MemRn_0 || Rn_0_stepZIDS_3 is opcode_5_15=(0x84E>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 { CHNG(MemRn_0, MemRn_0, Imm16); build Rn_0_stepZIDS_3; }
 # 85E0h TL  chng Imm16@16, Register@0
 # TODO: teakra alb indicates special behavior for Register_0 p, a0, and a1 AND also weird behavior for writing to [ab][01][lh], not currently implemented
-op:"chng" Imm16, Register_0_Write is opcode_5_15=(0x85E>>1) & Register_0_Read_No_Saturate & Register_0_Write & Register_0_Write_After; Imm16 unimpl
+op:"chng" Imm16, Register_0_Write is opcode_5_15=(0x85E>>1) & Register_0_Read_No_Saturate & Register_0_Write & Register_0_Write_After; Imm16 { CHNG(Register_0_Write, Register_0_Read_No_Saturate, Imm16); build Register_0_Write_After; }
 @ifdef TEAK_LITE_2
 # 47BAh TL2 chng Imm16@16, r6
-op:"chng" Imm16, r6 is opcode_0_15=0x47BA & r6; Imm16 unimpl
+op:"chng" Imm16, r6 is opcode_0_15=0x47BA & r6; Imm16 { CHNG(r6, r6, Imm16); }
 # 0038h TL2 chng Imm16@16, SttMod@0
-op:"chng" Imm16, SttMod_0 is opcode_3_15=(0x0038>>3) & SttMod_0; Imm16 unimpl
+op:"chng" Imm16, SttMod_0 is opcode_3_15=(0x0038>>3) & SttMod_0; Imm16 { CHNG(SttMod_0, SttMod_0, Imm16); }
 @endif
 # 6760h TL  clr  Implied ConstZero, Ax@12, Cond@0  ;aX=0
 op:"clr" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=(0x76) & Cond_0 {
 	if (!Cond_0) goto inst_next;
 	Ax_12 = 0;
+	FLAGS40(Ax_12);
 }
 op:"clr" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=(0x76) & cond_0=0 { Ax_12 = 0; }
 # 6F60h TL  clr  Implied ConstZero, Bx@12, Cond@0  ;bX=0
 op:"clr" Bx_12, Cond_0 is opcode_13_15=(6>>1) & Bx_12 & opcode_4_11=(0xF6) & Cond_0 {
 	if (!Cond_0) goto inst_next;
 	Bx_12 = 0;
+	FLAGS40(Bx_12);
 }
 op:"clr" Bx_12 is opcode_13_15=(6>>1) & Bx_12 & opcode_4_11=(0xF6) & cond_0=0 { Bx_12 = 0; }
 @ifdef TEAK_LITE_2
 # 8ED0h TL2 clr  Implied ConstZero, Ab@2, Ab@0
-# TODO: What if Ab_2 == Ab_0? Is that something else?
+# TODO: teakra FilterDoubleClr indicates some weird stuff happens for Ab_2=b0/b1 or a lot of other cases
 op:"clr" Ab_2, Ab_0 is opcode_4_15=0x8ED & Ab_2 & Ab_0 {
 	Ab_2 = 0;
+	FLAGS40(Ab_2);
 	Ab_0 = 0;
+	FLAGS40(Ab_0);
 }
 # 5DFEh TL2 clrp p0
 op:"clrp" p0 is opcode_0_15=0x5DFE & p0 {
@@ -1763,6 +1796,7 @@ op:"clrp" p1 is opcode_0_15=0x5DFD & p1 {
 op:"clrr" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x7C & Cond_0 {
 	if (!Cond_0) goto inst_next;
 	Ax_12 = 0x8000;
+	FLAGS40(Ax_12);
 }
 op:"clrr" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x7C & cond_0=0 { Ax_12 = 0x8000; }
 @ifdef TEAK_LITE_2
@@ -1770,66 +1804,70 @@ op:"clrr" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x7C & cond_0=0 { A
 op:"clrr" Bx_12, Cond_0 is opcode_13_15=(6>>1) & Bx_12 & opcode_4_11=0xF7 & Cond_0 {
 	if (!Cond_0) goto inst_next;
 	Bx_12 = 0x8000;
+	FLAGS40(Bx_12);
 }
 op:"clrr" Bx_12 is opcode_13_15=(6>>1) & Bx_12 & opcode_4_11=0xF7 & cond_0=0 { Bx_12 = 0x8000; }
 # 8DD0h TL2 clrr Implied Const8000h, Ab@2, Ab@0
+# TODO: teakra FilterDoubleClr indicates some weird stuff happens for Ab_2=b0/b1 or a lot of other cases
 op:"clrr" Ab_2, Ab_0 is opcode_4_15=0x8DD & Ab_2 & Ab_0 {
 	Ab_2 = 0x8000;
+	FLAGS40(Ab_2);
 	Ab_0 = 0x8000;
+	FLAGS40(Ab_0);
 }
 @endif
 # D4FEh TL  cmp  MemImm16@16, Ax@8
-op:"cmp" MemImm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xFE; MemImm16 unimpl
+op:"cmp" MemImm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xFE; MemImm16 { FLAGS_SUB40(Ax_8, sext(MemImm16)); }
 # AC00h TL  cmp  MemImm8@0, Ax@8
-op:"cmp" MemImm8_0, Ax_8 is opcode_9_15=(0xAC>>1) & Ax_8 & MemImm8_0 unimpl
+op:"cmp" MemImm8_0, Ax_8 is opcode_9_15=(0xAC>>1) & Ax_8 & MemImm8_0 { FLAGS_SUB40(Ax_8, sext(MemImm8_0)); }
 # 8CC0h TL  cmp  Imm16@16, Ax@8
-op:"cmp" Imm16, Ax_8 is opcode_9_15=(0x8C>>1) & Ax_8 & opcode_0_7=0xC0; Imm16 unimpl
+op:"cmp" Imm16, Ax_8 is opcode_9_15=(0x8C>>1) & Ax_8 & opcode_0_7=0xC0; Imm16 { FLAGS_SUB40(Ax_8, sext(Imm16)); }
 # CC00h TL  cmp  Imm8u@0, Ax@8
-op:"cmp" Imm8u_0, Ax_8 is opcode_9_15=(0xCC>>1) & Ax_8 & Imm8u_0 unimpl
+op:"cmp" Imm8u_0, Ax_8 is opcode_9_15=(0xCC>>1) & Ax_8 & Imm8u_0 { FLAGS_SUB40(Ax_8, zext(Imm8u_0)); }
 # D4DEh TL  cmp  MemR7Imm16@16, Ax@8
-op:"cmp" MemR7Imm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xDE; MemR7Imm16 unimpl
+op:"cmp" MemR7Imm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xDE; MemR7Imm16 { FLAGS_SUB40(Ax_8, sext(MemR7Imm16)); }
 # 4C00h TL  cmp  MemR7Imm7s@0, Ax@8
-op:"cmp" MemR7Imm7s_0, Ax_8 is opcode_9_15=(0x4C>>1) & Ax_8 & opcode_7_7=0 & MemR7Imm7s_0 unimpl
+op:"cmp" MemR7Imm7s_0, Ax_8 is opcode_9_15=(0x4C>>1) & Ax_8 & opcode_7_7=0 & MemR7Imm7s_0 { FLAGS_SUB40(Ax_8, sext(MemR7Imm7s_0)); }
 # 8C80h TL  cmp  MemRn@0, Ax@8 || Rn@0stepZIDS@3
-op:"cmp" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x8C>>1) & Ax_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 unimpl
+op:"cmp" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x8C>>1) & Ax_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 { FLAGS_SUB40(Ax_8, sext(MemRn_0)); build Rn_0_stepZIDS_3; }
 # 8CA0h TL  cmp  RegisterP0@0, Ax@8
 # TODO: teakra alm indicates special behavior for Register_0 p, a0, and a1
-op:"cmp" Register_0_Read_No_Saturate, Ax_8 is opcode_9_15=(0x8C)>>1 & Ax_8 & opcode_5_7=(0xA>>1) & Register_0_Read_No_Saturate unimpl
+op:"cmp" Register_0_Read_No_Saturate, Ax_8 is opcode_9_15=(0x8C)>>1 & Ax_8 & opcode_5_7=(0xA>>1) & Register_0_Read_No_Saturate { FLAGS_SUB40(Ax_8, sext(Register_0_Read_No_Saturate)); }
 @ifdef TEAK_LITE_2
 # 4D8Ch TL2 cmp  Ax@1, Bx@0
-op:"cmp" Ax_1, Bx_0 is opcode_2_15=(0x4D8C>>2) & Ax_1 & Bx_0 unimpl
+op:"cmp" Ax_1, Bx_0 is opcode_2_15=(0x4D8C>>2) & Ax_1 & Bx_0 { FLAGS_SUB40(Bx_0, Ax_1); }
 # D483h TL2 cmp  b0, b1
-op:"cmp" b0, b1 is opcode_0_15=0xD483 & b0 & b1 unimpl
+op:"cmp" b0, b1 is opcode_0_15=0xD483 & b0 & b1 { FLAGS_SUB40(b1, b0); }
 # D583h TL2 cmp  b1, b0
-op:"cmp" b1, b0 is opcode_0_15=0xD583 & b0 & b1 unimpl
+op:"cmp" b1, b0 is opcode_0_15=0xD583 & b0 & b1 { FLAGS_SUB40(b0, b1); }
 # DA9Ah TL2 cmp  Bx@10, Ax@0
-op:"cmp" Bx_10, Ax_0 is opcode_11_15=(0xDA>>3) & Bx_10 & opcode_1_9=(0x29A>>1) & Ax_0 unimpl
+op:"cmp" Bx_10, Ax_0 is opcode_11_15=(0xDA>>3) & Bx_10 & opcode_1_9=(0x29A>>1) & Ax_0 { FLAGS_SUB40(Ax_0, Bx_10); }
 # 8B63h TL2 cmp  p1, Ax@4
-op:"cmp" p1, Ax_4 is opcode_5_15=(0x8B6>>1) & Ax_4 & opcode_0_3=0x3 & p1 unimpl
+op:"cmp" p1, Ax_4 is opcode_5_15=(0x8B6>>1) & Ax_4 & opcode_0_3=0x3 & p1 { FLAGS_SUB40(Ax_4, p1); }
 # D38Eh TL2 cmp  r6, Ax@4
-op:"cmp" r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=0xE & r6 unimpl
+op:"cmp" r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=0xE & r6 { FLAGS_SUB40(Ax_4, sext(r6)); }
 @endif
 # BE00h TL  cmpu MemImm8@0, Ax@8
-op:"cmpu" MemImm8_0, Ax_8 is opcode_9_15=(0xBE>>1) & Ax_8 & MemImm8_0 unimpl
+op:"cmpu" MemImm8_0, Ax_8 is opcode_9_15=(0xBE>>1) & Ax_8 & MemImm8_0 { FLAGS_SUB40(Ax_8, zext(MemImm8_0)); }
 # 9E80h TL  cmpu MemRn@0, Ax@8 || Rn@0stepZIDS@3
-op:"cmpu" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x9E>>1) & Ax_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 unimpl
+op:"cmpu" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x9E>>1) & Ax_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 { FLAGS_SUB40(Ax_8, zext(MemRn_0)); build Rn_0_stepZIDS_3; }
 # 9EA0h TL  cmpu Register@0, Ax@8
 # TODO: teakra alm indicates special behavior for Register_0 p, a0, and a1
-op:"cmpu" Register_0_Read_No_Saturate, Ax_8 is opcode_9_15=(0x9E>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0_Read_No_Saturate unimpl
+op:"cmpu" Register_0_Read_No_Saturate, Ax_8 is opcode_9_15=(0x9E>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0_Read_No_Saturate { FLAGS_SUB40(Ax_8, zext(Register_0_Read_No_Saturate)); }
 @ifdef TEAK_LITE_2
 # 8A63h TL2 cmpu r6, Ax@3
-op:"cmpu" r6, Ax_3 is opcode_4_15=0x8A6 & Ax_3 & opcode_0_2=3 & r6 unimpl
+op:"cmpu" r6, Ax_3 is opcode_4_15=0x8A6 & Ax_3 & opcode_0_2=3 & r6 { FLAGS_SUB40(Ax_3, zext(r6)); }
 @endif
 # ED00h TL  cmpv Imm16@16, MemImm8@0
-op:"cmpv" Imm16, MemImm8_0 is opcode_8_15=0xED & MemImm8_0; Imm16 unimpl
+op:"cmpv" Imm16, MemImm8_0 is opcode_8_15=0xED & MemImm8_0; Imm16 { FLAGS_SUB16(MemImm8_0, Imm16); }
 # 8CE0h TL  cmpv Imm16@16, MemRn@0 || Rn@0stepZIDS@3
-op:"cmpv" Imm16, MemRn_0 || Rn_0_stepZIDS_3 is opcode_5_15=(0x8CE>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 unimpl
+op:"cmpv" Imm16, MemRn_0 || Rn_0_stepZIDS_3 is opcode_5_15=(0x8CE>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 { FLAGS_SUB16(MemRn_0, Imm16); build Rn_0_stepZIDS_3; }
 # 8DE0h TL  cmpv Imm16@16, Register@0
-# TODO: teakra alb indicates special behavior for Register_0 p, a0, and a1 AND also weird behavior for writing to [ab][01][lh], not currently implemented
-op:"cmpv" Imm16, Register_0_Write is opcode_5_15=(0x8DE>>1) & Register_0_Read_No_Saturate & Register_0_Write & Register_0_Write_After; Imm16 unimpl
+# TODO: teakra alb indicates special behavior for Register_0 p, a0, and a1 (the weird behavior for writing to [ab][01][lh] doesn't apply since cmpv doesn't write)
+op:"cmpv" Imm16, Register_0_Read_No_Saturate is opcode_5_15=(0x8DE>>1) & Register_0_Read_No_Saturate; Imm16 { FLAGS_SUB16(Register_0_Read_No_Saturate, Imm16); }
 @ifdef TEAK_LITE_2
 # 47BEh TL2 cmpv Imm16@16, r6
-op:"cmpv" Imm16, r6 is opcode_0_15=0x47BE & r6; Imm16 unimpl
+op:"cmpv" Imm16, r6 is opcode_0_15=0x47BE & r6; Imm16 { FLAGS_SUB16(r6, Imm16); }
 @endif
 # D390h TL  cntx r  ;restore shadows
 op:"cntx" "r" is opcode_0_15=0xD390 unimpl
