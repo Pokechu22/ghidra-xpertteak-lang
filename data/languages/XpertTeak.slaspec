@@ -2576,9 +2576,9 @@ op:"mind" Ax_3, MemR0, "lt", mixp || R0_stepZIDS_0 is opcode_4_15=0x47A & Ax_3 &
 }
 @endif
 # 0080h TL  modr MemRn@0stepZIDS@3
-op:"modr" MemRn_0_stepZIDS_3 is opcode_5_15=(0x008>>1) & MemRn_0_stepZIDS_3 { build MemRn_0_stepZIDS_3; }
+op:"modr" MemRn_0_stepZIDS_3 is opcode_5_15=(0x008>>1) & MemRn_0_stepZIDS_3 & Rn_0 { build MemRn_0_stepZIDS_3; $(FLAG_R) = (Rn_0 == 0); }
 # 00A0h TL  modr MemRn@0stepZIDS@3, dmod  ;Disable modulo
-op:"modr" MemRn_0_stepZIDS_3,"dmod" is opcode_5_15=(0x00A>>1) & MemRn_0_stepZIDS_3 { build MemRn_0_stepZIDS_3; }
+op:"modr" MemRn_0_stepZIDS_3,"dmod" is opcode_5_15=(0x00A>>1) & MemRn_0_stepZIDS_3 & Rn_0 { build MemRn_0_stepZIDS_3; $(FLAG_R) = (Rn_0 == 0); } # TODO: dmod
 @ifdef TEAK_LITE_2
 # NOTE: nocash documentation has a "modrstepII2D2S0" which is what is used here (the difference is
 # that one uses stepi/stepj (unclear which) and the other uses stepi0/stepj0 (also unclear which).)
@@ -2615,13 +2615,13 @@ op:"modr" MemR0123_8_modrstepII2D2S0_0, "dmod" || "modr" MemR4567_8_modrstepII2D
 }
 # TODO: Brackets? (See comment on MemR0123_5_modrstepII2D2S0_1)
 # 5DA0h TL2 modr MemRn@0stepD2
-op:"modr" MemRn_0-2 is opcode_3_15=(0x5DA0>>3) & MemRn_0 & Rn_0 { Rn_0 = Rn_0 - 2; }
+op:"modr" MemRn_0-2 is opcode_3_15=(0x5DA0>>3) & MemRn_0 & Rn_0 { Rn_0 = Rn_0 - 2; $(FLAG_R) = (Rn_0 == 0); }
 # 5DA8h TL2 modr MemRn@0stepD2, dmod
-op:"modr" MemRn_0-2, "dmod" is opcode_3_15=(0x5DA8>>3) & MemRn_0 & Rn_0 { Rn_0 = Rn_0 - 2; }  # TODO: dmod
+op:"modr" MemRn_0-2, "dmod" is opcode_3_15=(0x5DA8>>3) & MemRn_0 & Rn_0 { Rn_0 = Rn_0 - 2; $(FLAG_R) = (Rn_0 == 0); }  # TODO: dmod
 # 4990h TL2 modr MemRn@0stepI2
-op:"modr" MemRn_0+2 is opcode_3_15=(0x4990>>3) & MemRn_0 & Rn_0 { Rn_0 = Rn_0 + 2; }
+op:"modr" MemRn_0+2 is opcode_3_15=(0x4990>>3) & MemRn_0 & Rn_0 { Rn_0 = Rn_0 + 2; $(FLAG_R) = (Rn_0 == 0); }
 # 4998h TL2 modr MemRn@0stepI2, dmod
-op:"modr" MemRn_0+2, "dmod" is opcode_3_15=(0x4998>>3) & MemRn_0 & Rn_0 { Rn_0 = Rn_0 + 2; }  # TODO: dmod
+op:"modr" MemRn_0+2, "dmod" is opcode_3_15=(0x4998>>3) & MemRn_0 & Rn_0 { Rn_0 = Rn_0 + 2; $(FLAG_R) = (Rn_0 == 0); }  # TODO: dmod
 @endif
 # D290h TL  mov  Ab@10, Ab@5
 op:"mov" Ab_10, Ab_5 is opcode_12_15=0xD & Ab_10 & opcode_7_9=(0x29>>3) & Ab_5 & opcode_0_4=0x10 { Ab_5 = Ab_10; }
