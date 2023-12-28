@@ -107,14 +107,17 @@ define register offset=0xD0 size=2 [ lc_0 lc_1 lc_2 lc_3 lc_4 lc_5 lc_6 lc_7 ];
 # Note: The outermost loop increments loopstackdepth and then uses CurSt3, so index 1 is the first.
 # Although we could reset loopstackdepth for the loop instruction, it needs to be changed for
 # the next instruction for flowing to work, and that instruction might need to check looping.
-CurLC: is loopstackdepth=1 { export lc_0; }
-CurLC: is loopstackdepth=2 { export lc_1; }
-CurLC: is loopstackdepth=3 { export lc_2; }
-CurLC: is loopstackdepth=4 { export lc_3; }
-CurLC: is loopstackdepth=5 { export lc_4; }
-CurLC: is loopstackdepth=6 { export lc_5; }
-CurLC: is loopstackdepth=7 { export lc_6; }
-CurLC: is loopstackdepth=8 { export lc_7; }
+CurLC:lc_0 is loopstackdepth=1 & lc_0 { export lc_0; }
+CurLC:lc_1 is loopstackdepth=2 & lc_1 { export lc_1; }
+CurLC:lc_2 is loopstackdepth=3 & lc_2 { export lc_2; }
+CurLC:lc_3 is loopstackdepth=4 & lc_3 { export lc_3; }
+CurLC:lc_4 is loopstackdepth=5 & lc_4 { export lc_4; }
+CurLC:lc_5 is loopstackdepth=6 & lc_5 { export lc_5; }
+CurLC:lc_6 is loopstackdepth=7 & lc_6 { export lc_6; }
+CurLC:lc_7 is loopstackdepth=8 & lc_7 { export lc_7; }
+
+CurLC_Even_Not_In_Loop:CurLC is CurLC { export CurLC; }
+CurLC_Even_Not_In_Loop:lc_0 is loopstackdepth=0 & lc_0 { export lc_0; }
 
 # Regular and hacky implementation of status register
 @ifdef USE_REAL_ST0_REGISTER
@@ -621,13 +624,13 @@ Register_5_Write_After:a0l is Register_5_=0x1C & a0l { a0 = zext(a0l); }
 Register_0_Write_After:a1l is Register_0_=0x1D & a1l { a1 = zext(a1l); }
 Register_5_Write_After:a1l is Register_5_=0x1D & a1l { a1 = zext(a1l); }
 
-# NOTE: CurLC is a table based on context, so we can't use it in attach variables.
-Register_0_Read_Impl:CurLC is Register_0_=0x1E & CurLC { export CurLC; }
-Register_5_Read_Impl:CurLC is Register_5_=0x1E & CurLC { export CurLC; }
-Register_0_Write:CurLC is Register_0_=0x1E & CurLC { export CurLC; }
-Register_5_Write:CurLC is Register_5_=0x1E & CurLC { export CurLC; }
-Register_0_Write_After:CurLC is Register_0_=0x1E & CurLC {}
-Register_5_Write_After:CurLC is Register_5_=0x1E & CurLC {}
+# NOTE: CurLC_Even_Not_In_Loop is a table based on context, so we can't use it in attach variables.
+Register_0_Read_Impl:CurLC_Even_Not_In_Loop is Register_0_=0x1E & CurLC_Even_Not_In_Loop { export CurLC_Even_Not_In_Loop; }
+Register_5_Read_Impl:CurLC_Even_Not_In_Loop is Register_5_=0x1E & CurLC_Even_Not_In_Loop { export CurLC_Even_Not_In_Loop; }
+Register_0_Write:CurLC_Even_Not_In_Loop is Register_0_=0x1E & CurLC_Even_Not_In_Loop { export CurLC_Even_Not_In_Loop; }
+Register_5_Write:CurLC_Even_Not_In_Loop is Register_5_=0x1E & CurLC_Even_Not_In_Loop { export CurLC_Even_Not_In_Loop; }
+Register_0_Write_After:CurLC_Even_Not_In_Loop is Register_0_=0x1E & CurLC_Even_Not_In_Loop {}
+Register_5_Write_After:CurLC_Even_Not_In_Loop is Register_5_=0x1E & CurLC_Even_Not_In_Loop {}
 
 # Ignore saturation/no saturation for registers where it doesn't matter
 Register_0_Read_Saturate:Register_0_Read_Impl is Register_0_Read_Impl { export Register_0_Read_Impl; }
