@@ -293,6 +293,7 @@ define token opcode (16)
 	Bx_12 = (12, 12)
 
 	Bxl_0 = (0, 0)
+	Bxl_1 = (1, 1)
 	Bxl_3 = (3, 3)
 	Bxl_4 = (4, 4)
 	Bxl_5 = (5, 5)
@@ -300,11 +301,12 @@ define token opcode (16)
 	Bxl_Not4 = (4, 4)
 
 	Bxh_0 = (0, 0)
-	Bxh_2 = (3, 3)
+	Bxh_1 = (1, 1)
+	Bxh_2 = (2, 2)
 	Bxh_3 = (3, 3)
 	Bxh_4 = (4, 4)
 	Bxh_5 = (5, 5)
-	Bxh_8 = (5, 5)
+	Bxh_8 = (8, 8)
 	Bxh_10 = (10, 10)
 	Bxh_Not4 = (4, 4)
 
@@ -650,10 +652,10 @@ attach variables [ Px_0 Px_1 Px_4 ] [ p0 p1 ];
 
 attach variables [ Bx_0 Bx_1 Bx_2 Bx_3 Bx_4 Bx_5 Bx_8 Bx_10 Bx_12 ] [ b0 b1 ];
 
-attach variables [ Bxl_0 Bxl_3 Bxl_4 Bxl_5 Bxl_10 ] [ b0l b1l ];
+attach variables [ Bxl_0 Bxl_1 Bxl_3 Bxl_4 Bxl_5 Bxl_10 ] [ b0l b1l ];
 attach variables [ Bxl_Not4 ] [ b1l b0l ];
 
-attach variables [ Bxh_0 Bxh_2 Bxh_3 Bxh_4 Bxh_5 Bxh_8 Bxh_10 ] [ b0h b1h ];
+attach variables [ Bxh_0 Bxh_1 Bxh_2 Bxh_3 Bxh_4 Bxh_5 Bxh_8 Bxh_10 ] [ b0h b1h ];
 attach variables [ Bxh_Not4 ] [ b1h b0h ];
 
 attach variables [ Ab_0 Ab_2 Ab_3 Ab_4 Ab_5 Ab_6 Ab_7 Ab_8 Ab_10 Ab_11 ] [ b0 b1 a0 a1 ];
@@ -3072,9 +3074,10 @@ op:"pop" Register_0_Write is opcode_5_15=(0x5E60>>5) & Register_0_Write & Regist
 }
 @ifdef TEAK_LITE_2
 # 47B4h TL2 pop  Abe@0
-op:"pop" Abe_0 is opcode_2_15=(0x47B4>>2) & Abe_0 {
+op:"pop" Abe_0 is opcode_2_15=(0x47B4>>2) & Abe_0 & Ab_0 {
 	Abe_0 = *[data]:2 sp;
 	sp = sp + 1;
+	FLAGS40(Ab_0);
 }
 # 80C7h TL2 pop  ArArpSttMod@8
 op:"pop" ArArpSttMod_8 is opcode_12_15=0x8 & ArArpSttMod_8 & opcode_0_7=0xc7 {
@@ -3122,7 +3125,15 @@ op:"pop" y1 is opcode_1_15=(4>>1) & unused_0_0 & y1 {
 	sp = sp + 1;
 }
 # 47B0h TL2 popa Ab@0
-op:"popa" Ab_0 is opcode_2_15=(0x47B0>>2) & Ab_0 unimpl
+op:"popa" Ab_0 is opcode_2_15=(0x47B0>>2) & Ab_0 {
+	local h:2 = *[data]:2 sp;
+	sp = sp + 1;
+	local l:2 = *[data]:2 sp;
+	sp = sp + 1;
+	local full:4 = (zext(h) << 16) | zext(l);
+	Ab_0 = sext(full);
+	FLAGS40(Ab_0);
+}
 @endif
 # 5F40h TL  push Imm16@16
 op:"push" Imm16 is opcode_0_15=0x5F40; Imm16 {
@@ -3137,6 +3148,7 @@ op:"push" Register_0_Read_Saturate is opcode_5_15=(0x5E40>>5) & Register_0_Read_
 @ifdef TEAK_LITE_2
 # D7C8h TL2 push Abe@1, Unused1@0
 op:"push" Abe_1 is opcode_3_15=(0xD7C8>>3) & Abe_1 & unused_0_0 {
+	# TODO: saturation
 	sp = sp - 1;
 	*[data]:2 sp = Abe_1;
 }
@@ -3181,9 +3193,21 @@ op:"push" y1 is opcode_6_15=(0xD4D>>2) & unused_5_5 & opcode_0_4=0x16 & y1 {
 	*[data]:2 sp = y1;
 }
 # 4384h TL2 pusha Ax@6, Unused2@0
-op:"pusha" Ax_6 is opcode_7_15=(0x438>>3) & Ax_6 & opcode_2_5=(4>>2) & unused_0_1 unimpl
+op:"pusha" Ax_6 is opcode_7_15=(0x438>>3) & Ax_6 & opcode_2_5=(4>>2) & unused_0_1 & Axh_6 & Axl_6 {
+	# TODO: saturation
+	sp = sp - 1;
+	*[data]:2 sp = Axl_6;
+	sp = sp - 1;
+	*[data]:2 sp = Axh_6;
+}
 # D788h TL2 pusha Bx@1, Unused1@0
-op:"pusha" Bx_1 is opcode_2_15=(0xD788>>2) & Bx_1 & unused_0_0 unimpl
+op:"pusha" Bx_1 is opcode_2_15=(0xD788>>2) & Bx_1 & unused_0_0 & Bxh_1 & Bxl_1 {
+	# TODO: saturation
+	sp = sp - 1;
+	*[data]:2 sp = Bxl_1;
+	sp = sp - 1;
+	*[data]:2 sp = Bxh_1;
+}
 @endif
 AfterLoopWrapper:tmp is epsilon [ tmp = inst_start + 2; ] { export *[code]:2 tmp; }
 # 0C00h TL  rep  Imm8u@0    ;repeat next opcode N+1 times
