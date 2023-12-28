@@ -3014,9 +3014,9 @@ op:"msusu" y0, MemR0425_3, Ax_8 || R0425_3_stepII2D2S_0 is opcode_9_15=(0x82>>1)
 # 6790h TL  neg  Ax@12, Cond@0 ;aX=0-aX
 op:"neg" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x79 & Cond_0 {
 	if (!Cond_0) goto inst_next;
-	Ax_12 = -Ax_12;
+	SUB40_3(Ax_12, 0, Ax_12);
 }
-op:"neg" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x79 & cond_0=0 { Ax_12 = -Ax_12; }
+op:"neg" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x79 & cond_0=0 { SUB40_3(Ax_12, 0, Ax_12); }
 # 0000h TL  nop
 op:"nop" is opcode_0_15=0x0000 {}
 # 94C0h TL  norm Ax@8, Bogus MemRn@0 || Rn@0stepZIDS@3  ;if N=0 (aX=aX*2,rN+/-)
@@ -3025,8 +3025,9 @@ op:"norm" Ax_8, MemRn_0 || Rn_0_stepZIDS_3 is opcode_9_15=(0x94>>1) & Ax_8 & opc
 op:"not" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x78 & Cond_0 {
 	if (!Cond_0) goto inst_next;
 	Ax_12 = ~Ax_12;
+	FLAGS40(Ax_12);
 }
-op:"not" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x78 & cond_0=0 { Ax_12 = ~Ax_12; }
+op:"not" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x78 & cond_0=0 { Ax_12 = ~Ax_12; FLAGS40(Ax_12); }
 # D4F8h TL  or   MemImm16@16, Ax@8
 op:"or" MemImm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xF8; MemImm16 { Ax_8 = Ax_8 | zext(MemImm16); }
 # A000h TL  or   MemImm8@0, Ax@8
