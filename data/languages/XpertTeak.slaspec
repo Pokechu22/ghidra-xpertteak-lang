@@ -1329,9 +1329,8 @@ op:"add" MemR04_1, sv, Abh_2 || "sub" MemR04_1_offsZI_0, sv_copy, Abl_2 || R04_1
 {
 	# teakra add_sub_sv - no flags
 	local high:5 = sext(MemR04_1) + sext(sv);
-	local low:5 = zext(MemR04_1_offsZI_0 + sv);
+	local low:5 = zext(MemR04_1_offsZI_0 - sv);
 	Ab_2 = (high << 16) | low;
-	# TODO: saturation/sign extension
 	build R04_1_stepII2_0;
 }
 # 6F80h TL2 add  MemR45@2, MemR01@2, Abh@3
@@ -3465,47 +3464,108 @@ op:"sub" Bx_4, Ax_3 is opcode_5_15=(0x886>>1) & Bx_4 & Ax_3 & opcode_0_2=1 { SUB
 # 8064h TL2 sub  MemR01@8, sv, Abh@3 || add MemR01@8offsZI@0, sv, Abl@3
 #            || mov MemR45@8, sv || R01@8stepII2@0, R45@8stepII2@1
 op:"sub" MemR01_8, sv, Abh_3 || "add" MemR01_8_offsZI_0, sv_copy, Abl_3 || "mov" MemR45_8, sv_copy_2 || R01_8_stepII2_0, R45_8_stepII2_1
-	is opcode_9_15=(0x80>>1) & MemR01_8 & MemR45_8 & opcode_4_7=6 & Abh_3 & Abl_3 & opcode_2_2=1 & MemR01_8_offsZI_0 & R01_8_stepII2_0 & R45_8_stepII2_1 & sv & sv_copy & sv_copy_2
-unimpl
+	is opcode_9_15=(0x80>>1) & MemR01_8 & MemR45_8 & opcode_4_7=6 & Abh_3 & Abl_3 & Ab_3 & opcode_2_2=1 & MemR01_8_offsZI_0 & R01_8_stepII2_0 & R45_8_stepII2_1 & sv & sv_copy & sv_copy_2
+{
+	# teakra sub_add_i_mov_j_sv - no flags
+	local high:5 = sext(MemR01_8) - sext(sv);
+	local low:5 = zext(MemR01_8_offsZI_0 + sv);
+	Ab_3 = (high << 16) | low;
+	sv = MemR45_8;
+	build R01_8_stepII2_0;
+	build R45_8_stepII2_1;
+}
 # 5DE0h TL2 sub  MemR04@1, sv, Abh@2 || add MemR04@1offsZI@0, sv, Abl@2
 #            || R04@1stepII2@0
 op:"sub" MemR04_1, sv, Abh_2 || "add" MemR04_1_offsZI_0, sv_copy, Abl_2 || R04_1_stepII2_0
-	is opcode_4_15=0x5DE & Abh_2 & Abl_2 & MemR04_1 & MemR04_1_offsZI_0 & R04_1_stepII2_0 & sv & sv_copy
-unimpl
+	is opcode_4_15=0x5DE & Abh_2 & Abl_2 & Ab_2 & MemR04_1 & MemR04_1_offsZI_0 & R04_1_stepII2_0 & sv & sv_copy
+{
+	# teakra sub_add_sv - no flags
+	local high:5 = sext(MemR04_1) - sext(sv);
+	local low:5 = zext(MemR04_1_offsZI_0 + sv);
+	Ab_2 = (high << 16) | low;
+	build R04_1_stepII2_0;
+}
 # 6FC0h TL2 sub  MemR45@2, MemR01@2, Abh@3
 #            || add MemR45@2offsZI@1, MemR01@2offsZI@0, Abl@3
 #            || R01@2stepII2@0, R45@2stepII2@1
 op:"sub" MemR45_2, MemR01_2, Abh_3 || "add" MemR45_2_offsZI_1, MemR01_2_offsZI_0, Abl_3 || R01_2_stepII2_0, R45_2_stepII2_1
-	is opcode_5_15=(0x6FC>>1) & Abh_3 & Abl_3 & MemR45_2 & MemR01_2 & MemR45_2_offsZI_1 & R45_2_stepII2_1 & MemR01_2_offsZI_0 & R01_2_stepII2_0
-unimpl
+	is opcode_5_15=(0x6FC>>1) & Abh_3 & Abl_3 & Ab_3 & MemR45_2 & MemR01_2 & MemR45_2_offsZI_1 & R45_2_stepII2_1 & MemR01_2_offsZI_0 & R01_2_stepII2_0
+{
+	# teakra sub_add - no flags
+	local high:5 = sext(MemR45_2) - sext(MemR01_2);
+	local low:5 = zext(MemR45_2_offsZI_1 + MemR01_2_offsZI_0);
+	Ab_3 = (high << 16) | low;
+	build R01_2_stepII2_0;
+	build R45_2_stepII2_1;
+}
 # 6FE0h TL2 sub  MemR45@2, MemR01@2, Abh@3
 #            || sub MemR45@2offsZI@1, MemR01@2offsZI@0, Abl@3
 #            || R01@2stepII2@0, R45@2stepII2@1
 op:"sub" MemR45_2, MemR01_2, Abh_3 || "sub" MemR45_2_offsZI_1, MemR01_2_offsZI_0, Abl_3 || R01_2_stepII2_0, R45_2_stepII2_1
-	is opcode_5_15=(0x6FE>>1) & Abh_3 & Abl_3 & MemR45_2 & MemR01_2 & MemR45_2_offsZI_1 & R45_2_stepII2_1 & MemR01_2_offsZI_0 & R01_2_stepII2_0
-unimpl
+	is opcode_5_15=(0x6FE>>1) & Abh_3 & Abl_3 & Ab_3 & MemR45_2 & MemR01_2 & MemR45_2_offsZI_1 & R45_2_stepII2_1 & MemR01_2_offsZI_0 & R01_2_stepII2_0
+{
+	# teakra sub_sub - no flags
+	local high:5 = sext(MemR45_2) - sext(MemR01_2);
+	local low:5 = zext(MemR45_2_offsZI_1 - MemR01_2_offsZI_0);
+	Ab_3 = (high << 16) | low;
+	build R01_2_stepII2_0;
+	build R45_2_stepII2_1;
+}
 # 5D80h TL2 sub  MemR45@2, sv, Abh@3 || add MemR45@2offsZI@1, sv, Abl@3
 #            || mov MemR01@2, sv || R01@2stepII2@0, R45@2stepII2@1
 op:"sub" MemR45_2, sv, Abh_3 || "add" MemR45_2_offsZI_1, sv_copy, Abl_3 || "mov" MemR01_2, sv_copy_2 || R01_2_stepII2_0, R45_2_stepII2_1
-	is opcode_5_15=(0x5D8>>1) & Abh_3 & Abl_3 & MemR45_2 & MemR01_2 & MemR45_2_offsZI_1 & R45_2_stepII2_1 & R01_2_stepII2_0 & sv & sv_copy & sv_copy_2
-unimpl
+	is opcode_5_15=(0x5D8>>1) & Abh_3 & Abl_3 & Ab_3 & MemR45_2 & MemR01_2 & MemR45_2_offsZI_1 & R45_2_stepII2_1 & R01_2_stepII2_0 & sv & sv_copy & sv_copy_2
+{
+	# teakra sub_add_j_mov_i_sv - no flags
+	local high:5 = sext(MemR45_2) - sext(sv);
+	local low:5 = zext(MemR45_2_offsZI_1 + sv);
+	Ab_3 = (high << 16) | low;
+	sv = MemR01_2;
+	build R01_2_stepII2_0;
+	build R45_2_stepII2_1;
+}
 # 5DC2h TL2 sub  p0, p1, Ab@2
-# TODO: Should this just be sub  p0, Ab@2? Or how does it differ from sub3?
-op:"sub" p0, p1, Ab_2 is opcode_4_15=0x5DC & Ab_2 & opcode_0_1=2 & p0 & p1 unimpl
+# teakra app/ProductSum for the ones with both p0 and p1
+# TODO: better handling of product registers - there's some additional shift stuff that needs to happen
+# NOTE: we don't need to do an ADD40(0, p0) call as that will never set FLAG_C or FLAG_V
+# (teakra's ProductSum is just too generalized)
+op:"sub" p0, p1, Ab_2 is opcode_4_15=0x5DC & Ab_2 & opcode_0_1=2 & p0 & p1 { SUB40_3(Ab_2, p0, p1); }
 # D4B9h TL2 sub  p1, Ax@8
-op:"sub" p1, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xB9 & p1 { Ax_8 = Ax_8 - sext(p1); }
+op:"sub" p1, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xB9 & p1 { SUB40(Ax_8, p1); }
 # 8FD0h TL2 sub  Px@1, Bx@0
-op:"sub" Px_1, Bx_0 is opcode_2_15=(0x8FD0>>2) & Px_1 & Bx_0 { Bx_0 = Bx_0 - sext(Px_1); }
+op:"sub" Px_1, Bx_0 is opcode_2_15=(0x8FD0>>2) & Px_1 & Bx_0 { SUB40(Bx_0, Px_1); }
 # D38Fh TL2 sub  r6, Ax@4
-op:"sub" r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=0xF & r6 { Ax_4 = Ax_4 - sext(r6); }
+op:"sub" r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=0xF & r6 { SUB40(Ax_4, sext(r6)); }
 # 80C6h TL2 sub3 p0, p1, Ab@10
-op:"sub3" p0, p1, Ab_10 is opcode_12_15=8 & Ab_10 & opcode_0_9=0x0C6 & p0 & p1 unimpl
+op:"sub3" p0, p1, Ab_10 is opcode_12_15=8 & Ab_10 & opcode_0_9=0x0C6 & p0 & p1 {
+	# TODOs shared with add3 above
+	SUB40(Ab_10, p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	SUB40(Ab_10, p1);
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+}
 # 82C6h TL2 sub3a p0, p1, Ab@10
-op:"sub3a" p0, p1, Ab_10 is opcode_12_15=8 & Ab_10 & opcode_0_9=0x2C6 & p0 & p1 unimpl
+op:"sub3a" p0, p1, Ab_10 is opcode_12_15=8 & Ab_10 & opcode_0_9=0x2C6 & p0 & p1 {
+	SUB40(Ab_10, p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	SUB40(Ab_10, p1 s>> 16);
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+}
 # 83C6h TL2 sub3aa p0, p1, Ab@10
-op:"sub3aa" p0, p1, Ab_10 is opcode_12_15=8 & Ab_10 & opcode_0_9=0x3C6 & p0 & p1 unimpl
+op:"sub3aa" p0, p1, Ab_10 is opcode_12_15=8 & Ab_10 & opcode_0_9=0x3C6 & p0 & p1 {
+	SUB40(Ab_10, p0 s>> 16);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	SUB40(Ab_10, p1 s>> 16);
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+}
 # 5DC3h TL2 suba p0, p1, Ab@2
-op:"suba" p0, p1, Ab_2 is opcode_4_15=0x5DC & Ab_2 & opcode_0_1=3 & p0 & p1 unimpl
+op:"suba" p0, p1, Ab_2 is opcode_4_15=0x5DC & Ab_2 & opcode_0_1=3 & p0 & p1 { SUB40_3(Ab_2, p0, p1 s>> 16); }
 @endif
 # B600h TL  subh MemImm8@0, Ax@8
 # per teakra ExtendOperandForAlm, subh shifts its operand by 16
