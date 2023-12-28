@@ -2795,7 +2795,7 @@ op:"mova" Ab_4, MemR0425_2^"_"^MemR0425_2_offsZIDZ_0 || R0425_2_stepII2D2S_0
 	# TODO: saturation
 	# NOTE: teakra notes that the low part is overridden by the high part if the offset is 0
 	MemR0425_2_offsZIDZ_0 = Abl_4;
-	MemR0425 = Abh_4;
+	MemR0425_2 = Abh_4;
 	build R0425_2_stepII2D2S_0;
 }
 # 4BC0h TL2 mova MemR0425@2_MemR0425@2offsZIDZ@0, Ab@4 || R0425@2stepII2D2S@0
