@@ -585,6 +585,7 @@ ProgMemRn_0:[^"code:movpd":Rn_0] is Rn_0
 ProgMemRn_0:(Rn_0) is Rn_0
 @endif
 {
+	# TODO: this uses the same upper bits as pcmhi
 	export *[code]:2 Rn_0;
 }
 
@@ -594,6 +595,7 @@ ProgMemAxl_5:[^"code:movpd":Axl_5] is Axl_5
 ProgMemAxl_5:(Axl_5) is Axl_5
 @endif
 {
+	# TODO: this uses the same upper bits as pcmhi
 	export *[code]:2 Axl_5;
 }
 
@@ -603,7 +605,9 @@ ProgMemAx_5:[^"code:movpd":Ax_5] is Ax_5
 ProgMemAx_5:(Ax_5) is Ax_5
 @endif
 {
-	export *[code]:2 Ax_5;
+	# This does not experience saturation
+	local address:5 = Ax_5 & 0x3FFFF;
+	export *[code]:2 address;
 }
 
 @ifdef NOCASH_SYNTAX
@@ -612,7 +616,9 @@ ProgMemAx_8:[^"code:movpd":Ax_8] is Ax_8
 ProgMemAx_8:(Ax_8) is Ax_8
 @endif
 {
-	export *[code]:2 Ax_8;
+	# This does not experience saturation
+	local address:5 = Ax_8 & 0x3FFFF;
+	export *[code]:2 address;
 }
 
 # offsI doesn't seem to be configurable
@@ -622,8 +628,9 @@ ProgMemAx_8_offsI:[^"code:movpd":Ax_8+] is Ax_8
 ProgMemAx_8_offsI:(Ax_8+) is Ax_8
 @endif
 {
-	addr = Ax_8 + 1;
-	export *[code]:2 addr;
+	# This does not experience saturation
+	local address:5 = (Ax_8 + 1) & 0x3FFFF;
+	export *[code]:2 address;
 }
 
 @ifdef NOCASH_SYNTAX
@@ -632,6 +639,7 @@ ProgMemR45_2:[^"code:movpd":R45_2] is R45_2
 ProgMemR45_2:(R45_2) is R45_2
 @endif
 {
+	# TODO: this uses the same upper bits as pcmhi
 	export *[code]:2 R45_2;
 }
 
@@ -3108,7 +3116,6 @@ op:"mova" MemR0425_2^"_"^MemR0425_2_offsZIDZ_0, Ab_4 || R0425_2_stepII2D2S_0
 }
 @endif
 # 5F80h TL  movd MemR0123@0,ProgMemR45@2 || R0123@0stepZIDS@3, R45@2stepZIDS@5
-# TODO: write to progmem?
 op:"movd" MemR0123_0, ProgMemR45_2 || R0123_0_stepZIDS_3, R45_2_stepZIDS_5
 	is opcode_7_15=(0x5F8>>3) & R45_2_stepZIDS_5 & R0123_0_stepZIDS_3 & ProgMemR45_2 & MemR0123_0
 {
@@ -3132,42 +3139,67 @@ op:"movp" ProgMemRn_0, MemR0123_5 || R0123_5_stepZIDS_7, Rn_0_stepZIDS_3
 }
 @ifdef TEAK_LITE_2
 # D499h TL2 movpdw ProgMemAx@8_ProgMemAx@8offsI, pc
-op:"movpdw" ProgMemAx_8^"_"^ProgMemAx_8_offsI, pc is opcode_9_15=(0xD4>>1) & ProgMemAx_8 & ProgMemAx_8_offsI & opcode_0_7=0x99 & pc unimpl
+op:"movpdw" ProgMemAx_8^"_"^ProgMemAx_8_offsI, pc is opcode_9_15=(0xD4>>1) & ProgMemAx_8 & ProgMemAx_8_offsI & opcode_0_7=0x99 & pc {
+	local address:5 = (zext(ProgMemAx_8) << 16) | zext(ProgMemAx_8_offsI);
+	goto [address];
+}
 @endif
 # 8864h TL  movr MemR0425@3, Abh@8 || R0425@3stepII2D2S@0   ;op*10000h+8000h
-# TODO: rounding?
-op:"movr" MemR0425_3, Abh_8 || R0425_3_stepII2D2S_0 is opcode_10_15=(0x88>>2) & Abh_8 & opcode_5_7=(6>>1) & MemR0425_3 & opcode_2_2=1 & R0425_3_stepII2D2S_0 {
-	Abh_8 = MemR0425_3;
+# TODO: why does this one use Abh while the rest use Ax? In practice it seems like this needs to write to Ab anyways...
+op:"movr" MemR0425_3, Abh_8 || R0425_3_stepII2D2S_0 is opcode_10_15=(0x88>>2) & Abh_8 & opcode_5_7=(6>>1) & MemR0425_3 & opcode_2_2=1 & R0425_3_stepII2D2S_0 & Ab_8 {
+	ADD40_3(Ab_8, sext(MemR0425_3) << 16, 0x8000);
 	build R0425_3_stepII2D2S_0;
 }
 # 9CE0h TL  movr MemRn@0, Ax@8 || Rn@0stepZIDS@3
 op:"movr" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x9C>>1) & Ax_8 & opcode_5_7=(0xE>>1) & Rn_0_stepZIDS_3 & MemRn_0 {
-	Ax_8 = zext(MemRn_0);
+	# Teakra says: "Do 16-bit arithmetic. Flag C is set according to bit 16 but Flag V is always cleared" "Looks like a hardware bug to me"
+	local tmp:2 = MemRn_0;
+	$(FLAG_C) = scarry(tmp, 0x8000);
+	$(FLAG_V) = 0;
+	tmp = tmp + 0x8000;
+	Ax_8 = zext(tmp);
+	FLAGS40(Ax_8);  # TODO: saturation
 	build Rn_0_stepZIDS_3;
 }
 # 9CC0h TL  movr RegisterP0@0, Ax@8
 # TODO: teakra indicates special behavior for Register_0 = a0/a1/p
-op:"movr" Register_0_Read_No_Saturate, Ax_8 is opcode_9_15=(0x9C>>1) & Ax_8 & opcode_5_7=(0xC>>1) & Register_0_Read_No_Saturate { Ax_8 = zext(Register_0_Read_No_Saturate); }
+op:"movr" Register_0_Read_No_Saturate, Ax_8 is opcode_9_15=(0x9C>>1) & Ax_8 & opcode_5_7=(0xC>>1) & Register_0_Read_No_Saturate {
+	# Same 16-bit arithmetic as 9CE0h
+	local tmp:2 = Register_0_Read_No_Saturate;
+	$(FLAG_C) = scarry(tmp, 0x8000);
+	$(FLAG_V) = 0;
+	tmp = tmp + 0x8000;
+	Ax_8 = zext(tmp);
+	FLAGS40(Ax_8);  # TODO: saturation
+}
 @ifdef TEAK_LITE_2
 # 5DF4h TL2 movr Bx@1, Ax@0
-op:"movr" Bx_1, Ax_0 is opcode_2_15=(0x5DF4>>2) & Bx_1 & Ax_0 { Ax_0 = Bx_1; }
+op:"movr" Bx_1, Ax_0 is opcode_2_15=(0x5DF4>>2) & Bx_1 & Ax_0 { ADD40_3(Ax_0, Bx_1, 0x8000); }
 # 8961h TL2 movr r6, Ax@3
-op:"movr" r6, Ax_3 is opcode_4_15=0x896 & Ax_3 & opcode_0_2=1 & r6 { Ax_3 = zext(r6); }
+op:"movr" r6, Ax_3 is opcode_4_15=0x896 & Ax_3 & opcode_0_2=1 & r6 {
+	# Same 16-bit arithmetic as 9CE0h
+	local tmp:2 = r6;
+	$(FLAG_C) = scarry(tmp, 0x8000);
+	$(FLAG_V) = 0;
+	tmp = tmp + 0x8000;
+	Ax_3 = zext(tmp);
+	FLAGS40(Ax_3);  # TODO: saturation
+}
 @endif
 # 6300h TL  movs Implied sv, MemImm8@0, Ab@11
 # TODO: what does this do and what does sv do?
-op:"movs" MemImm8_0, Ab_11 is opcode_13_15=(6>>1) & Ab_11 & opcode_8_10=3 & MemImm8_0 { Ab_11 = zext(MemImm8_0); }
+op:"movs" MemImm8_0, Ab_11 is opcode_13_15=(6>>1) & Ab_11 & opcode_8_10=3 & MemImm8_0 unimpl # { Ab_11 = zext(MemImm8_0); }
 # 0180h TL  movs Implied sv, MemRn@0, Ab@5 || Rn@0stepZIDS@3
-op:"movs" MemRn_0, Ab_5 || Rn_0_stepZIDS_3 is opcode_7_15=(0x018>>3) & Ab_5 & Rn_0_stepZIDS_3 & MemRn_0 { Ab_5 = zext(MemRn_0); build Rn_0_stepZIDS_3; }
+op:"movs" MemRn_0, Ab_5 || Rn_0_stepZIDS_3 is opcode_7_15=(0x018>>3) & Ab_5 & Rn_0_stepZIDS_3 & MemRn_0 unimpl # { Ab_5 = zext(MemRn_0); build Rn_0_stepZIDS_3; }
 # 0100h TL  movs Implied sv, RegisterP0@0, Ab@5
-op:"movs" Register_0_Read_No_Saturate, Ab_5 is opcode_7_15=(0x010>>3) & Ab_5 & Register_0_Read_No_Saturate { Ab_5 = zext(Register_0_Read_No_Saturate); }
+op:"movs" Register_0_Read_No_Saturate, Ab_5 is opcode_7_15=(0x010>>3) & Ab_5 & Register_0_Read_No_Saturate unimpl # { Ab_5 = zext(Register_0_Read_No_Saturate); }
 @ifdef TEAK_LITE_2
 # 5F42h TL2 movs Implied sv, r6, Ax@0
-op:"movs" r6, Ax_0 is opcode_1_15=(0x5F42>>1) & Ax_0 & r6 { Ax_0 = zext(r6); }
+op:"movs" r6, Ax_0 is opcode_1_15=(0x5F42>>1) & Ax_0 & r6 unimpl # { Ax_0 = zext(r6); }
 @endif
 # 4080h TL  movsi Implied Imm5s@0, R0123457y0@9, Ab@5, Bogus Imm5s@0
 # TODO: OK, this is trying to indicate a different order or something? But what is it doing? Hardcoding a value for sv?
-op:"movsi" Imm5s_0, R0123457y0_9, Ab_5 is opcode_12_15=4 & R0123457y0_9 & opcode_7_8=(0x08>>3) & Ab_5 & Imm5s_0 { Ab_5 = zext(R0123457y0_9); }
+op:"movsi" Imm5s_0, R0123457y0_9, Ab_5 is opcode_12_15=4 & R0123457y0_9 & opcode_7_8=(0x08>>3) & Ab_5 & Imm5s_0 unimpl # { Ab_5 = zext(R0123457y0_9); }
 # D000h TL  mpy  MemR45@2, MemR0123@0 || R0123@0stepZIDS@3, R45@2stepZIDS@5
 op:"mpy" MemR45_2, MemR0123_0 || R0123_0_stepZIDS_3, R45_2_stepZIDS_5 is opcode_7_15=(0xD00>>3) & R45_2_stepZIDS_5 & R0123_0_stepZIDS_3 & MemR45_2 & MemR0123_0 & Y0_input {
 	y0 = MemR45_2;
