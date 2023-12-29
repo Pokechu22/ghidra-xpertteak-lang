@@ -1115,7 +1115,7 @@ macro FLAGS16(result) {
 	$(FLAG_Z) = result == 0;
 }
 
-# teakra ProductSum for the following 6 macros
+# teakra ProductSum for the following 8 macros
 macro PRODUCT_ADD3(dest, possibly_shifted_p0, possibly_shifted_p1) {
 	# TODO: this means that we can't implement saturation in ADD40_3 since the intermediate value shouldn't be saturated here (probably)
 	ADD40(dest, possibly_shifted_p0);
@@ -1164,6 +1164,18 @@ macro PRODUCT_SUB_ADD(dest, possibly_shifted_p0, possibly_shifted_p1) {
 	$(FLAG_V) = $(FLAG_V) ^ tmp_flag_v;
 }
 
+macro PRODUCT_ADD3_SV(dest, possibly_rounded_sv, possibly_shifted_p0, possibly_shifted_p1) {
+	# TODO: this means that we can't implement saturation in ADD40_3 since the intermediate value shouldn't be saturated here (probably)
+	ADD40_3(dest, possibly_rounded_sv, possibly_shifted_p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	ADD40(dest, possibly_shifted_p1);
+	# TODO: saturate here
+	# TODO: teakra marks this as a TODO for different behavior regarding add/subtract
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+}
+
 macro PRODUCT_SUB3_SV(dest, possibly_rounded_sv, possibly_shifted_p0, possibly_shifted_p1) {
 	# TODO: this means that we can't implement saturation in ADD40_3 since the intermediate value shouldn't be saturated here (probably)
 	SUB40_3(dest, possibly_rounded_sv, possibly_shifted_p0);
@@ -1174,6 +1186,18 @@ macro PRODUCT_SUB3_SV(dest, possibly_rounded_sv, possibly_shifted_p0, possibly_s
 	# TODO: teakra marks this as a TODO for different behavior regarding add/subtract
 	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
 	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+}
+
+macro PRODUCT_ADD_SUB_SV(dest, possibly_rounded_sv, possibly_shifted_p0, possibly_shifted_p1) {
+	# TODO: this means that we can't implement saturation in ADD40_3 since the intermediate value shouldn't be saturated here (probably)
+	ADD40_3(dest, possibly_rounded_sv, possibly_shifted_p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	SUB40(dest, possibly_shifted_p1);
+	# TODO: saturate here
+	# TODO: teakra marks this as a TODO for different behavior regarding add/subtract
+	$(FLAG_C) = $(FLAG_C) ^ tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) ^ tmp_flag_v;
 }
 
 macro PRODUCT_SUB_ADD_SV(dest, possibly_rounded_sv, possibly_shifted_p0, possibly_shifted_p1) {
@@ -3341,15 +3365,18 @@ op:"mpy" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "
 }
 # D5E0h TL2 mpy  MemR04@1, x1 || mpy y1, x0 || sub3 p0, p1, Ax@3
 #            || R04@1stepII2@0
+macro SWAP_X0_X1() {
+	local tmp:2 = x1;
+	x1 = x0;
+	x0 = tmp;
+}
 op:"mpy" MemR04_1, x1 || "mpy" y1, x0 || "sub3" p0, p1, Ax_3 || R04_1_stepII2_0
 	is opcode_5_15=(0xD5E>>1) & MemR04_1 & Ax_3 & opcode_2_2=0 & R04_1_stepII2_0 & x1 & y1 & x0 & p0 & p1 & Y0_input & Y1_input
 {
 	PRODUCT_SUB3(Ax_3, p0, p1);
 
 	y0 = MemR04_1;
-	local tmp:2 = x1;
-	x1 = x0;
-	x0 = tmp;
+	SWAP_X0_X1();
 
 	MULTIPLY(sext(x0), sext(Y0_input), p0);
 	MULTIPLY(sext(x1), sext(Y1_input), p1);
@@ -3364,9 +3391,7 @@ op:"mpy" MemR04_1, x1 || "mpy" y1, x0 || "add3" p0, p1, Ax_3 || R04_1_stepII2_0
 	PRODUCT_ADD3(Ax_3, p0, p1);
 
 	y0 = MemR04_1;
-	local tmp:2 = x1;
-	x1 = x0;
-	x0 = tmp;
+	SWAP_X0_X1();
 
 	MULTIPLY(sext(x0), sext(Y0_input), p0);
 	MULTIPLY(sext(x1), sext(Y1_input), p1);
@@ -3377,266 +3402,845 @@ op:"mpy" MemR04_1, x1 || "mpy" y1, x0 || "add3" p0, p1, Ax_3 || R04_1_stepII2_0
 #            || mpy MemR4567@4offsZIDZ@2, MemR0123@4offsZIDZ@0
 #            || add3 p0, p1, Ab@6 || R0123@4stepII2D2S@0, R4567@4stepII2D2S@2
 op:"mpy" MemR4567_4, MemR0123_4 || "mpy" MemR4567_4_offsZIDZ_2, MemR0123_4_offsZIDZ_0 || "add3" p0, p1, Ab_6 || R0123_4_stepII2D2S_0, R4567_4_stepII2D2S_2
-	is opcode_8_15=0xC8 & Ab_6 & MemR4567_4 & MemR0123_4 & MemR4567_4_offsZIDZ_2 & R4567_4_stepII2D2S_2 & MemR0123_4_offsZIDZ_0 & R0123_4_stepII2D2S_0 & p0 & p1
-unimpl
+	is opcode_8_15=0xC8 & Ab_6 & MemR4567_4 & MemR0123_4 & MemR4567_4_offsZIDZ_2 & R4567_4_stepII2D2S_2 & MemR0123_4_offsZIDZ_0 & R0123_4_stepII2D2S_0 & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_ADD3(Ab_6, p0, p1);
+
+	x0 = MemR0123_4;
+	y0 = MemR4567_4;
+	x1 = MemR0123_4_offsZIDZ_0;
+	y1 = MemR4567_4_offsZIDZ_2;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R0123_4_stepII2D2S_0;
+	build R4567_4_stepII2D2S_2;
+}
 # C900h TL2 mpy  MemR4567@4, MemR0123@4
 #            || mpy MemR4567@4offsZIDZ@2, MemR0123@4offsZIDZ@0
 #            || sub3 p0, p1, Ab@6 || R0123@4stepII2D2S@0, R4567@4stepII2D2S@2
 op:"mpy" MemR4567_4, MemR0123_4 || "mpy" MemR4567_4_offsZIDZ_2, MemR0123_4_offsZIDZ_0 || "sub3" p0, p1, Ab_6 || R0123_4_stepII2D2S_0, R4567_4_stepII2D2S_2
-	is opcode_8_15=0xC9 & Ab_6 & MemR4567_4 & MemR0123_4 & MemR4567_4_offsZIDZ_2 & R4567_4_stepII2D2S_2 & MemR0123_4_offsZIDZ_0 & R0123_4_stepII2D2S_0 & p0 & p1
-unimpl
+	is opcode_8_15=0xC9 & Ab_6 & MemR4567_4 & MemR0123_4 & MemR4567_4_offsZIDZ_2 & R4567_4_stepII2D2S_2 & MemR0123_4_offsZIDZ_0 & R0123_4_stepII2D2S_0 & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_SUB3(Ab_6, p0, p1);
+
+	x0 = MemR0123_4;
+	y0 = MemR4567_4;
+	x1 = MemR0123_4_offsZIDZ_0;
+	y1 = MemR4567_4_offsZIDZ_2;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R0123_4_stepII2D2S_0;
+	build R4567_4_stepII2D2S_2;
+}
 # 80C2h TL2 mpy  MemR45@0, MemR01@0 || mpy MemR45@0offsZI@9, MemR01@0offsZI@8
 #            || add3a p0, p1, Ab@10 || R01@0stepII2@8, R45@0stepII2@9
 op:"mpy" MemR45_0, MemR01_0 || "mpy" MemR45_0_offsZI_9, MemR01_0_offsZI_8 || "add3a" p0, p1, Ab_10 || R01_0_stepII2_8, R45_0_stepII2_9
-	is opcode_12_15=8 & Ab_10 & MemR45_0_offsZI_9 & R45_0_stepII2_9 & MemR01_0_offsZI_8 & R01_0_stepII2_8 & opcode_1_7=(0xC2>>1) & MemR45_0 & MemR01_0 & p0 & p1
-unimpl
+	is opcode_12_15=8 & Ab_10 & MemR45_0_offsZI_9 & R45_0_stepII2_9 & MemR01_0_offsZI_8 & R01_0_stepII2_8 & opcode_1_7=(0xC2>>1) & MemR45_0 & MemR01_0 & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_ADD3(Ab_10, p0, p1 s>> 16);
+
+	x0 = MemR01_0;
+	y0 = MemR45_0;
+	x1 = MemR01_0_offsZI_8;
+	y1 = MemR45_0_offsZI_9;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R01_0_stepII2_8;
+	build R45_0_stepII2_9;
+}
 # 49C8h TL2 mpy  MemR45@2, MemR01@2 || mpy MemR45@2offsZI@1, MemR01@2offsZI@0
 #            || sub3a p0, p1, Ab@4 || R01@2stepII2@0, R45@2stepII2@1
 op:"mpy" MemR45_2, MemR01_2 || "mpy" MemR45_2_offsZI_1, MemR01_2_offsZI_0 || "sub3a" p0, p1, Ab_4 || R01_2_stepII2_0, R45_2_stepII2_1
-	is opcode_6_15=(0x49C>>2) & Ab_4 & opcode_3_3=1 & MemR45_2 & MemR01_2 & MemR45_2_offsZI_1 & R45_2_stepII2_1 & MemR01_2_offsZI_0 & R01_2_stepII2_0 & p0 & p1
-unimpl
+	is opcode_6_15=(0x49C>>2) & Ab_4 & opcode_3_3=1 & MemR45_2 & MemR01_2 & MemR45_2_offsZI_1 & R45_2_stepII2_1 & MemR01_2_offsZI_0 & R01_2_stepII2_0 & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_SUB3(Ab_4, p0, p1 s>> 16);
+
+	x0 = MemR01_2;
+	y0 = MemR45_2;
+	x1 = MemR01_2_offsZI_0;
+	y1 = MemR45_2_offsZI_1;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R01_2_stepII2_0;
+	build R45_2_stepII2_1;
+}
 # 80C8h TL2 mpy  MemR45@2, MemR01@2 || mpy MemR45@2offsZI@1, MemR01@2offsZI@0
 #            || addsub  p0, p1, Ab@10 || R01@2stepII2@0, R45@2stepII2@1
 op:"mpy" MemR45_2, MemR01_2 || "mpy" MemR45_2_offsZI_1, MemR01_2_offsZI_0 || "addsub" p0, p1, Ab_10 || R01_2_stepII2_0, R45_2_stepII2_1
-	is opcode_12_15=8 & Ab_10 & opcode_3_9=(0x0C8>>3) & MemR45_2 & MemR01_2 & MemR45_2_offsZI_1 & R45_2_stepII2_1 & MemR01_2_offsZI_0 & R01_2_stepII2_0 & p0 & p1
-unimpl
+	is opcode_12_15=8 & Ab_10 & opcode_3_9=(0x0C8>>3) & MemR45_2 & MemR01_2 & MemR45_2_offsZI_1 & R45_2_stepII2_1 & MemR01_2_offsZI_0 & R01_2_stepII2_0 & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_ADD_SUB(Ab_10, p0, p1);
+
+	x0 = MemR01_2;
+	y0 = MemR45_2;
+	x1 = MemR01_2_offsZI_0;
+	y1 = MemR45_2_offsZI_1;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R01_2_stepII2_0;
+	build R45_2_stepII2_1;
+}
 # 81C8h TL2 mpy  MemR45@2, MemR01@2 || mpy MemR45@2offsZI@1, MemR01@2offsZI@0
 #            || addsuba p0, p1, Ab@10 || R01@2stepII2@0, R45@2stepII2@1
 op:"mpy" MemR45_2, MemR01_2 || "mpy" MemR45_2_offsZI_1, MemR01_2_offsZI_0 || "addsuba" p0, p1, Ab_10 || R01_2_stepII2_0, R45_2_stepII2_1
-	is opcode_12_15=8 & Ab_10 & opcode_3_9=(0x1C8>>3) & MemR45_2 & MemR01_2 & MemR45_2_offsZI_1 & R45_2_stepII2_1 & MemR01_2_offsZI_0 & R01_2_stepII2_0 & p0 & p1
-unimpl
+	is opcode_12_15=8 & Ab_10 & opcode_3_9=(0x1C8>>3) & MemR45_2 & MemR01_2 & MemR45_2_offsZI_1 & R45_2_stepII2_1 & MemR01_2_offsZI_0 & R01_2_stepII2_0 & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_ADD_SUB(Ab_10, p0, p1 s>> 16);
+
+	x0 = MemR01_2;
+	y0 = MemR45_2;
+	x1 = MemR01_2_offsZI_0;
+	y1 = MemR45_2_offsZI_1;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R01_2_stepII2_0;
+	build R45_2_stepII2_1;
+}
 # 82C8h TL2 mpy  MemR45@2, MemR01@2 || mpy MemR45@2offsZI@1, MemR01@2offsZI@0
 #            || add     p0, p1, Ab@10 || R01@2stepII2@0, R45@2stepII2@1
 op:"mpy" MemR45_2, MemR01_2 || "mpy" MemR45_2_offsZI_1, MemR01_2_offsZI_0 || "add" p0, p1, Ab_10 || R01_2_stepII2_0, R45_2_stepII2_1
-	is opcode_12_15=8 & Ab_10 & opcode_3_9=(0x2C8>>3) & MemR45_2 & MemR01_2 & MemR45_2_offsZI_1 & R45_2_stepII2_1 & MemR01_2_offsZI_0 & R01_2_stepII2_0 & p0 & p1
-unimpl
+	is opcode_12_15=8 & Ab_10 & opcode_3_9=(0x2C8>>3) & MemR45_2 & MemR01_2 & MemR45_2_offsZI_1 & R45_2_stepII2_1 & MemR01_2_offsZI_0 & R01_2_stepII2_0 & p0 & p1 & Y0_input & Y1_input
+{
+	ADD40_3(Ab_10, p0, p1);
+
+	x0 = MemR01_2;
+	y0 = MemR45_2;
+	x1 = MemR01_2_offsZI_0;
+	y1 = MemR45_2_offsZI_1;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R01_2_stepII2_0;
+	build R45_2_stepII2_1;
+}
 # 83C8h TL2 mpy  MemR45@2, MemR01@2 || mpy MemR45@2offsZI@1, MemR01@2offsZI@0
 #            || adda    p0, p1, Ab@10 || R01@2stepII2@0, R45@2stepII2@1
 op:"mpy" MemR45_2, MemR01_2 || "mpy" MemR45_2_offsZI_1, MemR01_2_offsZI_0 || "adda" p0, p1, Ab_10 || R01_2_stepII2_0, R45_2_stepII2_1
-	is opcode_12_15=8 & Ab_10 & opcode_3_9=(0x3C8>>3) & MemR45_2 & MemR01_2 & MemR45_2_offsZI_1 & R45_2_stepII2_1 & MemR01_2_offsZI_0 & R01_2_stepII2_0 & p0 & p1
-unimpl
+	is opcode_12_15=8 & Ab_10 & opcode_3_9=(0x3C8>>3) & MemR45_2 & MemR01_2 & MemR45_2_offsZI_1 & R45_2_stepII2_1 & MemR01_2_offsZI_0 & R01_2_stepII2_0 & p0 & p1 & Y0_input & Y1_input
+{
+	ADD40_3(Ab_10, p0, p1 s>> 16);
+
+	x0 = MemR01_2;
+	y0 = MemR45_2;
+	x1 = MemR01_2_offsZI_0;
+	y1 = MemR45_2_offsZI_1;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R01_2_stepII2_0;
+	build R45_2_stepII2_1;
+}
 # 00C0h TL2 mpy  MemR45@3, MemR01@3 || mpy MemR45@3offsZI@2, MemR01@3offsZI@1
 #            || sub  p0, p1, Ab@4 || R01@3stepII2@1, R45@3stepII2@2
 op:"mpy" MemR45_3, MemR01_3 || "mpy" MemR45_3_offsZI_2, MemR01_3_offsZI_1 || "sub" p0, p1, Ab_4 || R01_3_stepII2_1, R45_3_stepII2_2
-	is opcode_6_15=(0x00C>>2) & Ab_4 & MemR45_3 & MemR01_3 & MemR45_3_offsZI_2 & R45_3_stepII2_2 & MemR01_3_offsZI_1 & R01_3_stepII2_1 & opcode_0_0=0 & p0 & p1
-unimpl
+	is opcode_6_15=(0x00C>>2) & Ab_4 & MemR45_3 & MemR01_3 & MemR45_3_offsZI_2 & R45_3_stepII2_2 & MemR01_3_offsZI_1 & R01_3_stepII2_1 & opcode_0_0=0 & p0 & p1 & Y0_input & Y1_input
+{
+	SUB40_3(Ab_4, p0, p1);
+
+	x0 = MemR01_3;
+	y0 = MemR45_3;
+	x1 = MemR01_3_offsZI_1;
+	y1 = MemR45_3_offsZI_2;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R01_3_stepII2_1;
+	build R45_3_stepII2_2;
+}
 # 00C1h TL2 mpy  MemR45@3, MemR01@3 || mpy MemR45@3offsZI@2, MemR01@3offsZI@1
 #            || suba p0, p1, Ab@4 || R01@3stepII2@1, R45@3stepII2@2
 op:"mpy" MemR45_3, MemR01_3 || "mpy" MemR45_3_offsZI_2, MemR01_3_offsZI_1 || "suba" p0, p1, Ab_4 || R01_3_stepII2_1, R45_3_stepII2_2
-	is opcode_6_15=(0x00C>>2) & Ab_4 & MemR45_3 & MemR01_3 & MemR45_3_offsZI_2 & R45_3_stepII2_2 & MemR01_3_offsZI_1 & R01_3_stepII2_1 & opcode_0_0=1 & p0 & p1
-unimpl
+	is opcode_6_15=(0x00C>>2) & Ab_4 & MemR45_3 & MemR01_3 & MemR45_3_offsZI_2 & R45_3_stepII2_2 & MemR01_3_offsZI_1 & R01_3_stepII2_1 & opcode_0_0=1 & p0 & p1 & Y0_input & Y1_input
+{
+	SUB40_3(Ab_4, p0, p1 s>> 16);
+
+	x0 = MemR01_3;
+	y0 = MemR45_3;
+	x1 = MemR01_3_offsZI_1;
+	y1 = MemR45_3_offsZI_2;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R01_3_stepII2_1;
+	build R45_3_stepII2_2;
+}
 # 0D20h TL2 mpy  MemR45@3, MemR01@3 || mpyus MemR45@3offsZI@2, MemR01@3offsZI@1
 #            || add3a p0, p1, Ax@0, dmodi || R01@3stepII2@1, R45@3stepII2@2
-op:"mpy" MemR45_3, MemR01_3 || "mpyus" MemR45_3_offsZI_2, MemR01_3_offsZI_1 || "add3" p0, p1, Ax_0, "dmodi" || R01_3_stepII2_1, R45_3_stepII2_2
-	is opcode_4_15=0x0D2 & MemR45_3 & MemR01_3 & MemR45_3_offsZI_2 & R45_3_stepII2_2 & MemR01_3_offsZI_1 & R01_3_stepII2_1 & Ax_0 & p0 & p1
-unimpl
+# TODO: what do dmodi/dmodj/dmodij do? Teakra indicates it probably affects the step operations... but then why does gbatek put them next to add3?
+op:"mpy" MemR45_3, MemR01_3 || "mpyus" MemR45_3_offsZI_2, MemR01_3_offsZI_1 || "add3a" p0, p1, Ax_0, "dmodi" || R01_3_stepII2_1, R45_3_stepII2_2
+	is opcode_4_15=0x0D2 & MemR45_3 & MemR01_3 & MemR45_3_offsZI_2 & R45_3_stepII2_2 & MemR01_3_offsZI_1 & R01_3_stepII2_1 & Ax_0 & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_ADD3(Ax_0, p0, p1 s>> 16);
+
+	x0 = MemR01_3;
+	y0 = MemR45_3;
+	x1 = MemR01_3_offsZI_1;
+	y1 = MemR45_3_offsZI_2;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), zext(Y1_input), p1);
+
+	build R01_3_stepII2_1;
+	build R45_3_stepII2_2;
+}
 # 0D30h TL2 mpy  MemR45@3, MemR01@3 || mpyus MemR45@3offsZI@2, MemR01@3offsZI@1
 #            || add3a p0, p1, Ax@0, dmodj || R01@3stepII2@1, R45@3stepII2@2
-op:"mpy" MemR45_3, MemR01_3 || "mpyus" MemR45_3_offsZI_2, MemR01_3_offsZI_1 || "add3" p0, p1, Ax_0, "dmodj" || R01_3_stepII2_1, R45_3_stepII2_2
-	is opcode_4_15=0x0D3 & MemR45_3 & MemR01_3 & MemR45_3_offsZI_2 & R45_3_stepII2_2 & MemR01_3_offsZI_1 & R01_3_stepII2_1 & Ax_0 & p0 & p1
-unimpl
+# TODO: dmodj
+op:"mpy" MemR45_3, MemR01_3 || "mpyus" MemR45_3_offsZI_2, MemR01_3_offsZI_1 || "add3a" p0, p1, Ax_0, "dmodj" || R01_3_stepII2_1, R45_3_stepII2_2
+	is opcode_4_15=0x0D3 & MemR45_3 & MemR01_3 & MemR45_3_offsZI_2 & R45_3_stepII2_2 & MemR01_3_offsZI_1 & R01_3_stepII2_1 & Ax_0 & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_ADD3(Ax_0, p0, p1 s>> 16);
+
+	x0 = MemR01_3;
+	y0 = MemR45_3;
+	x1 = MemR01_3_offsZI_1;
+	y1 = MemR45_3_offsZI_2;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), zext(Y1_input), p1);
+
+	build R01_3_stepII2_1;
+	build R45_3_stepII2_2;
+}
 # 4B50h TL2 mpy  MemR45@3, MemR01@3 || mpyus MemR45@3offsZI@2, MemR01@3offsZI@1
 #            || add3a p0, p1, Ax@0, dmodij || R01@3stepII2@1, R45@3stepII2@2
-op:"mpy" MemR45_3, MemR01_3 || "mpyus" MemR45_3_offsZI_2, MemR01_3_offsZI_1 || "add3" p0, p1, Ax_0, "dmodij" || R01_3_stepII2_1, R45_3_stepII2_2
-	is opcode_4_15=0x4B5 & MemR45_3 & MemR01_3 & MemR45_3_offsZI_2 & R45_3_stepII2_2 & MemR01_3_offsZI_1 & R01_3_stepII2_1 & Ax_0 & p0 & p1
-unimpl
+# TODO: dmodij
+op:"mpy" MemR45_3, MemR01_3 || "mpyus" MemR45_3_offsZI_2, MemR01_3_offsZI_1 || "add3a" p0, p1, Ax_0, "dmodij" || R01_3_stepII2_1, R45_3_stepII2_2
+	is opcode_4_15=0x4B5 & MemR45_3 & MemR01_3 & MemR45_3_offsZI_2 & R45_3_stepII2_2 & MemR01_3_offsZI_1 & R01_3_stepII2_1 & Ax_0 & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_ADD3(Ax_0, p0, p1 s>> 16);
+
+	x0 = MemR01_3;
+	y0 = MemR45_3;
+	x1 = MemR01_3_offsZI_1;
+	y1 = MemR45_3_offsZI_2;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), zext(Y1_input), p1);
+
+	build R01_3_stepII2_1;
+	build R45_3_stepII2_2;
+}
 # D7A0h TL2 mpy  MemR45@3, MemR01@3 || mpy MemR45@3offsZI@2, MemR01@3offsZI@1
 #            || add3    sv, p0, p1, Ax@4 || R01@3stepII2@1, R45@3stepII2@2
 op:"mpy" MemR45_3, MemR01_3 || "mpy" MemR45_3_offsZI_2, MemR01_3_offsZI_1 || "add3" sv, p0, p1, Ax_4 || R01_3_stepII2_1, R45_3_stepII2_2
-	is opcode_5_15=(0xD7A>>1) & Ax_4 & MemR45_3 & MemR01_3 & MemR45_3_offsZI_2 & R45_3_stepII2_2 & MemR01_3_offsZI_1 & R01_3_stepII2_1 & opcode_0_0=0 & sv & p0 & p1
-unimpl
+	is opcode_5_15=(0xD7A>>1) & Ax_4 & MemR45_3 & MemR01_3 & MemR45_3_offsZI_2 & R45_3_stepII2_2 & MemR01_3_offsZI_1 & R01_3_stepII2_1 & opcode_0_0=0 & sv & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_ADD3_SV(b0, sext(sv) << 16, p0, p1);
+
+	x0 = MemR01_3;
+	y0 = MemR45_3;
+	x1 = MemR01_3_offsZI_1;
+	y1 = MemR45_3_offsZI_2;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R01_3_stepII2_1;
+	build R45_3_stepII2_2;
+}
 # D7A1h TL2 mpy  MemR45@3, MemR01@3 || mpy MemR45@3offsZI@2, MemR01@3offsZI@1
 #            || add3rnd sv, p0, p1, Ax@4 || R01@3stepII2@1, R45@3stepII2@2
 op:"mpy" MemR45_3, MemR01_3 || "mpy" MemR45_3_offsZI_2, MemR01_3_offsZI_1 || "add3rnd" sv, p0, p1, Ax_4 || R01_3_stepII2_1, R45_3_stepII2_2
-	is opcode_5_15=(0xD7A>>1) & Ax_4 & MemR45_3 & MemR01_3 & MemR45_3_offsZI_2 & R45_3_stepII2_2 & MemR01_3_offsZI_1 & R01_3_stepII2_1 & opcode_0_0=1 & sv & p0 & p1
-unimpl
+	is opcode_5_15=(0xD7A>>1) & Ax_4 & MemR45_3 & MemR01_3 & MemR45_3_offsZI_2 & R45_3_stepII2_2 & MemR01_3_offsZI_1 & R01_3_stepII2_1 & opcode_0_0=1 & sv & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_ADD3_SV(b1, (sext(sv) << 16) | 0x8000, p0, p1);
+
+	x0 = MemR01_3;
+	y0 = MemR45_3;
+	x1 = MemR01_3_offsZI_1;
+	y1 = MemR45_3_offsZI_2;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R01_3_stepII2_1;
+	build R45_3_stepII2_2;
+}
 # 9861h TL2 mpy  MemR45@4, MemR01@4 || mpy MemR45@4offsZI@3, MemR01@4offsZI@2
 #            || add3  p0, p1, Ax@8, dmodj  || R01@4stepII2@2, R45@4stepII2@3
 op:"mpy" MemR45_4, MemR01_4 || "mpy" MemR45_4_offsZI_3, MemR01_4_offsZI_2 || "add3" p0, p1, Ax_8, "dmodj" || R01_4_stepII2_2, R45_4_stepII2_3
-	is opcode_9_15=(0x98>>1) & Ax_8 & opcode_5_7=(0x6>>1) &  MemR45_4 & MemR01_4 & MemR45_4_offsZI_3 & R45_4_stepII2_3 & MemR01_4_offsZI_2 & R01_4_stepII2_2 & opcode_0_1=1 & p0 & p1
-unimpl
+	is opcode_9_15=(0x98>>1) & Ax_8 & opcode_5_7=(0x6>>1) & MemR45_4 & MemR01_4 & MemR45_4_offsZI_3 & R45_4_stepII2_3 & MemR01_4_offsZI_2 & R01_4_stepII2_2 & opcode_0_1=1 & p0 & p1 & Y0_input & Y1_input
+# TODO: dmodj
+{
+	PRODUCT_ADD3(Ax_8, p0, p1);
+
+	x0 = MemR01_4;
+	y0 = MemR45_4;
+	x1 = MemR01_4_offsZI_2;
+	y1 = MemR45_4_offsZI_3;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R01_4_stepII2_2;
+	build R45_4_stepII2_3;
+}
 # 9862h TL2 mpy  MemR45@4, MemR01@4 || mpy MemR45@4offsZI@3, MemR01@4offsZI@2
 #            || add3  p0, p1, Ax@8, dmodi  || R01@4stepII2@2, R45@4stepII2@3
 op:"mpy" MemR45_4, MemR01_4 || "mpy" MemR45_4_offsZI_3, MemR01_4_offsZI_2 || "add3" p0, p1, Ax_8, "dmodi" || R01_4_stepII2_2, R45_4_stepII2_3
-	is opcode_9_15=(0x98>>1) & Ax_8 & opcode_5_7=(0x6>>1) &  MemR45_4 & MemR01_4 & MemR45_4_offsZI_3 & R45_4_stepII2_3 & MemR01_4_offsZI_2 & R01_4_stepII2_2 & opcode_0_1=2 & p0 & p1
-unimpl
+	is opcode_9_15=(0x98>>1) & Ax_8 & opcode_5_7=(0x6>>1) & MemR45_4 & MemR01_4 & MemR45_4_offsZI_3 & R45_4_stepII2_3 & MemR01_4_offsZI_2 & R01_4_stepII2_2 & opcode_0_1=2 & p0 & p1 & Y0_input & Y1_input
+# TODO: dmodi
+{
+	PRODUCT_ADD3(Ax_8, p0, p1);
+
+	x0 = MemR01_4;
+	y0 = MemR45_4;
+	x1 = MemR01_4_offsZI_2;
+	y1 = MemR45_4_offsZI_3;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R01_4_stepII2_2;
+	build R45_4_stepII2_3;
+}
 # 9863h TL2 mpy  MemR45@4, MemR01@4 || mpy MemR45@4offsZI@3, MemR01@4offsZI@2
 #            || add3  p0, p1, Ax@8, dmodij || R01@4stepII2@2, R45@4stepII2@3
 op:"mpy" MemR45_4, MemR01_4 || "mpy" MemR45_4_offsZI_3, MemR01_4_offsZI_2 || "add3" p0, p1, Ax_8, "dmodij" || R01_4_stepII2_2, R45_4_stepII2_3
-	is opcode_9_15=(0x98>>1) & Ax_8 & opcode_5_7=(0x6>>1) &  MemR45_4 & MemR01_4 & MemR45_4_offsZI_3 & R45_4_stepII2_3 & MemR01_4_offsZI_2 & R01_4_stepII2_2 & opcode_0_1=3 & p0 & p1
-unimpl
+	is opcode_9_15=(0x98>>1) & Ax_8 & opcode_5_7=(0x6>>1) & MemR45_4 & MemR01_4 & MemR45_4_offsZI_3 & R45_4_stepII2_3 & MemR01_4_offsZI_2 & R01_4_stepII2_2 & opcode_0_1=3 & p0 & p1 & Y0_input & Y1_input
+# TODO: dmodij
+{
+	PRODUCT_ADD3(Ax_8, p0, p1);
+
+	x0 = MemR01_4;
+	y0 = MemR45_4;
+	x1 = MemR01_4_offsZI_2;
+	y1 = MemR45_4_offsZI_3;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R01_4_stepII2_2;
+	build R45_4_stepII2_3;
+}
 # 98E1h TL2 mpy  MemR45@4, MemR01@4 || mpy MemR45@4offsZI@3, MemR01@4offsZI@2
 #            || add3a p0, p1, Ax@8, dmodj  || R01@4stepII2@2, R45@4stepII2@3
 op:"mpy" MemR45_4, MemR01_4 || "mpy" MemR45_4_offsZI_3, MemR01_4_offsZI_2 || "add3a" p0, p1, Ax_8, "dmodj" || R01_4_stepII2_2, R45_4_stepII2_3
-	is opcode_9_15=(0x98>>1) & Ax_8 & opcode_5_7=(0xE>>1) &  MemR45_4 & MemR01_4 & MemR45_4_offsZI_3 & R45_4_stepII2_3 & MemR01_4_offsZI_2 & R01_4_stepII2_2 & opcode_0_1=1 & p0 & p1
-unimpl
+	is opcode_9_15=(0x98>>1) & Ax_8 & opcode_5_7=(0xE>>1) & MemR45_4 & MemR01_4 & MemR45_4_offsZI_3 & R45_4_stepII2_3 & MemR01_4_offsZI_2 & R01_4_stepII2_2 & opcode_0_1=1 & p0 & p1 & Y0_input & Y1_input
+# TODO: dmodj
+{
+	PRODUCT_ADD3(Ax_8, p0, p1 s>> 16);
+
+	x0 = MemR01_4;
+	y0 = MemR45_4;
+	x1 = MemR01_4_offsZI_2;
+	y1 = MemR45_4_offsZI_3;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R01_4_stepII2_2;
+	build R45_4_stepII2_3;
+}
 # 98E2h TL2 mpy  MemR45@4, MemR01@4 || mpy MemR45@4offsZI@3, MemR01@4offsZI@2
 #            || add3a p0, p1, Ax@8, dmodi  || R01@4stepII2@2, R45@4stepII2@3
 op:"mpy" MemR45_4, MemR01_4 || "mpy" MemR45_4_offsZI_3, MemR01_4_offsZI_2 || "add3a" p0, p1, Ax_8, "dmodi" || R01_4_stepII2_2, R45_4_stepII2_3
-	is opcode_9_15=(0x98>>1) & Ax_8 & opcode_5_7=(0xE>>1) &  MemR45_4 & MemR01_4 & MemR45_4_offsZI_3 & R45_4_stepII2_3 & MemR01_4_offsZI_2 & R01_4_stepII2_2 & opcode_0_1=2 & p0 & p1
-unimpl
+	is opcode_9_15=(0x98>>1) & Ax_8 & opcode_5_7=(0xE>>1) & MemR45_4 & MemR01_4 & MemR45_4_offsZI_3 & R45_4_stepII2_3 & MemR01_4_offsZI_2 & R01_4_stepII2_2 & opcode_0_1=2 & p0 & p1 & Y0_input & Y1_input
+# TODO: dmodi
+{
+	PRODUCT_ADD3(Ax_8, p0, p1 s>> 16);
+
+	x0 = MemR01_4;
+	y0 = MemR45_4;
+	x1 = MemR01_4_offsZI_2;
+	y1 = MemR45_4_offsZI_3;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R01_4_stepII2_2;
+	build R45_4_stepII2_3;
+}
 # 98E3h TL2 mpy  MemR45@4, MemR01@4 || mpy MemR45@4offsZI@3, MemR01@4offsZI@2
 #            || add3a p0, p1, Ax@8, dmodij || R01@4stepII2@2, R45@4stepII2@3
 op:"mpy" MemR45_4, MemR01_4 || "mpy" MemR45_4_offsZI_3, MemR01_4_offsZI_2 || "add3a" p0, p1, Ax_8, "dmodij" || R01_4_stepII2_2, R45_4_stepII2_3
-	is opcode_9_15=(0x98>>1) & Ax_8 & opcode_5_7=(0xE>>1) &  MemR45_4 & MemR01_4 & MemR45_4_offsZI_3 & R45_4_stepII2_3 & MemR01_4_offsZI_2 & R01_4_stepII2_2 & opcode_0_1=3 & p0 & p1
-unimpl
+	is opcode_9_15=(0x98>>1) & Ax_8 & opcode_5_7=(0xE>>1) & MemR45_4 & MemR01_4 & MemR45_4_offsZI_3 & R45_4_stepII2_3 & MemR01_4_offsZI_2 & R01_4_stepII2_2 & opcode_0_1=3 & p0 & p1 & Y0_input & Y1_input
+# TODO: dmodij
+{
+	PRODUCT_ADD3(Ax_8, p0, p1 s>> 16);
+
+	x0 = MemR01_4;
+	y0 = MemR45_4;
+	x1 = MemR01_4_offsZI_2;
+	y1 = MemR45_4_offsZI_3;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R01_4_stepII2_2;
+	build R45_4_stepII2_3;
+}
 # 4DA0h TL2 mpy  y0, MemR04@3 || mpyus y1, MemR04@3offsZI@2
 #            || sub3  p0, p1, Ax@4 || R04@3stepII2@2
 op:"mpy" y0, MemR04_3 || "mpyus" y1, MemR04_3_offsZI_2 || "sub3" p0, p1, Ax_4 || R04_3_stepII2_2
-	is opcode_5_15=(0x4DA>>1) & Ax_4 & MemR04_3 & MemR04_3_offsZI_2 & R04_3_stepII2_2 & opcode_0_1=0 & y0 & y1 & p0 & p1
-unimpl
+	is opcode_5_15=(0x4DA>>1) & Ax_4 & MemR04_3 & MemR04_3_offsZI_2 & R04_3_stepII2_2 & opcode_0_1=0 & y0 & y1 & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_SUB3(Ax_4, p0, p1);
+
+	x0 = MemR04_3;
+	x1 = MemR04_3_offsZI_2;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), zext(Y1_input), p1);
+
+	build R04_3_stepII2_2;
+}
 # 4DA1h TL2 mpy  y0, MemR04@3 || mpyus y1, MemR04@3offsZI@2
 #            || sub3a p0, p1, Ax@4 || R04@3stepII2@2
 op:"mpy" y0, MemR04_3 || "mpyus" y1, MemR04_3_offsZI_2 || "sub3a" p0, p1, Ax_4 || R04_3_stepII2_2
-	is opcode_5_15=(0x4DA>>1) & Ax_4 & MemR04_3 & MemR04_3_offsZI_2 & R04_3_stepII2_2 & opcode_0_1=1 & y0 & y1 & p0 & p1
-unimpl
+	is opcode_5_15=(0x4DA>>1) & Ax_4 & MemR04_3 & MemR04_3_offsZI_2 & R04_3_stepII2_2 & opcode_0_1=1 & y0 & y1 & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_SUB3(Ax_4, p0, p1 s>> 16);
+
+	x0 = MemR04_3;
+	x1 = MemR04_3_offsZI_2;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), zext(Y1_input), p1);
+
+	build R04_3_stepII2_2;
+}
 # 4DA2h TL2 mpy  y0, MemR04@3 || mpyus y1, MemR04@3offsZI@2
 #            || add3  p0, p1, Ax@4 || R04@3stepII2@2
 op:"mpy" y0, MemR04_3 || "mpyus" y1, MemR04_3_offsZI_2 || "add3" p0, p1, Ax_4 || R04_3_stepII2_2
-	is opcode_5_15=(0x4DA>>1) & Ax_4 & MemR04_3 & MemR04_3_offsZI_2 & R04_3_stepII2_2 & opcode_0_1=2 & y0 & y1 & p0 & p1
-unimpl
+	is opcode_5_15=(0x4DA>>1) & Ax_4 & MemR04_3 & MemR04_3_offsZI_2 & R04_3_stepII2_2 & opcode_0_1=2 & y0 & y1 & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_ADD3(Ax_4, p0, p1);
+
+	x0 = MemR04_3;
+	x1 = MemR04_3_offsZI_2;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), zext(Y1_input), p1);
+
+	build R04_3_stepII2_2;
+}
 # 4DA3h TL2 mpy  y0, MemR04@3 || mpyus y1, MemR04@3offsZI@2
 #            || add3a p0, p1, Ax@4 || R04@3stepII2@2
 op:"mpy" y0, MemR04_3 || "mpyus" y1, MemR04_3_offsZI_2 || "add3a" p0, p1, Ax_4 || R04_3_stepII2_2
-	is opcode_5_15=(0x4DA>>1) & Ax_4 & MemR04_3 & MemR04_3_offsZI_2 & R04_3_stepII2_2 & opcode_0_1=3 & y0 & y1 & p0 & p1
-unimpl
+	is opcode_5_15=(0x4DA>>1) & Ax_4 & MemR04_3 & MemR04_3_offsZI_2 & R04_3_stepII2_2 & opcode_0_1=3 & y0 & y1 & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_ADD3(Ax_4, p0, p1 s>> 16);
+
+	x0 = MemR04_3;
+	x1 = MemR04_3_offsZI_2;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), zext(Y1_input), p1);
+
+	build R04_3_stepII2_2;
+}
 # 94E0h TL2 mpy  y0, MemR04@4 || mpy   y1, MemR04@4offsZI@3
 #            || sub3  p0, p1, Ax@8 || R04@4stepII2@3
 op:"mpy" y0, MemR04_4 || "mpy" y1, MemR04_4_offsZI_3 || "sub3" p0, p1, Ax_8 || R04_4_stepII2_3
-	is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0xE>>1) & MemR04_4 & MemR04_4_offsZI_3 & R04_4_stepII2_3 & opcode_0_2=0 & y0 & y1 & p0 & p1
-unimpl
+	is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0xE>>1) & MemR04_4 & MemR04_4_offsZI_3 & R04_4_stepII2_3 & opcode_0_2=0 & y0 & y1 & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_SUB3(Ax_8, p0, p1);
+
+	x0 = MemR04_4;
+	x1 = MemR04_4_offsZI_3;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R04_4_stepII2_3;
+}
 # 94E2h TL2 mpy  y0, MemR04@4 || mpy   y1, MemR04@4offsZI@3
 #            || sub3a p0, p1, Ax@8 || R04@4stepII2@3
 op:"mpy" y0, MemR04_4 || "mpy" y1, MemR04_4_offsZI_3 || "sub3a" p0, p1, Ax_8 || R04_4_stepII2_3
-	is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0xE>>1) & MemR04_4 & MemR04_4_offsZI_3 & R04_4_stepII2_3 & opcode_0_2=2 & y0 & y1 & p0 & p1
-unimpl
+	is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0xE>>1) & MemR04_4 & MemR04_4_offsZI_3 & R04_4_stepII2_3 & opcode_0_2=2 & y0 & y1 & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_SUB3(Ax_8, p0, p1 s>> 16);
+
+	x0 = MemR04_4;
+	x1 = MemR04_4_offsZI_3;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R04_4_stepII2_3;
+}
 # 94E4h TL2 mpy  y0, MemR04@4 || mpy   y1, MemR04@4offsZI@3
 #            || add3  p0, p1, Ax@8 || R04@4stepII2@3
 op:"mpy" y0, MemR04_4 || "mpy" y1, MemR04_4_offsZI_3 || "add3" p0, p1, Ax_8 || R04_4_stepII2_3
-	is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0xE>>1) & MemR04_4 & MemR04_4_offsZI_3 & R04_4_stepII2_3 & opcode_0_2=4 & y0 & y1 & p0 & p1
-unimpl
+	is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0xE>>1) & MemR04_4 & MemR04_4_offsZI_3 & R04_4_stepII2_3 & opcode_0_2=4 & y0 & y1 & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_ADD3(Ax_8, p0, p1);
+
+	x0 = MemR04_4;
+	x1 = MemR04_4_offsZI_3;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R04_4_stepII2_3;
+}
 # 94E6h TL2 mpy  y0, MemR04@4 || mpy   y1, MemR04@4offsZI@3
 #            || add3a p0, p1, Ax@8 || R04@4stepII2@3
 op:"mpy" y0, MemR04_4 || "mpy" y1, MemR04_4_offsZI_3 || "add3a" p0, p1, Ax_8 || R04_4_stepII2_3
-	is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0xE>>1) & MemR04_4 & MemR04_4_offsZI_3 & R04_4_stepII2_3 & opcode_0_2=6 & y0 & y1 & p0 & p1
-unimpl
+	is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0xE>>1) & MemR04_4 & MemR04_4_offsZI_3 & R04_4_stepII2_3 & opcode_0_2=6 & y0 & y1 & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_ADD3(Ax_8, p0, p1 s>> 16);
+
+	x0 = MemR04_4;
+	x1 = MemR04_4_offsZI_3;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R04_4_stepII2_3;
+}
 # 94E1h TL2 mpy  y0, MemR04@4 || mpysu y1, MemR04@4offsZI@3
 #            || sub3  p0, p1, Ax@8 || R04@4stepII2@3
 op:"mpy" y0, MemR04_4 || "mpysu" y1, MemR04_4_offsZI_3 || "sub3" p0, p1, Ax_8 || R04_4_stepII2_3
-	is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0xE>>1) & MemR04_4 & MemR04_4_offsZI_3 & R04_4_stepII2_3 & opcode_0_2=1 & y0 & y1 & p0 & p1
-unimpl
+	is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0xE>>1) & MemR04_4 & MemR04_4_offsZI_3 & R04_4_stepII2_3 & opcode_0_2=1 & y0 & y1 & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_SUB3(Ax_8, p0, p1);
+
+	x0 = MemR04_4;
+	x1 = MemR04_4_offsZI_3;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(zext(x1), sext(Y1_input), p1);
+
+	build R04_4_stepII2_3;
+}
 # 94E3h TL2 mpy  y0, MemR04@4 || mpysu y1, MemR04@4offsZI@3
 #            || sub3a p0, p1, Ax@8 || R04@4stepII2@3
 op:"mpy" y0, MemR04_4 || "mpysu" y1, MemR04_4_offsZI_3 || "sub3a" p0, p1, Ax_8 || R04_4_stepII2_3
-	is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0xE>>1) & MemR04_4 & MemR04_4_offsZI_3 & R04_4_stepII2_3 & opcode_0_2=3 & y0 & y1 & p0 & p1
-unimpl
+	is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0xE>>1) & MemR04_4 & MemR04_4_offsZI_3 & R04_4_stepII2_3 & opcode_0_2=3 & y0 & y1 & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_SUB3(Ax_8, p0, p1 s>> 16);
+
+	x0 = MemR04_4;
+	x1 = MemR04_4_offsZI_3;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(zext(x1), sext(Y1_input), p1);
+
+	build R04_4_stepII2_3;
+}
 # 94E5h TL2 mpy  y0, MemR04@4 || mpysu y1, MemR04@4offsZI@3
 #            || add3  p0, p1, Ax@8 || R04@4stepII2@3
 op:"mpy" y0, MemR04_4 || "mpysu" y1, MemR04_4_offsZI_3 || "add3" p0, p1, Ax_8 || R04_4_stepII2_3
-	is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0xE>>1) & MemR04_4 & MemR04_4_offsZI_3 & R04_4_stepII2_3 & opcode_0_2=5 & y0 & y1 & p0 & p1
-unimpl
+	is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0xE>>1) & MemR04_4 & MemR04_4_offsZI_3 & R04_4_stepII2_3 & opcode_0_2=5 & y0 & y1 & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_ADD3(Ax_8, p0, p1);
+
+	x0 = MemR04_4;
+	x1 = MemR04_4_offsZI_3;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(zext(x1), sext(Y1_input), p1);
+
+	build R04_4_stepII2_3;
+}
 # 94E7h TL2 mpy  y0, MemR04@4 || mpysu y1, MemR04@4offsZI@3
 #            || add3a p0, p1, Ax@8 || R04@4stepII2@3
 op:"mpy" y0, MemR04_4 || "mpysu" y1, MemR04_4_offsZI_3 || "add3a" p0, p1, Ax_8 || R04_4_stepII2_3
-	is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0xE>>1) & MemR04_4 & MemR04_4_offsZI_3 & R04_4_stepII2_3 & opcode_0_2=7 & y0 & y1 & p0 & p1
-unimpl
+	is opcode_9_15=(0x94>>1) & Ax_8 & opcode_5_7=(0xE>>1) & MemR04_4 & MemR04_4_offsZI_3 & R04_4_stepII2_3 & opcode_0_2=7 & y0 & y1 & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_ADD3(Ax_8, p0, p1 s>> 16);
+
+	x0 = MemR04_4;
+	x1 = MemR04_4_offsZI_3;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(zext(x1), sext(Y1_input), p1);
+
+	build R04_4_stepII2_3;
+}
 # 8862h TL2 mpy  y0, x1 || mpy   MemR04@4, x0 || sub3  p0, p1, Ax@8
 #            || R04@4stepII2@3
 op:"mpy" y0, x1 || "mpy" MemR04_4, x0 || "sub3" p0, p1, Ax_8 || R04_4_stepII2_3
-	is opcode_9_15=(0x88>>1) & Ax_8 & opcode_5_7=(6>>1) & MemR04_4 & R04_4_stepII2_3 & opcode_0_2=2 & y0 & x1 & x0 & p0 & p1
-unimpl
+	is opcode_9_15=(0x88>>1) & Ax_8 & opcode_5_7=(6>>1) & MemR04_4 & R04_4_stepII2_3 & opcode_0_2=2 & y0 & x1 & x0 & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_SUB3(Ax_8, p0, p1);
+
+	y1 = MemR04_4;
+	SWAP_X0_X1();
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R04_4_stepII2_3;
+}
 # 8A62h TL2 mpy  y0, x1 || mpy   MemR04@4, x0 || add3  p0, p1, Ax@8
 #            || R04@4stepII2@3
 op:"mpy" y0, x1 || "mpy" MemR04_4, x0 || "add3" p0, p1, Ax_8 || R04_4_stepII2_3
-	is opcode_9_15=(0x8A>>1) & Ax_8 & opcode_5_7=(6>>1) & MemR04_4 & R04_4_stepII2_3 & opcode_0_2=2 & y0 & x1 & x0 & p0 & p1
-unimpl
+	is opcode_9_15=(0x8A>>1) & Ax_8 & opcode_5_7=(6>>1) & MemR04_4 & R04_4_stepII2_3 & opcode_0_2=2 & y0 & x1 & x0 & p0 & p1 & Y0_input & Y1_input
+{
+	PRODUCT_ADD3(Ax_8, p0, p1);
+
+	y1 = MemR04_4;
+	SWAP_X0_X1();
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R04_4_stepII2_3;
+}
 # 4D88h TL2 mpy  y0, x1 || mpy   y1, x0 || sub p0, p1, Ax@1
-op:"mpy" y0, x1 || "mpy" y1, x0 || "sub" p0, p1, Ax_1 is opcode_2_15=(0x4D88>>2) & Ax_1 & opcode_0_0=0 & x0 & x1 & y0 & y1 & p0 & p1 unimpl
+op:"mpy" y0, x1 || "mpy" y1, x0 || "sub" p0, p1, Ax_1 is opcode_2_15=(0x4D88>>2) & Ax_1 & opcode_0_0=0 & x0 & x1 & y0 & y1 & p0 & p1 & Y0_input & Y1_input {
+	SUB40_3(Ax_1, p0, p1);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+}
 # 5E24h TL2 mpy  y0, x1 || mpy   y1, x0 || add p0, p1, Ab@0
-op:"mpy" y0, x1 || "mpy" y1, x0 || "add" p0, p1, Ab_0 is opcode_2_15=(0x5E24>>2) & Ab_0 & x0 & x1 & y0 & y1 & p0 & p1 unimpl
+op:"mpy" y0, x1 || "mpy" y1, x0 || "add" p0, p1, Ab_0 is opcode_2_15=(0x5E24>>2) & Ab_0 & x0 & x1 & y0 & y1 & p0 & p1 & Y0_input & Y1_input {
+	ADD40_3(Ab_0, p0, p1);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+}
 # 8061h TL2 mpy  y0, x1 || mpy   y1, x0 || add3  p0, p1, Ab@8
-op:"mpy" y0, x1 || "mpy" y1, x0 || "add3" p0, p1, Ab_8 is opcode_10_15=(0x80>>2) & Ab_8 & opcode_0_7=0x61 & x0 & x1 & y0 & y1 & p0 & p1 unimpl
+op:"mpy" y0, x1 || "mpy" y1, x0 || "add3" p0, p1, Ab_8 is opcode_10_15=(0x80>>2) & Ab_8 & opcode_0_7=0x61 & x0 & x1 & y0 & y1 & p0 & p1 & Y0_input & Y1_input {
+	PRODUCT_ADD3(Ab_8, p0, p1);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+}
 # 8071h TL2 mpy  y0, x1 || mpy   y1, x0 || add3a p0, p1, Ab@8
-op:"mpy" y0, x1 || "mpy" y1, x0 || "add3a" p0, p1, Ab_8 is opcode_10_15=(0x80>>2) & Ab_8 & opcode_0_7=0x71 & x0 & x1 & y0 & y1 & p0 & p1 unimpl
+op:"mpy" y0, x1 || "mpy" y1, x0 || "add3a" p0, p1, Ab_8 is opcode_10_15=(0x80>>2) & Ab_8 & opcode_0_7=0x71 & x0 & x1 & y0 & y1 & p0 & p1 & Y0_input & Y1_input {
+	PRODUCT_ADD3(Ab_8, p0, p1 s>> 16);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+}
 # 8461h TL2 mpy  y0, x1 || mpy   y1, x0 || sub3  p0, p1, Ab@8
-op:"mpy" y0, x1 || "mpy" y1, x0 || "sub3" p0, p1, Ab_8 is opcode_10_15=(0x84>>2) & Ab_8 & opcode_0_7=0x61 & x0 & x1 & y0 & y1 & p0 & p1 unimpl
+op:"mpy" y0, x1 || "mpy" y1, x0 || "sub3" p0, p1, Ab_8 is opcode_10_15=(0x84>>2) & Ab_8 & opcode_0_7=0x61 & x0 & x1 & y0 & y1 & p0 & p1 & Y0_input & Y1_input {
+	PRODUCT_SUB3(Ab_8, p0, p1);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+}
 # 8471h TL2 mpy  y0, x1 || mpy   y1, x0 || sub3a p0, p1, Ab@8
-op:"mpy" y0, x1 || "mpy" y1, x0 || "sub3a" p0, p1, Ab_8 is opcode_10_15=(0x84>>2) & Ab_8 & opcode_0_7=0x71 & x0 & x1 & y0 & y1 & p0 & p1 unimpl
+op:"mpy" y0, x1 || "mpy" y1, x0 || "sub3a" p0, p1, Ab_8 is opcode_10_15=(0x84>>2) & Ab_8 & opcode_0_7=0x71 & x0 & x1 & y0 & y1 & p0 & p1 & Y0_input & Y1_input {
+	PRODUCT_SUB3(Ab_8, p0, p1 s>> 16);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+}
 # D484h TL2 mpy  y0, x1 || mpy   y1, x0 || add3aa p0, p1, Ab@0
-op:"mpy" y0, x1 || "mpy" y1, x0 || "add3aa" p0, p1, Ab_0 is opcode_2_15=(0xD484>>2) & Ab_0 & x0 & x1 & y0 & y1 & p0 & p1 unimpl
+op:"mpy" y0, x1 || "mpy" y1, x0 || "add3aa" p0, p1, Ab_0 is opcode_2_15=(0xD484>>2) & Ab_0 & x0 & x1 & y0 & y1 & p0 & p1 & Y0_input & Y1_input {
+	PRODUCT_ADD3(Ab_0, p0 s>> 16, p1 s>> 16);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+}
 # D49Dh TL2 mpy  y0, x1 || mpy   y1, x0 || sub p0, p1, Bx@5
-op:"mpy" y0, x1 || "mpy" y1, x0 || "sub" p0, p1, Bx_5 is opcode_6_15=(0xD49>>2) & Bx_5 & opcode_0_4=0x1D & x0 & x1 & y0 & y1 & p0 & p1 unimpl
+op:"mpy" y0, x1 || "mpy" y1, x0 || "sub" p0, p1, Bx_5 is opcode_6_15=(0xD49>>2) & Bx_5 & opcode_0_4=0x1D & x0 & x1 & y0 & y1 & p0 & p1 & Y0_input & Y1_input {
+	PRODUCT_SUB3(Bx_5, p0, p1);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+}
 # D4A0h TL2 mpy  y0, x1 || mpy   y1, x0 || addsub p0, p1, Ab@0
-op:"mpy" y0, x1 || "mpy" y1, x0 || "addsub" p0, p1, Ab_0 is opcode_2_15=(0xD4A0>>2) & Ab_0 & x0 & x1 & y0 & y1 & p0 & p1 unimpl
+op:"mpy" y0, x1 || "mpy" y1, x0 || "addsub" p0, p1, Ab_0 is opcode_2_15=(0xD4A0>>2) & Ab_0 & x0 & x1 & y0 & y1 & p0 & p1 & Y0_input & Y1_input {
+	PRODUCT_ADD_SUB(Ab_0, p0, p1);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+}
 # 4FA0h TL2 mpy  y0, x1 || mpy y1, x0 || add3 p0, p1, Ab@3
 #            || mov Axh@6, MemR04@1 || mov Bxh@2, MemR04@1offsZI@0
 #            || R04@1stepII2@0
 op:"mpy" y0, x1 || "mpy" y1, x0 || "add3" p0, p1, Ab_3 || "mov" Axh_6, MemR04_1 || "mov" Bxh_2, MemR04_1_offsZI_0 || R04_1_stepII2_0
-	is opcode_7_15=(0x4FA>>3) & Axh_6 & opcode_5_5=(2>>1) & Ab_3 & Bxh_2 & MemR04_1 & MemR04_1_offsZI_0 & R04_1_stepII2_0 & x0 & x1 & y0 & y1 & p0 & p1
-unimpl
+	is opcode_7_15=(0x4FA>>3) & Axh_6 & opcode_5_5=(2>>1) & Ab_3 & Bxh_2 & MemR04_1 & MemR04_1_offsZI_0 & R04_1_stepII2_0 & x0 & x1 & y0 & y1 & p0 & p1 & Y0_input & Y1_input
+{
+	MemR04_1_offsZI_0 = Bxh_2; # TODO: saturation
+	MemR04_1 = Axh_6; # TODO: saturation
+	PRODUCT_ADD3(Ab_3, p0, p1);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+	build R04_1_stepII2_0;
+}
 # 5818h TL2 mpy  y0, x1 || mpy y1, x0 || addsub    sv, p0, p1, Ax@0
 #            || mov Axh@0, MemR0425@7 || mov Axh@not0, MemR0425@7offsZI@6
 #            || R0425@7stepII2@6  ;override 5800h+18h (mov a0, Register)
 op:"mpy" y0, x1 || "mpy" y1, x0 || "addsub" sv, p0, p1, Ax_0 || "mov" Axh_0, MemR0425_7 || "mov" Axh_Not0, MemR0425_7_offsZI_6 || R0425_7_stepII2_6
-	is opcode_9_15=(0x58>>1) & MemR0425_7 & MemR0425_7_offsZI_6 & R0425_7_stepII2_6 & opcode_1_5=(0x18>>1) & Ax_0 & Axh_0 & Axh_Not0 & x0 & x1 & y0 & y1 & sv & p0 & p1
-unimpl
+	is opcode_9_15=(0x58>>1) & MemR0425_7 & MemR0425_7_offsZI_6 & R0425_7_stepII2_6 & opcode_1_5=(0x18>>1) & Ax_0 & Axh_0 & Axh_Not0 & x0 & x1 & y0 & y1 & sv & p0 & p1 & Y0_input & Y1_input
+{
+	MemR0425_7_offsZI_6 = Axh_Not0; # TODO: saturation
+	MemR0425_7 = Axh_0; # TODO: saturation
+	PRODUCT_ADD_SUB_SV(Ax_0, sext(sv) << 16, p0, p1);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+	build R0425_7_stepII2_6;
+}
 # 5838h TL2 mpy  y0, x1 || mpy y1, x0 || addsubrnd sv, p0, p1, Ax@0
 #            || mov Axh@0, MemR0425@7 || mov Axh@not0, MemR0425@7offsZI@6
 #            || R0425@7stepII2@6  ;override 5800h+38h (mov a1, Register)
-op:"mpy" y0, x1 || "mpy" y1, x0 || "addsub" sv, p0, p1, Ax_0 || "mov" Axh_0, MemR0425_7 || "mov" Axh_Not0, MemR0425_7_offsZI_6 || R0425_7_stepII2_6
-	is opcode_9_15=(0x58>>1) & MemR0425_7 & MemR0425_7_offsZI_6 & R0425_7_stepII2_6 & opcode_1_5=(0x38>>1) & Ax_0 & Axh_0 & Axh_Not0 & x0 & x1 & y0 & y1 & sv & p0 & p1
-unimpl
+op:"mpy" y0, x1 || "mpy" y1, x0 || "addsubrnd" sv, p0, p1, Ax_0 || "mov" Axh_0, MemR0425_7 || "mov" Axh_Not0, MemR0425_7_offsZI_6 || R0425_7_stepII2_6
+	is opcode_9_15=(0x58>>1) & MemR0425_7 & MemR0425_7_offsZI_6 & R0425_7_stepII2_6 & opcode_1_5=(0x38>>1) & Ax_0 & Axh_0 & Axh_Not0 & x0 & x1 & y0 & y1 & sv & p0 & p1 & Y0_input & Y1_input
+{
+	MemR0425_7_offsZI_6 = Axh_Not0; # TODO: saturation
+	MemR0425_7 = Axh_0; # TODO: saturation
+	PRODUCT_ADD_SUB_SV(Ax_0, (sext(sv) << 16) | 0x8000, p0, p1);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+	build R0425_7_stepII2_6;
+}
 # 80D0h TL2 mpy  y0, x1 || mpy y1, x0 || addsub    sv, p0, p1, Ax@10
 #            || mov Axh@9, MemR04@3 || mov Bxh@8, MemR04@3offsZI@2
 #            || R04@3stepII2@2
 op:"mpy" y0, x1 || "mpy" y1, x0 || "addsub" sv, p0, p1, Ax_10 || "mov" Axh_9, MemR04_3 || "mov" Bxh_8, MemR04_3_offsZI_2 || R04_3_stepII2_2
-	is opcode_11_15=(0x80>>3) & Ax_10 & Axh_9 & Bxh_8 & opcode_4_7=0xD & MemR04_3 & MemR04_3_offsZI_2 & R04_3_stepII2_2 & opcode_0_1=0 & x0 & x1 & y0 & y1 & sv & p0 & p1
-unimpl
+	is opcode_11_15=(0x80>>3) & Ax_10 & Axh_9 & Bxh_8 & opcode_4_7=0xD & MemR04_3 & MemR04_3_offsZI_2 & R04_3_stepII2_2 & opcode_0_1=0 & x0 & x1 & y0 & y1 & sv & p0 & p1 & Y0_input & Y1_input
+{
+	MemR04_3_offsZI_2 = Bxh_8; # TODO: saturation
+	MemR04_3 = Axh_9; # TODO: saturation
+	PRODUCT_ADD_SUB_SV(Ax_10, sext(sv) << 16, p0, p1);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+	build R04_3_stepII2_2;
+}
 # 80D1h TL2 mpy  y0, x1 || mpy y1, x0 || addsubrnd sv, p0, p1, Ax@10
 #            || mov Axh@9, MemR04@3 || mov Bxh@8, MemR04@3offsZI@2
 #            || R04@3stepII2@2
 op:"mpy" y0, x1 || "mpy" y1, x0 || "addsubrnd" sv, p0, p1, Ax_10 || "mov" Axh_9, MemR04_3 || "mov" Bxh_8, MemR04_3_offsZI_2 || R04_3_stepII2_2
-	is opcode_11_15=(0x80>>3) & Ax_10 & Axh_9 & Bxh_8 & opcode_4_7=0xD & MemR04_3 & MemR04_3_offsZI_2 & R04_3_stepII2_2 & opcode_0_1=1 & x0 & x1 & y0 & y1 & sv & p0 & p1
-unimpl
+	is opcode_11_15=(0x80>>3) & Ax_10 & Axh_9 & Bxh_8 & opcode_4_7=0xD & MemR04_3 & MemR04_3_offsZI_2 & R04_3_stepII2_2 & opcode_0_1=1 & x0 & x1 & y0 & y1 & sv & p0 & p1 & Y0_input & Y1_input
+{
+	MemR04_3_offsZI_2 = Bxh_8; # TODO: saturation
+	MemR04_3 = Axh_9; # TODO: saturation
+	PRODUCT_ADD_SUB_SV(Ax_10, (sext(sv) << 16) | 0x8000, p0, p1);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+	build R04_3_stepII2_2;
+}
 # 80D2h TL2 mpy  y0, x1 || mpy y1, x0 || add3      sv, p0, p1, Ax@10
 #            || mov Axh@9, MemR04@3 || mov Bxh@8, MemR04@3offsZI@2
 #            || R04@3stepII2@2
 op:"mpy" y0, x1 || "mpy" y1, x0 || "add3" sv, p0, p1, Ax_10 || "mov" Axh_9, MemR04_3 || "mov" Bxh_8, MemR04_3_offsZI_2 || R04_3_stepII2_2
-	is opcode_11_15=(0x80>>3) & Ax_10 & Axh_9 & Bxh_8 & opcode_4_7=0xD & MemR04_3 & MemR04_3_offsZI_2 & R04_3_stepII2_2 & opcode_0_1=2 & x0 & x1 & y0 & y1 & sv & p0 & p1
-unimpl
+	is opcode_11_15=(0x80>>3) & Ax_10 & Axh_9 & Bxh_8 & opcode_4_7=0xD & MemR04_3 & MemR04_3_offsZI_2 & R04_3_stepII2_2 & opcode_0_1=2 & x0 & x1 & y0 & y1 & sv & p0 & p1 & Y0_input & Y1_input
+{
+	MemR04_3_offsZI_2 = Bxh_8; # TODO: saturation
+	MemR04_3 = Axh_9; # TODO: saturation
+	PRODUCT_ADD3_SV(Ax_10, sext(sv) << 16, p0, p1);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+	build R04_3_stepII2_2;
+}
 # 80D3h TL2 mpy  y0, x1 || mpy y1, x0 || add3rnd   sv, p0, p1, Ax@10
 #            || mov Axh@9, MemR04@3 || mov Bxh@8, MemR04@3offsZI@2
 #            || R04@3stepII2@2
 op:"mpy" y0, x1 || "mpy" y1, x0 || "add3rnd" sv, p0, p1, Ax_10 || "mov" Axh_9, MemR04_3 || "mov" Bxh_8, MemR04_3_offsZI_2 || R04_3_stepII2_2
-	is opcode_11_15=(0x80>>3) & Ax_10 & Axh_9 & Bxh_8 & opcode_4_7=0xD & MemR04_3 & MemR04_3_offsZI_2 & R04_3_stepII2_2 & opcode_0_1=3 & x0 & x1 & y0 & y1 & sv & p0 & p1
-unimpl
+	is opcode_11_15=(0x80>>3) & Ax_10 & Axh_9 & Bxh_8 & opcode_4_7=0xD & MemR04_3 & MemR04_3_offsZI_2 & R04_3_stepII2_2 & opcode_0_1=3 & x0 & x1 & y0 & y1 & sv & p0 & p1 & Y0_input & Y1_input
+{
+	MemR04_3_offsZI_2 = Bxh_8; # TODO: saturation
+	MemR04_3 = Axh_9; # TODO: saturation
+	PRODUCT_ADD3_SV(Ax_10, (sext(sv) << 16) | 0x8000, p0, p1);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+	build R04_3_stepII2_2;
+}
 # D3A0h TL2 mpy  y0, x1 || mpy y1, x0 || addsub p0, p1, Ab@3
 #            || mov Axh@6, MemR04@1 || mov Bxh@2, MemR04@1offsZI@0
 #            || R04@1stepII2@0
 op:"mpy" y0, x1 || "mpy" y1, x0 || "addsub" p0, p1, Ab_3 || "mov" Axh_6, MemR04_1 || "mov" Bxh_2, MemR04_1_offsZI_0 || R04_1_stepII2_0
-	is opcode_7_15=(0xD3A>>3) & Axh_6 & opcode_5_5=(2>>1) & Ab_3 & Bxh_2 & MemR04_1 & MemR04_1_offsZI_0 & R04_1_stepII2_0 & x0 & x1 & y0 & y1 & p0 & p1
-unimpl
+	is opcode_7_15=(0xD3A>>3) & Axh_6 & opcode_5_5=(2>>1) & Ab_3 & Bxh_2 & MemR04_1 & MemR04_1_offsZI_0 & R04_1_stepII2_0 & x0 & x1 & y0 & y1 & p0 & p1 & Y0_input & Y1_input
+{
+	MemR04_1_offsZI_0 = Bxh_2; # TODO: saturation
+	MemR04_1 = Axh_6; # TODO: saturation
+	PRODUCT_ADD_SUB(Ab_3, p0, p1);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+	build R04_1_stepII2_0;
+}
 # 4D89h TL2 mpy  y0, x1 || mpyus y1, x0 || sub p0, p1, Ax@1
-op:"mpy" y0, x1 || "mpyus" y1, x0 || "sub" p0, p1, Ax_1 is opcode_2_15=(0x4D89>>2) & Ax_1 & opcode_0_0=1 & x0 & x1 & y0 & y1 & p0 & p1 unimpl
+op:"mpy" y0, x1 || "mpyus" y1, x0 || "sub" p0, p1, Ax_1 is opcode_2_15=(0x4D89>>2) & Ax_1 & opcode_0_0=1 & x0 & x1 & y0 & y1 & p0 & p1 & Y0_input & Y1_input {
+	SUB40_3(Ax_1, p0, p1);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), zext(Y1_input), p1);
+}
 # 5F24h TL2 mpy  y0, x1 || mpyus y1, x0 || add p0, p1, Ab@0
-op:"mpy" y0, x1 || "mpyus" y1, x0 || "add" p0, p1, Ab_0 is opcode_2_15=(0x5F24>>2) & Ab_0 & x0 & x1 & y0 & y1 & p0 & p1 unimpl
+op:"mpy" y0, x1 || "mpyus" y1, x0 || "add" p0, p1, Ab_0 is opcode_2_15=(0x5F24>>2) & Ab_0 & x0 & x1 & y0 & y1 & p0 & p1 & Y0_input & Y1_input {
+	ADD40_3(Ab_0, p0, p1);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), zext(Y1_input), p1);
+}
 # 8069h TL2 mpy  y0, x1 || mpyus y1, x0 || add3  p0, p1, Ab@8
-op:"mpy" y0, x1 || "mpyus" y1, x0 || "add3" p0, p1, Ab_8 is opcode_10_15=(0x80>>2) & Ab_8 & opcode_0_7=0x69 & x0 & x1 & y0 & y1 & p0 & p1 unimpl
+op:"mpy" y0, x1 || "mpyus" y1, x0 || "add3" p0, p1, Ab_8 is opcode_10_15=(0x80>>2) & Ab_8 & opcode_0_7=0x69 & x0 & x1 & y0 & y1 & p0 & p1 & Y0_input & Y1_input {
+	PRODUCT_ADD3(Ab_8, p0, p1);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), zext(Y1_input), p1);
+}
 # 8079h TL2 mpy  y0, x1 || mpyus y1, x0 || add3a p0, p1, Ab@8
-op:"mpy" y0, x1 || "mpyus" y1, x0 || "add3" p0, p1, Ab_8 is opcode_10_15=(0x80>>2) & Ab_8 & opcode_0_7=0x79 & x0 & x1 & y0 & y1 & p0 & p1 unimpl
+op:"mpy" y0, x1 || "mpyus" y1, x0 || "add3" p0, p1, Ab_8 is opcode_10_15=(0x80>>2) & Ab_8 & opcode_0_7=0x79 & x0 & x1 & y0 & y1 & p0 & p1 & Y0_input & Y1_input {
+	PRODUCT_ADD3(Ab_8, p0, p1 s>> 16);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), zext(Y1_input), p1);
+}
 # 8469h TL2 mpy  y0, x1 || mpyus y1, x0 || sub3  p0, p1, Ab@8
-op:"mpy" y0, x1 || "mpyus" y1, x0 || "add3" p0, p1, Ab_8 is opcode_10_15=(0x84>>2) & Ab_8 & opcode_0_7=0x69 & x0 & x1 & y0 & y1 & p0 & p1 unimpl
+op:"mpy" y0, x1 || "mpyus" y1, x0 || "add3" p0, p1, Ab_8 is opcode_10_15=(0x84>>2) & Ab_8 & opcode_0_7=0x69 & x0 & x1 & y0 & y1 & p0 & p1 & Y0_input & Y1_input {
+	PRODUCT_SUB3(Ab_8, p0, p1);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), zext(Y1_input), p1);
+}
 # 8479h TL2 mpy  y0, x1 || mpyus y1, x0 || sub3a p0, p1, Ab@8
-op:"mpy" y0, x1 || "mpyus" y1, x0 || "add3" p0, p1, Ab_8 is opcode_10_15=(0x84>>2) & Ab_8 & opcode_0_7=0x79 & x0 & x1 & y0 & y1 & p0 & p1 unimpl
+op:"mpy" y0, x1 || "mpyus" y1, x0 || "add3" p0, p1, Ab_8 is opcode_10_15=(0x84>>2) & Ab_8 & opcode_0_7=0x79 & x0 & x1 & y0 & y1 & p0 & p1 & Y0_input & Y1_input {
+	PRODUCT_SUB3(Ab_8, p0, p1 s>> 16);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), zext(Y1_input), p1);
+}
 # D584h TL2 mpy  y0, x1 || mpyus y1, x0 || add3aa p0, p1, Ab@0
-op:"mpy" y0, x1 || "mpyus" y1, x0 || "add3aa" p0, p1, Ab_0 is opcode_2_15=(0xD584>>2) & Ab_0 & x0 & x1 & y0 & y1 & p0 & p1 unimpl
+op:"mpy" y0, x1 || "mpyus" y1, x0 || "add3aa" p0, p1, Ab_0 is opcode_2_15=(0xD584>>2) & Ab_0 & x0 & x1 & y0 & y1 & p0 & p1 & Y0_input & Y1_input {
+	PRODUCT_ADD3(Ab_0, p0 s>> 16, p1 s>> 16);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), zext(Y1_input), p1);
+}
 # D59Dh TL2 mpy  y0, x1 || mpyus y1, x0 || sub p0, p1, Bx@5
-op:"mpy" y0, x1 || "mpyus" y1, x0 || "sub" p0, p1, Bx_5 is opcode_6_15=(0xD59>>2) & Bx_5 & opcode_0_4=(0x1D) & x0 & x1 & y0 & y1 & p0 & p1 unimpl
+op:"mpy" y0, x1 || "mpyus" y1, x0 || "sub" p0, p1, Bx_5 is opcode_6_15=(0xD59>>2) & Bx_5 & opcode_0_4=(0x1D) & x0 & x1 & y0 & y1 & p0 & p1 & Y0_input & Y1_input {
+	PRODUCT_SUB3(Bx_5, p0, p1);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+}
 # D5A0h TL2 mpy  y0, x1 || mpyus y1, x0 || addsub p0, p1, Ab@0
-op:"mpy" y0, x1 || "mpyus" y1, x0 || "addsub" p0, p1, Ab_0 is opcode_2_15=(0xD5A0>>2) & Ab_0 & x0 & x1 & y0 & y1 & p0 & p1 unimpl
+op:"mpy" y0, x1 || "mpyus" y1, x0 || "addsub" p0, p1, Ab_0 is opcode_2_15=(0xD5A0>>2) & Ab_0 & x0 & x1 & y0 & y1 & p0 & p1 & Y0_input & Y1_input {
+	PRODUCT_ADD_SUB(Ab_0, p0, p1);
+	SWAP_X0_X1();
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+}
 @endif
 # 0800h TL  mpyi NoReverse, Implied p0, y0, Imm8s@0   ;multiply  ;aka "mpys"
-op:"mpyi" y0, Imm8s_0 is opcode_8_15=0x08 & Imm8s_0 & y0 unimpl
+op:"mpyi" y0, Imm8s_0 is opcode_8_15=0x08 & Imm8s_0 & y0 & Y0_input {
+	x0 = Imm8s_0;
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+}
 # D100h TL  mpysu MemR45@2, MemR0123@0 || R0123@0stepZIDS@3, R45@2stepZIDS@5
 op:"mpysu" MemR45_2, MemR0123_0 || R0123_0_stepZIDS_3, R45_2_stepZIDS_5 is opcode_7_15=(0xD10>>3) & R45_2_stepZIDS_5 & R0123_0_stepZIDS_3 & MemR45_2 & MemR0123_0 & Y0_input {
 	y0 = MemR45_2;
@@ -3824,21 +4428,56 @@ op:"mpysu" y0, r6 is opcode_0_15=0x5EA2 & y0 & r6 & Y0_input {
 }
 @endif
 # D080h TL  msu  MemR45@2,MemR0123@0,Ax@8 || R0123@0stepZIDS@3, R45@2stepZIDS@5
-op:"msu" MemR45_2, MemR0123_0, Ax_8 || R0123_0_stepZIDS_3, R45_2_stepZIDS_5 is opcode_9_15=(0xD0>>1) & Ax_8 & opcode_7_7=1 & R45_2_stepZIDS_5 & R0123_0_stepZIDS_3 & MemR45_2 & MemR0123_0 unimpl
+op:"msu" MemR45_2, MemR0123_0, Ax_8 || R0123_0_stepZIDS_3, R45_2_stepZIDS_5 is opcode_9_15=(0xD0>>1) & Ax_8 & opcode_7_7=1 & R45_2_stepZIDS_5 & R0123_0_stepZIDS_3 & MemR45_2 & MemR0123_0 & Y0_input {
+	ADD40(Ax_8, p0);
+	x0 = MemR0123_0;
+	y0 = MemR45_2;
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	build R0123_0_stepZIDS_3;
+	build R45_2_stepZIDS_5;
+}
 # 90C0h TL  msu  MemRn@0, Imm16@16,  Ax@8 || Rn@0stepZIDS@3 ;multiply, subtract
-op:"msu" MemRn_0, Imm16, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x90>>1) & Ax_8 & opcode_5_7=(0xC>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 unimpl
+op:"msu" MemRn_0, Imm16, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x90>>1) & Ax_8 & opcode_5_7=(0xC>>1) & Rn_0_stepZIDS_3 & MemRn_0 & Y0_input; Imm16 {
+	ADD40(Ax_8, p0);
+	x0 = Imm16;
+	y0 = MemRn_0;
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	build Rn_0_stepZIDS_3;
+}
 # 9080h TL  msu  y0, MemRn@0, Ax@8 || Rn@0stepZIDS@3
-op:"msu" y0, MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x90>>1) & Ax_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 & y0 unimpl
+op:"msu" y0, MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x90>>1) & Ax_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 & y0 & Y0_input {
+	ADD40(Ax_8, p0);
+	x0 = MemRn_0;
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	build Rn_0_stepZIDS_3;
+}
 # 90A0h TL  msu  y0, Register@0, Ax@8
 # TODO: teakra alm indicates special behavior for Register_0 p, a0, and a1
-op:"msu" y0, Register_0_Read_No_Saturate, Ax_8 is opcode_9_15=(0x90>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0_Read_No_Saturate & y0 unimpl
+op:"msu" y0, Register_0_Read_No_Saturate, Ax_8 is opcode_9_15=(0x90>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0_Read_No_Saturate & y0 & Y0_input {
+	ADD40(Ax_8, p0);
+	x0 = Register_0_Read_No_Saturate;
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+}
 # B000h TL  msu  y0,MemImm8@0, Ax@8
-op:"msu" y0, MemImm8_0, Ax_8 is opcode_9_15=(0xB0>>1) & Ax_8 & MemImm8_0 & y0 unimpl
+op:"msu" y0, MemImm8_0, Ax_8 is opcode_9_15=(0xB0>>1) & Ax_8 & MemImm8_0 & y0 & Y0_input {
+	ADD40(Ax_8, p0);
+	x0 = MemImm8_0;
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+}
 @ifdef TEAK_LITE_2
 # 9462h TL2 msu  y0, r6, Ax@0
-op:"msu" y0, r6, Ax_0 is opcode_1_15=(0x9462>>1) & Ax_0 & r6 & y0 unimpl
+op:"msu" y0, r6, Ax_0 is opcode_1_15=(0x9462>>1) & Ax_0 & r6 & y0 & Y0_input {
+	ADD40(Ax_0, p0);
+	x0 = r6;
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+}
 # 8264h TL2 msusu y0, MemR0425@3, Ax@8 || R0425@3stepII2D2S@0
-op:"msusu" y0, MemR0425_3, Ax_8 || R0425_3_stepII2D2S_0 is opcode_9_15=(0x82>>1) & Ax_8 & opcode_5_7=(0x6>>1) & MemR0425_3 & opcode_2_2=1 & R0425_3_stepII2D2S_0 & y0 unimpl
+op:"msusu" y0, MemR0425_3, Ax_8 || R0425_3_stepII2D2S_0 is opcode_9_15=(0x82>>1) & Ax_8 & opcode_5_7=(0x6>>1) & MemR0425_3 & opcode_2_2=1 & R0425_3_stepII2D2S_0 & y0 & Y0_input {
+	ADD40(Ax_8, p0);
+	x0 = MemR0425_3;
+	MULTIPLY(zext(x0), sext(Y0_input), p0);
+	build R0425_3_stepII2D2S_0;
+}
 @endif
 # 6790h TL  neg  Ax@12, Cond@0 ;aX=0-aX
 op:"neg" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x79 & Cond_0 {
