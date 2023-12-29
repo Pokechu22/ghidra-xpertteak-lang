@@ -1115,6 +1115,79 @@ macro FLAGS16(result) {
 	$(FLAG_Z) = result == 0;
 }
 
+# teakra ProductSum for the following 6 macros
+macro PRODUCT_ADD3(dest, possibly_shifted_p0, possibly_shifted_p1) {
+	# TODO: this means that we can't implement saturation in ADD40_3 since the intermediate value shouldn't be saturated here (probably)
+	ADD40(dest, possibly_shifted_p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	ADD40(dest, possibly_shifted_p1);
+	# TODO: saturate here
+	# TODO: teakra marks this as a TODO for different behavior regarding add/subtract
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+}
+
+macro PRODUCT_SUB3(dest, possibly_shifted_p0, possibly_shifted_p1) {
+	# TODO: this means that we can't implement saturation in ADD40_3 since the intermediate value shouldn't be saturated here (probably)
+	SUB40(dest, possibly_shifted_p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	SUB40(dest, possibly_shifted_p1);
+	# TODO: saturate here
+	# TODO: teakra marks this as a TODO for different behavior regarding add/subtract
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+}
+
+macro PRODUCT_ADD_SUB(dest, possibly_shifted_p0, possibly_shifted_p1) {
+	# TODO: this means that we can't implement saturation in ADD40_3 since the intermediate value shouldn't be saturated here (probably)
+	ADD40(dest, possibly_shifted_p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	SUB40(dest, possibly_shifted_p1);
+	# TODO: saturate here
+	# TODO: teakra marks this as a TODO for different behavior regarding add/subtract
+	$(FLAG_C) = $(FLAG_C) ^ tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) ^ tmp_flag_v;
+}
+
+macro PRODUCT_SUB_ADD(dest, possibly_shifted_p0, possibly_shifted_p1) {
+	# TODO: this means that we can't implement saturation in ADD40_3 since the intermediate value shouldn't be saturated here (probably)
+	ADD40(dest, possibly_shifted_p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	ADD40(dest, possibly_shifted_p1);
+	# TODO: saturate here
+	# TODO: teakra marks this as a TODO for different behavior regarding add/subtract
+	$(FLAG_C) = $(FLAG_C) ^ tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) ^ tmp_flag_v;
+}
+
+macro PRODUCT_SUB3_SV(dest, possibly_rounded_sv, possibly_shifted_p0, possibly_shifted_p1) {
+	# TODO: this means that we can't implement saturation in ADD40_3 since the intermediate value shouldn't be saturated here (probably)
+	SUB40_3(dest, possibly_rounded_sv, possibly_shifted_p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	SUB40(dest, possibly_shifted_p1);
+	# TODO: saturate here
+	# TODO: teakra marks this as a TODO for different behavior regarding add/subtract
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+}
+
+macro PRODUCT_SUB_ADD_SV(dest, possibly_rounded_sv, possibly_shifted_p0, possibly_shifted_p1) {
+	# TODO: this means that we can't implement saturation in ADD40_3 since the intermediate value shouldn't be saturated here (probably)
+	SUB40_3(dest, possibly_rounded_sv, possibly_shifted_p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	ADD40(dest, possibly_shifted_p1);
+	# TODO: saturate here
+	# TODO: teakra marks this as a TODO for different behavior regarding add/subtract
+	$(FLAG_C) = $(FLAG_C) ^ tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) ^ tmp_flag_v;
+}
+
 # These exist to handle hwm later
 Y0_input:y0 is y0 { export y0; } # hwm = 0
 Y1_input:y1 is y1 { export y1; }
@@ -1412,7 +1485,6 @@ op:"add" MemR45_8, sv, Abh_2 || "sub" MemR45_8_offsZI_1, sv_copy, Abl_2 || "mov"
 	build R45_8_stepII2_1;
 }
 # 5DC0h TL2 add  p0, p1, Ab@2
-# teakra app/ProductSum for all of these
 # TODO: better handling of product registers - there's some additional shift stuff that needs to happen
 # NOTE: we don't need to do an ADD40(0, p0) call as that will never set FLAG_C or FLAG_V
 # (teakra's ProductSum is just too generalized)
@@ -1424,36 +1496,11 @@ op:"add" Px_1, Bx_0 is opcode_2_15=(0x5DF8>>2) & Px_1 & Bx_0 { ADD40(Bx_0, Px_1)
 # D38Bh TL2 add  r6, Ax@4
 op:"add" r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=0xB & r6 { ADD40(Ax_4, sext(r6)); }
 # 4590h TL2 add3 p0, p1, Ab@2
-op:"add3" p0, p1, Ab_2 is opcode_4_15=0x459 & Ab_2 & opcode_0_1=0 & p0 & p1 {
-	# TODO: this means that we can't implement saturation in ADD40_3 since the intermediate value shouldn't be saturated here (probably)
-	ADD40(Ab_2, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	ADD40(Ab_2, p1);
-	# TODO: teakra marks this as a TODO for different behavior regarding add/subtract
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
-}
+op:"add3" p0, p1, Ab_2 is opcode_4_15=0x459 & Ab_2 & opcode_0_1=0 & p0 & p1 { PRODUCT_ADD3(Ab_2, p0, p1); }
 # 4592h TL2 add3a p0, p1, Ab@2
-op:"add3a" p0, p1, Ab_2 is opcode_4_15=0x459 & Ab_2 & opcode_0_1=2 & p0 & p1 {
-	# TODOs shared with add3 above
-	ADD40(Ab_2, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	ADD40(Ab_2, p1 s>> 16);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
-}
+op:"add3a" p0, p1, Ab_2 is opcode_4_15=0x459 & Ab_2 & opcode_0_1=2 & p0 & p1 { PRODUCT_ADD3(Ab_2, p0, p1 s>> 16); }
 # 4593h TL2 add3aa p0, p1, Ab@2
-op:"add3aa" p0, p1, Ab_2 is opcode_4_15=0x459 & Ab_2 & opcode_0_1=3 & p0 & p1 {
-	# TODOs shared with add3 above
-	ADD40(Ab_2, p0 s>> 16);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	ADD40(Ab_2, p1 s>> 16);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
-}
+op:"add3aa" p0, p1, Ab_2 is opcode_4_15=0x459 & Ab_2 & opcode_0_1=3 & p0 & p1 { PRODUCT_ADD3(Ab_2, p0 s>> 16, p1 s>> 16); }
 # 5DC1h TL2 adda p0, p1, Ab@2
 op:"adda" p0, p1, Ab_2 is opcode_4_15=0x5DC & Ab_2 & opcode_0_1=1 & p0 & p1 { ADD40_3(Ab_2, p0, p1 s>> 16); }
 @endif
@@ -1487,45 +1534,13 @@ op:"addl" Register_0_Read_No_Saturate, Ax_8 is opcode_9_15=(0x94>>1) & Ax_8 & op
 # 9466h TL2 addl r6, Ax@0
 op:"addl" r6, Ax_0 is opcode_1_15=(0x9466>>1) & Ax_0 & r6 { ADD40(Ax_0, zext(r6)); }
 # 906Ch TL2 addsub  p0, p1, Ab@0
-op:"addsub" p0, p1, Ab_0 is opcode_2_15=(0x906C>>2) & Ab_0 & p0 & p1 {
-	# TODOs shared with add3 above
-	ADD40(Ab_0, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	SUB40(Ab_0, p1);
-	$(FLAG_C) = $(FLAG_C) ^ tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) ^ tmp_flag_v;
-}
+op:"addsub" p0, p1, Ab_0 is opcode_2_15=(0x906C>>2) & Ab_0 & p0 & p1 { PRODUCT_ADD_SUB(Ab_0, p0, p1); }
 # 49C2h TL2 addsub  p1, p0, Ab@4
-op:"addsub" p1, p0, Ab_4 is opcode_6_15=(0x49C>>2) & Ab_4 & opcode_0_3=2 & p1 & p0 {
-	# TODOs shared with add3 above
-	SUB40(Ab_4, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	ADD40(Ab_4, p1);
-	$(FLAG_C) = $(FLAG_C) ^ tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) ^ tmp_flag_v;
-}
+op:"addsub" p1, p0, Ab_4 is opcode_6_15=(0x49C>>2) & Ab_4 & opcode_0_3=2 & p1 & p0 { PRODUCT_SUB_ADD(Ab_4, p0, p1); }
 # 916Ch TL2 addsuba p0, p1, Ab@0
-op:"addsuba" p0, p1, Ab_0 is opcode_2_15=(0x916C>>2) & Ab_0 & p0 & p1 {
-	# TODOs shared with add3 above
-	ADD40(Ab_0, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	SUB40(Ab_0, p1 s>> 16);
-	$(FLAG_C) = $(FLAG_C) ^ tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) ^ tmp_flag_v;
-}
+op:"addsuba" p0, p1, Ab_0 is opcode_2_15=(0x916C>>2) & Ab_0 & p0 & p1 { PRODUCT_ADD_SUB(Ab_0, p0, p1 s>> 16); }
 # 49C3h TL2 addsuba p1, p0, Ab@4
-op:"addsuba" p1, p0, Ab_4 is opcode_6_15=(0x49C>>2) & Ab_4 & opcode_0_3=3 & p1 & p0 {
-	# TODOs shared with add3 above
-	SUB40(Ab_4, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	ADD40(Ab_4, p1 s>> 16);
-	$(FLAG_C) = $(FLAG_C) ^ tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) ^ tmp_flag_v;
-}
+op:"addsuba" p1, p0, Ab_4 is opcode_6_15=(0x49C>>2) & Ab_4 & opcode_0_3=3 & p1 & p0 { PRODUCT_SUB_ADD(Ab_4, p0, p1 s>> 16); }
 @endif
 # E700h TL  addv Imm16@16, MemImm8@0
 op:"addv" Imm16, MemImm8_0 is opcode_8_15=0xE7 & MemImm8_0; Imm16 { ADD16(MemImm8_0, MemImm8_0, Imm16); }
@@ -2862,37 +2877,19 @@ op:"mov" MemR04_1, repc || R04_1_stepII2_0 is opcode_2_15=(0xD7D4>>2) & MemR04_1
 # 5F4Ch TL2 mov  MemR04@1, sv || sub3 MemR04@1, p0, p1, b0 || R04@1stepII2@0
 op:"mov" MemR04_1, sv || "sub3" MemR04_1_copy, p0, p1, b0 || R04_1_stepII2_0 is opcode_2_15=(0x5F4C>>2) & MemR04_1 & MemR04_1_copy & R04_1_stepII2_0 & sv & p0 & p1 & b0 {
 	sv = MemR04_1;
-	# TODOs shared with add3 above
-	SUB40_3(b0, sext(sv) << 16, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	SUB40(b0, p1);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+	PRODUCT_SUB3_SV(b0, sext(sv) << 16, p0, p1);
 	build R04_1_stepII2_0;
 }
 # D4B4h TL2 mov  MemR04@1, sv || sub3rnd MemR04@1, p0, p1, b1 || R04@1stepII2@0
 op:"mov" MemR04_1, sv || "sub3rnd" MemR04_1_copy, p0, p1, b1 || R04_1_stepII2_0 is opcode_2_15=(0xD4B4>>2) & MemR04_1 & MemR04_1_copy & R04_1_stepII2_0 & sv & p0 & p1 & b1 {
 	sv = MemR04_1;
-	# TODOs shared with add3 above
-	SUB40_3(b1, (sext(sv) << 16) | 0x8000, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	SUB40(b1, p1);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+	PRODUCT_SUB3_SV(b1, (sext(sv) << 16) | 0x8000, p0, p1);
 	build R04_1_stepII2_0;
 }
 # DE9Ch TL2 mov  MemR04@1, sv || sub3rnd MemR04@1, p0, p1, b0 || R04@1stepII2@0
 op:"mov" MemR04_1, sv || "sub3rnd" MemR04_1_copy, p0, p1, b0 || R04_1_stepII2_0 is opcode_2_15=(0xDE9C>>2) & MemR04_1 & MemR04_1_copy & R04_1_stepII2_0 & sv & p0 & p1 & b0 {
 	sv = MemR04_1;
-	# TODOs shared with add3 above
-	SUB40_3(b0, (sext(sv) << 16) | 0x8000, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	SUB40(b0, p1);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+	PRODUCT_SUB3_SV(b0, (sext(sv) << 16) | 0x8000, p0, p1);
 	build R04_1_stepII2_0;
 }
 # 4B40h TL2 mov  MemR04@3, sv || addsub    MemR04@3, p1, p0, Bx@0
@@ -2901,13 +2898,7 @@ op:"mov" MemR04_3, sv || "addsub"    MemR04_3_copy, p1, p0, Bx_0 || R04_3_stepII
 	is opcode_4_15=0x4B4 & MemR04_3 & MemR04_3_copy & R04_3_stepII2_2 & opcode_1_1=0 & Bx_0 & sv & p1 & p0
 {
 	sv = MemR04_3;
-	# TODOs shared with add3 above
-	SUB40_3(Bx_0, sext(sv) << 16, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	ADD40(Bx_0, p1);
-	$(FLAG_C) = $(FLAG_C) ^ tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) ^ tmp_flag_v;
+	PRODUCT_SUB_ADD_SV(Bx_0, sext(sv) << 16, p0, p1);
 	build R04_3_stepII2_2;
 }
 # 4B42h TL2 mov  MemR04@3, sv || addsubrnd MemR04@3, p1, p0, Bx@0
@@ -2916,13 +2907,7 @@ op:"mov" MemR04_3, sv || "addsubrnd" MemR04_3_copy, p1, p0, Bx_0 || R04_3_stepII
 	is opcode_4_15=0x4B4 & MemR04_3 & MemR04_3_copy & R04_3_stepII2_2 & opcode_1_1=1 & Bx_0 & sv & p1 & p0
 {
 	sv = MemR04_3;
-	# TODOs shared with add3 above
-	SUB40_3(Bx_0, (sext(sv) << 16) | 0x8000, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	ADD40(Bx_0, p1);
-	$(FLAG_C) = $(FLAG_C) ^ tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) ^ tmp_flag_v;
+	PRODUCT_SUB_ADD_SV(Bx_0, (sext(sv) << 16) | 0x8000, p0, p1);
 	build R04_3_stepII2_2;
 }
 # 8062h TL2 mov  MemR04@4, ArArp@8  || R04@4stepII2@3
@@ -2937,18 +2922,12 @@ op:"mov" MemR04_4, SttMod_8 || R04_4_stepII2_3 is opcode_11_15=(0x80>>3) & SttMo
 }
 # 9960h TL2 mov  MemR04@4, sv || addsub    MemR04@4, p1, p0, Bx@2
 #            || R04@4stepD2S@3  ;<-- ordered p1, p0 here !
-# NOTE: the order warning here also applies to 4B40 / 4B42. There is no move instruction where p0 is added and p1 is subtracted (or even p1 is added).
+# NOTE: the order warning here also applies to 4B40 / 4B42. There is no move instruction where p0 is added (only options for p1 being added or subtracted)
 op:"mov" MemR04_4, sv || "addsub"    MemR04_4_copy, p1, p0, Bx_2 || R04_4_stepD2S_3
 	is opcode_5_15=(0x996>>1) & MemR04_4 & MemR04_4_copy & R04_4_stepD2S_3 & Bx_2 & opcode_0_1=0 & sv & p1 & p0
 {
 	sv = MemR04_4;
-	# TODOs shared with add3 above
-	SUB40_3(Bx_2, sext(sv) << 16, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	ADD40(Bx_2, p1);
-	$(FLAG_C) = $(FLAG_C) ^ tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) ^ tmp_flag_v;
+	PRODUCT_SUB_ADD_SV(Bx_2, sext(sv) << 16, p0, p1);
 	build R04_4_stepD2S_3;
 }
 # 99E0h TL2 mov  MemR04@4, sv || addsubrnd MemR04@4, p1, p0, Bx@2
@@ -2957,43 +2936,25 @@ op:"mov" MemR04_4, sv || "addsubrnd" MemR04_4_copy, p1, p0, Bx_2 || R04_4_stepD2
 	is opcode_5_15=(0x99E>>1) & MemR04_4 & MemR04_4_copy & R04_4_stepD2S_3 & Bx_2 & opcode_0_1=0 & sv & p1 & p0
 {
 	sv = MemR04_4;
-	# TODOs shared with add3 above
-	SUB40_3(Bx_2, (sext(sv) << 16) | 0x8000, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	ADD40(Bx_2, p1);
-	$(FLAG_C) = $(FLAG_C) ^ tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) ^ tmp_flag_v;
+	PRODUCT_SUB_ADD_SV(Bx_2, (sext(sv) << 16) | 0x8000, p0, p1);
 	build R04_4_stepD2S_3;
 }
 # 9860h TL2 mov  MemR04@4, sv || sub3      MemR04@4, p0, p1, Bx@2
 #            || R04@4stepD2S@3
-op:"mov" MemR04_4, sv || "addsub"    MemR04_4_copy, p0, p1, Bx_2 || R04_4_stepD2S_3
+op:"mov" MemR04_4, sv || "sub3"    MemR04_4_copy, p0, p1, Bx_2 || R04_4_stepD2S_3
 	is opcode_5_15=(0x986>>1) & MemR04_4 & MemR04_4_copy & R04_4_stepD2S_3 & Bx_2 & opcode_0_1=0 & sv & p0 & p1
 {
 	sv = MemR04_4;
-	# TODOs shared with add3 above
-	SUB40_3(Bx_2, sext(sv) << 16, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	SUB40(Bx_2, p1);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+	PRODUCT_SUB3_SV(Bx_2, sext(sv) << 16, p0, p1);
 	build R04_4_stepD2S_3;
 }
 # 98E0h TL2 mov  MemR04@4, sv || sub3rnd   MemR04@4, p0, p1, Bx@2
 #            || R04@4stepD2S@3
-op:"mov" MemR04_4, sv || "addsubrnd" MemR04_4_copy, p0, p1, Bx_2 || R04_4_stepD2S_3
+op:"mov" MemR04_4, sv || "sub3rnd" MemR04_4_copy, p0, p1, Bx_2 || R04_4_stepD2S_3
 	is opcode_5_15=(0x98E>>1) & MemR04_4 & MemR04_4_copy & R04_4_stepD2S_3 & Bx_2 & opcode_0_1=0 & sv & p0 & p1
 {
 	sv = MemR04_4;
-	# TODOs shared with add3 above
-	SUB40_3(Bx_2, (sext(sv) << 16) | 0x8000, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	SUB40(Bx_2, p1);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+	PRODUCT_SUB3_SV(Bx_2, (sext(sv) << 16) | 0x8000, p0, p1);
 	build R04_4_stepD2S_3;
 }
 # 8873h TL2 mov  MemR04@8, sv || sub3 MemR04@8, p0, p1, b1 || R04@8stepII2@3
@@ -3001,13 +2962,7 @@ op:"mov" MemR04_8, sv || "sub3" MemR04_8_copy, p0, p1, b1 || R04_8_stepII2_3
 	is opcode_9_15=(0x88>>1) & MemR04_8 & MemR04_8_copy & opcode_4_7=7 & R04_8_stepII2_3 & opcode_0_2=3 & sv & p0 & p1 & b1
 {
 	sv = MemR04_8;
-	# TODOs shared with add3 above
-	SUB40_3(b1, sext(sv) << 16, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	SUB40(b1, p1);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+	PRODUCT_SUB3_SV(b1, sext(sv) << 16, p0, p1);
 	build R04_8_stepII2_3;
 }
 
@@ -3245,13 +3200,7 @@ op:"mpy" y0, r6 is opcode_0_15=0x5EA0 & y0 & r6 & Y0_input {
 op:"mpy" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "sub3" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
 	is opcode_8_15=0xCB & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=0 & p0 & p1 & Y0_input & Y1_input
 {
-	# TODOs shared with add3 above
-	SUB40(Ab_6, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	SUB40(Ab_6, p1);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+	PRODUCT_SUB3(Ab_6, p0, p1);
 
 	x0 = MemR01_5;
 	y0 = MemR45_5;
@@ -3269,13 +3218,7 @@ op:"mpy" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "
 op:"mpy" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "sub3" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
 	is opcode_8_15=0xCB & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=1 & p0 & p1 & Y0_input & Y1_input
 {
-	# TODOs shared with add3 above
-	SUB40(Ab_6, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	SUB40(Ab_6, p1);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+	PRODUCT_SUB3(Ab_6, p0, p1);
 
 	x0 = MemR01_5;
 	y0 = MemR45_5;
@@ -3293,13 +3236,7 @@ op:"mpy" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "
 op:"mpy" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "sub3a" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
 	is opcode_8_15=0xCB & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=2 & p0 & p1 & Y0_input & Y1_input
 {
-	# TODOs shared with add3 above
-	SUB40(Ab_6, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	SUB40(Ab_6, p1 s>> 16);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+	PRODUCT_SUB3(Ab_6, p0, p1 s>> 16);
 
 	x0 = MemR01_5;
 	y0 = MemR45_5;
@@ -3317,13 +3254,7 @@ op:"mpy" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "
 op:"mpy" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "sub3a" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
 	is opcode_8_15=0xCB & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=3 & p0 & p1 & Y0_input & Y1_input
 {
-	# TODOs shared with add3 above
-	SUB40(Ab_6, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	SUB40(Ab_6, p1 s>> 16);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+	PRODUCT_SUB3(Ab_6, p0, p1 s>> 16);
 
 	x0 = MemR01_5;
 	y0 = MemR45_5;
@@ -3341,13 +3272,7 @@ op:"mpy" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "
 op:"mpy" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "add3" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
 	is opcode_8_15=0xCB & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=4 & p0 & p1 & Y0_input & Y1_input
 {
-	# TODOs shared with add3 above
-	ADD40(Ab_6, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	ADD40(Ab_6, p1);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+	PRODUCT_ADD3(Ab_6, p0, p1);
 
 	x0 = MemR01_5;
 	y0 = MemR45_5;
@@ -3365,13 +3290,7 @@ op:"mpy" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "
 op:"mpy" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "add3" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
 	is opcode_8_15=0xCB & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=5 & p0 & p1 & Y0_input & Y1_input
 {
-	# TODOs shared with add3 above
-	ADD40(Ab_6, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	ADD40(Ab_6, p1);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+	PRODUCT_ADD3(Ab_6, p0, p1);
 
 	x0 = MemR01_5;
 	y0 = MemR45_5;
@@ -3389,13 +3308,7 @@ op:"mpy" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "
 op:"mpy" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "add3a" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
 	is opcode_8_15=0xCB & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=6 & p0 & p1 & Y0_input & Y1_input
 {
-	# TODOs shared with add3 above
-	ADD40(Ab_6, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	ADD40(Ab_6, p1 s>> 16);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+	PRODUCT_ADD3(Ab_6, p0, p1 s>> 16);
 
 	x0 = MemR01_5;
 	y0 = MemR45_5;
@@ -3413,13 +3326,7 @@ op:"mpy" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "
 op:"mpy" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "add3a" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
 	is opcode_8_15=0xCB & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=7 & p0 & p1 & Y0_input & Y1_input
 {
-	# TODOs shared with add3 above
-	ADD40(Ab_6, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	ADD40(Ab_6, p1 s>> 16);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+	PRODUCT_ADD3(Ab_6, p0, p1 s>> 16);
 
 	x0 = MemR01_5;
 	y0 = MemR45_5;
@@ -3437,13 +3344,7 @@ op:"mpy" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "
 op:"mpy" MemR04_1, x1 || "mpy" y1, x0 || "sub3" p0, p1, Ax_3 || R04_1_stepII2_0
 	is opcode_5_15=(0xD5E>>1) & MemR04_1 & Ax_3 & opcode_2_2=0 & R04_1_stepII2_0 & x1 & y1 & x0 & p0 & p1 & Y0_input & Y1_input
 {
-	# TODOs shared with add3 above
-	SUB40(Ax_3, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	SUB40(Ax_3, p1);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+	PRODUCT_SUB3(Ax_3, p0, p1);
 
 	y0 = MemR04_1;
 	local tmp:2 = x1;
@@ -3460,13 +3361,7 @@ op:"mpy" MemR04_1, x1 || "mpy" y1, x0 || "sub3" p0, p1, Ax_3 || R04_1_stepII2_0
 op:"mpy" MemR04_1, x1 || "mpy" y1, x0 || "add3" p0, p1, Ax_3 || R04_1_stepII2_0
 	is opcode_5_15=(0xD5E>>1) & MemR04_1 & Ax_3 & opcode_2_2=1 & R04_1_stepII2_0 & x1 & y1 & x0 & p0 & p1 & Y0_input & Y1_input
 {
-	# TODOs shared with add3 above
-	ADD40(Ax_3, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	ADD40(Ax_3, p1);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+	PRODUCT_ADD3(Ax_3, p0, p1);
 
 	y0 = MemR04_1;
 	local tmp:2 = x1;
@@ -3776,13 +3671,7 @@ op:"mpysu" y0, Register_0_Read_No_Saturate is opcode_5_15=(0x814>>1) & Register_
 op:"mpysu" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "sub3a" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
 	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=0 & p0 & p1 & Y0_input & Y1_input
 {
-	# TODOs shared with add3 above
-	SUB40(Ab_6, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	SUB40(Ab_6, p1 s>> 16);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+	PRODUCT_SUB3(Ab_6, p0, p1 s>> 16);
 
 	x0 = MemR01_5;
 	y0 = MemR45_5;
@@ -3801,13 +3690,7 @@ op:"mpysu" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 ||
 op:"mpysu" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "sub3a" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
 	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=1 & p0 & p1 & Y0_input & Y1_input
 {
-	# TODOs shared with add3 above
-	SUB40(Ab_6, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	SUB40(Ab_6, p1 s>> 16);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+	PRODUCT_SUB3(Ab_6, p0, p1 s>> 16);
 
 	x0 = MemR01_5;
 	y0 = MemR45_5;
@@ -3826,13 +3709,7 @@ op:"mpysu" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 ||
 op:"mpysu" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "sub3aa" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
 	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=2 & p0 & p1 & Y0_input & Y1_input
 {
-	# TODOs shared with add3 above
-	SUB40(Ab_6, p0 s>> 16);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	SUB40(Ab_6, p1 s>> 16);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+	PRODUCT_SUB3(Ab_6, p0 s>> 16, p1 s>> 16);
 
 	x0 = MemR01_5;
 	y0 = MemR45_5;
@@ -3851,13 +3728,7 @@ op:"mpysu" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 ||
 op:"mpysu" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "sub3aa" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
 	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=3 & p0 & p1 & Y0_input & Y1_input
 {
-	# TODOs shared with add3 above
-	SUB40(Ab_6, p0 s>> 16);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	SUB40(Ab_6, p1 s>> 16);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+	PRODUCT_SUB3(Ab_6, p0 s>> 16, p1 s>> 16);
 
 	x0 = MemR01_5;
 	y0 = MemR45_5;
@@ -3876,13 +3747,7 @@ op:"mpysu" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 ||
 op:"mpysu" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "add3a" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
 	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=4 & p0 & p1 & Y0_input & Y1_input
 {
-	# TODOs shared with add3 above
-	ADD40(Ab_6, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	ADD40(Ab_6, p1 s>> 16);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+	PRODUCT_ADD3(Ab_6, p0, p1 s>> 16);
 
 	x0 = MemR01_5;
 	y0 = MemR45_5;
@@ -3901,13 +3766,7 @@ op:"mpysu" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 ||
 op:"mpysu" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "add3a" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
 	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=5 & p0 & p1 & Y0_input & Y1_input
 {
-	# TODOs shared with add3 above
-	ADD40(Ab_6, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	ADD40(Ab_6, p1 s>> 16);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+	PRODUCT_ADD3(Ab_6, p0, p1 s>> 16);
 
 	x0 = MemR01_5;
 	y0 = MemR45_5;
@@ -3926,13 +3785,7 @@ op:"mpysu" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 ||
 op:"mpysu" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "add3aa" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
 	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=6 & p0 & p1 & Y0_input & Y1_input
 {
-	# TODOs shared with add3 above
-	ADD40(Ab_6, p0 s>> 16);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	ADD40(Ab_6, p1 s>> 16);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+	PRODUCT_ADD3(Ab_6, p0 s>> 16, p1 s>> 16);
 
 	x0 = MemR01_5;
 	y0 = MemR45_5;
@@ -3951,13 +3804,7 @@ op:"mpysu" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 ||
 op:"mpysu" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "add3aa" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
 	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=7 & p0 & p1 & Y0_input & Y1_input
 {
-	# TODOs shared with add3 above
-	ADD40(Ab_6, p0 s>> 16);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	ADD40(Ab_6, p1 s>> 16);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+	PRODUCT_ADD3(Ab_6, p0 s>> 16, p1 s>> 16);
 
 	x0 = MemR01_5;
 	y0 = MemR45_5;
@@ -4540,7 +4387,6 @@ op:"sub" MemR45_2, sv, Abh_3 || "add" MemR45_2_offsZI_1, sv_copy, Abl_3 || "mov"
 	build R45_2_stepII2_1;
 }
 # 5DC2h TL2 sub  p0, p1, Ab@2
-# teakra app/ProductSum for the ones with both p0 and p1
 # TODO: better handling of product registers - there's some additional shift stuff that needs to happen
 # NOTE: we don't need to do an ADD40(0, p0) call as that will never set FLAG_C or FLAG_V
 # (teakra's ProductSum is just too generalized)
@@ -4552,33 +4398,11 @@ op:"sub" Px_1, Bx_0 is opcode_2_15=(0x8FD0>>2) & Px_1 & Bx_0 { SUB40(Bx_0, Px_1)
 # D38Fh TL2 sub  r6, Ax@4
 op:"sub" r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=0xF & r6 { SUB40(Ax_4, sext(r6)); }
 # 80C6h TL2 sub3 p0, p1, Ab@10
-op:"sub3" p0, p1, Ab_10 is opcode_12_15=8 & Ab_10 & opcode_0_9=0x0C6 & p0 & p1 {
-	# TODOs shared with add3 above
-	SUB40(Ab_10, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	SUB40(Ab_10, p1);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
-}
+op:"sub3" p0, p1, Ab_10 is opcode_12_15=8 & Ab_10 & opcode_0_9=0x0C6 & p0 & p1 { PRODUCT_SUB3(Ab_10, p0, p1); }
 # 82C6h TL2 sub3a p0, p1, Ab@10
-op:"sub3a" p0, p1, Ab_10 is opcode_12_15=8 & Ab_10 & opcode_0_9=0x2C6 & p0 & p1 {
-	SUB40(Ab_10, p0);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	SUB40(Ab_10, p1 s>> 16);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
-}
+op:"sub3a" p0, p1, Ab_10 is opcode_12_15=8 & Ab_10 & opcode_0_9=0x2C6 & p0 & p1 { PRODUCT_SUB3(Ab_10, p0, p1 s>> 16); }
 # 83C6h TL2 sub3aa p0, p1, Ab@10
-op:"sub3aa" p0, p1, Ab_10 is opcode_12_15=8 & Ab_10 & opcode_0_9=0x3C6 & p0 & p1 {
-	SUB40(Ab_10, p0 s>> 16);
-	local tmp_flag_c = $(FLAG_C);
-	local tmp_flag_v = $(FLAG_V);
-	SUB40(Ab_10, p1 s>> 16);
-	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
-	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
-}
+op:"sub3aa" p0, p1, Ab_10 is opcode_12_15=8 & Ab_10 & opcode_0_9=0x3C6 & p0 & p1 { PRODUCT_SUB3(Ab_10, p0 s>> 16, p1 s>> 16); }
 # 5DC3h TL2 suba p0, p1, Ab@2
 op:"suba" p0, p1, Ab_2 is opcode_4_15=0x5DC & Ab_2 & opcode_0_1=3 & p0 & p1 { SUB40_3(Ab_2, p0, p1 s>> 16); }
 @endif
