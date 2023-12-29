@@ -4527,11 +4527,14 @@ op:"or" Bx_10, Bx_1, Ax_0 is opcode_11_15=(0xD3>>3) & Bx_10 & opcode_2_9=(0x3C4>
 op:"or" r6, Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=8 & r6 { Ax_4 = Ax_4 | zext(r6); FLAGS40(Ax_4); }
 @endif
 # 67B0h TL  pacr Implied Const8000h, Implied p0, Ax@12, Cond@0 ;aX=shfP+8000h
-op:"pacr" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x7B & Cond_0 unimpl
-op:"pacr" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x7B & cond_0=0 unimpl
+op:"pacr" p0, Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x7B & Cond_0 & p0 {
+	if (!Cond_0) goto inst_next;
+	ADD40_3(Ax_12, p0, 0x8000);
+}
+op:"pacr" p0, Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x7B & cond_0=0 & p0 { ADD40_3(Ax_12, p0, 0x8000); }
 @ifdef TEAK_LITE_2
 # D7C2h TL2 pacr1 Implied Const8000h, Implied p1, Ax@0
-op:"pacrl" Ax_0 is opcode_1_15=(0xD7C2>>1) & Ax_0 unimpl
+op:"pacr1" p1, Ax_0 is opcode_1_15=(0xD7C2>>1) & Ax_0 & p1 { ADD40_3(Ax_0, p1, 0x8000); }
 @endif
 # 5E60h TL  pop  Register@0
 op:"pop" Register_0_Write is opcode_5_15=(0x5E60>>5) & Register_0_Write & Register_0_Write_After {
@@ -4783,8 +4786,11 @@ op:"rets" Imm8u_0 is opcode_8_15=0x09 & Imm8u_0 {
 	return [sp];
 }
 # 67A0h TL  rnd  Implied Const8000h, Ax@12, Cond@0 ;aX=aX+8000h
-op:"rnd" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=(0x7A) & Cond_0 unimpl
-op:"rnd" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=(0x7A) & cond_0=0 unimpl
+op:"rnd" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=(0x7A) & Cond_0 {
+	if (!Cond_0) goto inst_next;
+	ADD40(Ax_12, 0x8000);
+}
+op:"rnd" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=(0x7A) & cond_0=0  { ADD40(Ax_12, 0x8000); }
 # 6750h TL  rol  Implied Const1,     Ax@12, Cond@0 ;aX=aX rcl 1 (37bit rotate)
 op:"rol" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=(0x75) & Cond_0 {
 	if (!Cond_0) goto inst_next;
