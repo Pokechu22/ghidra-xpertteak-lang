@@ -3239,57 +3239,245 @@ op:"mpy" y0, r6 is opcode_0_15=0x5EA0 & y0 & r6 & Y0_input {
 }
 # CB00h TL2 mpy  MemR45@5, MemR01@5 || mpysu MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || sub3   p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
-# opcode_0_0: mpysu vs mpyus
+# opcode_0_0: mpysu (unsigned x1, signed y1) vs mpyus (signed x1, unsigned y1)
 # opcode_1_1: sub3 vs sub3a or add3 vs add3a
 # opcode_2_2: sub vs add
 op:"mpy" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "sub3" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
-	is opcode_8_15=0xCB & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=0 & p0 & p1
-unimpl
+	is opcode_8_15=0xCB & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=0 & p0 & p1 & Y0_input & Y1_input
+{
+	# TODOs shared with add3 above
+	SUB40(Ab_6, p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	SUB40(Ab_6, p1);
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+
+	x0 = MemR01_5;
+	y0 = MemR45_5;
+	x1 = MemR01_5_offsZI_3;
+	y1 = MemR45_5_offsZI_4;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(zext(x1), sext(Y1_input), p1);
+
+	build R01_5_stepII2_3;
+	build R45_5_stepII2_4;
+}
 # CB01h TL2 mpy  MemR45@5, MemR01@5 || mpyus MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || sub3   p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
 op:"mpy" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "sub3" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
-	is opcode_8_15=0xCB & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=1 & p0 & p1
-unimpl
+	is opcode_8_15=0xCB & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=1 & p0 & p1 & Y0_input & Y1_input
+{
+	# TODOs shared with add3 above
+	SUB40(Ab_6, p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	SUB40(Ab_6, p1);
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+
+	x0 = MemR01_5;
+	y0 = MemR45_5;
+	x1 = MemR01_5_offsZI_3;
+	y1 = MemR45_5_offsZI_4;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), zext(Y1_input), p1);
+
+	build R01_5_stepII2_3;
+	build R45_5_stepII2_4;
+}
 # CB02h TL2 mpy  MemR45@5, MemR01@5 || mpysu MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || sub3a  p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
 op:"mpy" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "sub3a" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
-	is opcode_8_15=0xCB & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=2 & p0 & p1
-unimpl
+	is opcode_8_15=0xCB & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=2 & p0 & p1 & Y0_input & Y1_input
+{
+	# TODOs shared with add3 above
+	SUB40(Ab_6, p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	SUB40(Ab_6, p1 s>> 16);
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+
+	x0 = MemR01_5;
+	y0 = MemR45_5;
+	x1 = MemR01_5_offsZI_3;
+	y1 = MemR45_5_offsZI_4;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(zext(x1), sext(Y1_input), p1);
+
+	build R01_5_stepII2_3;
+	build R45_5_stepII2_4;
+}
 # CB03h TL2 mpy  MemR45@5, MemR01@5 || mpyus MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || sub3a  p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
 op:"mpy" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "sub3a" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
-	is opcode_8_15=0xCB & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=3 & p0 & p1
-unimpl
+	is opcode_8_15=0xCB & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=3 & p0 & p1 & Y0_input & Y1_input
+{
+	# TODOs shared with add3 above
+	SUB40(Ab_6, p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	SUB40(Ab_6, p1 s>> 16);
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+
+	x0 = MemR01_5;
+	y0 = MemR45_5;
+	x1 = MemR01_5_offsZI_3;
+	y1 = MemR45_5_offsZI_4;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), zext(Y1_input), p1);
+
+	build R01_5_stepII2_3;
+	build R45_5_stepII2_4;
+}
 # CB04h TL2 mpy  MemR45@5, MemR01@5 || mpysu MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || add3   p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
 op:"mpy" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "add3" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
-	is opcode_8_15=0xCB & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=4 & p0 & p1
-unimpl
+	is opcode_8_15=0xCB & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=4 & p0 & p1 & Y0_input & Y1_input
+{
+	# TODOs shared with add3 above
+	ADD40(Ab_6, p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	ADD40(Ab_6, p1);
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+
+	x0 = MemR01_5;
+	y0 = MemR45_5;
+	x1 = MemR01_5_offsZI_3;
+	y1 = MemR45_5_offsZI_4;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(zext(x1), sext(Y1_input), p1);
+
+	build R01_5_stepII2_3;
+	build R45_5_stepII2_4;
+}
 # CB05h TL2 mpy  MemR45@5, MemR01@5 || mpyus MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || add3   p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
 op:"mpy" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "add3" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
-	is opcode_8_15=0xCB & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=5 & p0 & p1
-unimpl
+	is opcode_8_15=0xCB & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=5 & p0 & p1 & Y0_input & Y1_input
+{
+	# TODOs shared with add3 above
+	ADD40(Ab_6, p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	ADD40(Ab_6, p1);
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+
+	x0 = MemR01_5;
+	y0 = MemR45_5;
+	x1 = MemR01_5_offsZI_3;
+	y1 = MemR45_5_offsZI_4;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), zext(Y1_input), p1);
+
+	build R01_5_stepII2_3;
+	build R45_5_stepII2_4;
+}
 # CB06h TL2 mpy  MemR45@5, MemR01@5 || mpysu MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || add3a  p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
 op:"mpy" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "add3a" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
-	is opcode_8_15=0xCB & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=6 & p0 & p1
-unimpl
+	is opcode_8_15=0xCB & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=6 & p0 & p1 & Y0_input & Y1_input
+{
+	# TODOs shared with add3 above
+	ADD40(Ab_6, p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	ADD40(Ab_6, p1 s>> 16);
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+
+	x0 = MemR01_5;
+	y0 = MemR45_5;
+	x1 = MemR01_5_offsZI_3;
+	y1 = MemR45_5_offsZI_4;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(zext(x1), sext(Y1_input), p1);
+
+	build R01_5_stepII2_3;
+	build R45_5_stepII2_4;
+}
 # CB07h TL2 mpy  MemR45@5, MemR01@5 || mpyus MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || add3a  p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
 op:"mpy" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "add3a" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
-	is opcode_8_15=0xCB & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=7 & p0 & p1
-unimpl
+	is opcode_8_15=0xCB & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=7 & p0 & p1 & Y0_input & Y1_input
+{
+	# TODOs shared with add3 above
+	ADD40(Ab_6, p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	ADD40(Ab_6, p1 s>> 16);
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+
+	x0 = MemR01_5;
+	y0 = MemR45_5;
+	x1 = MemR01_5_offsZI_3;
+	y1 = MemR45_5_offsZI_4;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), zext(Y1_input), p1);
+
+	build R01_5_stepII2_3;
+	build R45_5_stepII2_4;
+}
 # D5E0h TL2 mpy  MemR04@1, x1 || mpy y1, x0 || sub3 p0, p1, Ax@3
 #            || R04@1stepII2@0
 op:"mpy" MemR04_1, x1 || "mpy" y1, x0 || "sub3" p0, p1, Ax_3 || R04_1_stepII2_0
-	is opcode_5_15=(0xD5E>>1) & MemR04_1 & Ax_3 & opcode_2_2=0 & R04_1_stepII2_0 & x1 & y1 & x0 & p0 & p1
-unimpl
+	is opcode_5_15=(0xD5E>>1) & MemR04_1 & Ax_3 & opcode_2_2=0 & R04_1_stepII2_0 & x1 & y1 & x0 & p0 & p1 & Y0_input & Y1_input
+{
+	# TODOs shared with add3 above
+	SUB40(Ax_3, p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	SUB40(Ax_3, p1);
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+
+	y0 = MemR04_1;
+	local tmp:2 = x1;
+	x1 = x0;
+	x0 = tmp;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R04_1_stepII2_0;
+}
 # D5E4h TL2 mpy  MemR04@1, x1 || mpy y1, x0 || add3 p0, p1, Ax@3
 #            || R04@1stepII2@0
 op:"mpy" MemR04_1, x1 || "mpy" y1, x0 || "add3" p0, p1, Ax_3 || R04_1_stepII2_0
-	is opcode_5_15=(0xD5E>>1) & MemR04_1 & Ax_3 & opcode_2_2=1 & R04_1_stepII2_0 & x1 & y1 & x0 & p0 & p1
-unimpl
+	is opcode_5_15=(0xD5E>>1) & MemR04_1 & Ax_3 & opcode_2_2=1 & R04_1_stepII2_0 & x1 & y1 & x0 & p0 & p1 & Y0_input & Y1_input
+{
+	# TODOs shared with add3 above
+	ADD40(Ax_3, p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	ADD40(Ax_3, p1);
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+
+	y0 = MemR04_1;
+	local tmp:2 = x1;
+	x1 = x0;
+	x0 = tmp;
+
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+
+	build R04_1_stepII2_0;
+}
 # C800h TL2 mpy  MemR4567@4, MemR0123@4
 #            || mpy MemR4567@4offsZIDZ@2, MemR0123@4offsZIDZ@0
 #            || add3 p0, p1, Ab@6 || R0123@4stepII2D2S@0, R4567@4stepII2D2S@2
@@ -3584,51 +3772,204 @@ op:"mpysu" y0, Register_0_Read_No_Saturate is opcode_5_15=(0x814>>1) & Register_
 # CA00h TL2 mpysu MemR45@5, MemR01@5
 #            || mpysu MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || sub3a  p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
+# Similar pattern as CB00h
 op:"mpysu" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "sub3a" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
-	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=0 & p0 & p1
-unimpl
+	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=0 & p0 & p1 & Y0_input & Y1_input
+{
+	# TODOs shared with add3 above
+	SUB40(Ab_6, p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	SUB40(Ab_6, p1 s>> 16);
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+
+	x0 = MemR01_5;
+	y0 = MemR45_5;
+	x1 = MemR01_5_offsZI_3;
+	y1 = MemR45_5_offsZI_4;
+
+	MULTIPLY(zext(x0), sext(Y0_input), p0);
+	MULTIPLY(zext(x1), sext(Y1_input), p1);
+
+	build R01_5_stepII2_3;
+	build R45_5_stepII2_4;
+}
 # CA01h TL2 mpysu MemR45@5, MemR01@5
 #            || mpyus MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || sub3a  p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
 op:"mpysu" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "sub3a" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
-	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=1 & p0 & p1
-unimpl
+	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=1 & p0 & p1 & Y0_input & Y1_input
+{
+	# TODOs shared with add3 above
+	SUB40(Ab_6, p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	SUB40(Ab_6, p1 s>> 16);
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+
+	x0 = MemR01_5;
+	y0 = MemR45_5;
+	x1 = MemR01_5_offsZI_3;
+	y1 = MemR45_5_offsZI_4;
+
+	MULTIPLY(zext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), zext(Y1_input), p1);
+
+	build R01_5_stepII2_3;
+	build R45_5_stepII2_4;
+}
 # CA02h TL2 mpysu MemR45@5, MemR01@5
 #            || mpysu MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || sub3aa p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
 op:"mpysu" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "sub3aa" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
-	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=2 & p0 & p1
-unimpl
+	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=2 & p0 & p1 & Y0_input & Y1_input
+{
+	# TODOs shared with add3 above
+	SUB40(Ab_6, p0 s>> 16);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	SUB40(Ab_6, p1 s>> 16);
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+
+	x0 = MemR01_5;
+	y0 = MemR45_5;
+	x1 = MemR01_5_offsZI_3;
+	y1 = MemR45_5_offsZI_4;
+
+	MULTIPLY(zext(x0), sext(Y0_input), p0);
+	MULTIPLY(zext(x1), sext(Y1_input), p1);
+
+	build R01_5_stepII2_3;
+	build R45_5_stepII2_4;
+}
 # CA03h TL2 mpysu MemR45@5, MemR01@5
 #            || mpyus MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || sub3aa p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
 op:"mpysu" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "sub3aa" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
-	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=3 & p0 & p1
-unimpl
+	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=3 & p0 & p1 & Y0_input & Y1_input
+{
+	# TODOs shared with add3 above
+	SUB40(Ab_6, p0 s>> 16);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	SUB40(Ab_6, p1 s>> 16);
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+
+	x0 = MemR01_5;
+	y0 = MemR45_5;
+	x1 = MemR01_5_offsZI_3;
+	y1 = MemR45_5_offsZI_4;
+
+	MULTIPLY(zext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), zext(Y1_input), p1);
+
+	build R01_5_stepII2_3;
+	build R45_5_stepII2_4;
+}
 # CA04h TL2 mpysu MemR45@5, MemR01@5
 #            || mpysu MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || add3a  p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
 op:"mpysu" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "add3a" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
-	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=4 & p0 & p1
-unimpl
+	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=4 & p0 & p1 & Y0_input & Y1_input
+{
+	# TODOs shared with add3 above
+	ADD40(Ab_6, p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	ADD40(Ab_6, p1 s>> 16);
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+
+	x0 = MemR01_5;
+	y0 = MemR45_5;
+	x1 = MemR01_5_offsZI_3;
+	y1 = MemR45_5_offsZI_4;
+
+	MULTIPLY(zext(x0), sext(Y0_input), p0);
+	MULTIPLY(zext(x1), sext(Y1_input), p1);
+
+	build R01_5_stepII2_3;
+	build R45_5_stepII2_4;
+}
 # CA05h TL2 mpysu MemR45@5, MemR01@5
 #            || mpyus MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || add3a  p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
 op:"mpysu" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "add3a" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
-	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=5 & p0 & p1
-unimpl
+	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=5 & p0 & p1 & Y0_input & Y1_input
+{
+	# TODOs shared with add3 above
+	ADD40(Ab_6, p0);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	ADD40(Ab_6, p1 s>> 16);
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+
+	x0 = MemR01_5;
+	y0 = MemR45_5;
+	x1 = MemR01_5_offsZI_3;
+	y1 = MemR45_5_offsZI_4;
+
+	MULTIPLY(zext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), zext(Y1_input), p1);
+
+	build R01_5_stepII2_3;
+	build R45_5_stepII2_4;
+}
 # CA06h TL2 mpysu MemR45@5, MemR01@5
 #            || mpysu MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || add3aa p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
 op:"mpysu" MemR45_5, MemR01_5 || "mpysu" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "add3aa" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
-	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=6 & p0 & p1
-unimpl
+	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=6 & p0 & p1 & Y0_input & Y1_input
+{
+	# TODOs shared with add3 above
+	ADD40(Ab_6, p0 s>> 16);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	ADD40(Ab_6, p1 s>> 16);
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+
+	x0 = MemR01_5;
+	y0 = MemR45_5;
+	x1 = MemR01_5_offsZI_3;
+	y1 = MemR45_5_offsZI_4;
+
+	MULTIPLY(zext(x0), sext(Y0_input), p0);
+	MULTIPLY(zext(x1), sext(Y1_input), p1);
+
+	build R01_5_stepII2_3;
+	build R45_5_stepII2_4;
+}
 # CA07h TL2 mpysu MemR45@5, MemR01@5
 #            || mpyus MemR45@5offsZI@4, MemR01@5offsZI@3
 #            || add3aa p0, p1, Ab@6 || R01@5stepII2@3, R45@5stepII2@4
 op:"mpysu" MemR45_5, MemR01_5 || "mpyus" MemR45_5_offsZI_4, MemR01_5_offsZI_3 || "add3aa" p0, p1, Ab_6 || R01_5_stepII2_3, R45_5_stepII2_4
-	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=7 & p0 & p1
-unimpl
+	is opcode_8_15=0xCA & Ab_6 & MemR45_5 & MemR01_5 & MemR45_5_offsZI_4 & R45_5_stepII2_4 & MemR01_5_offsZI_3 & R01_5_stepII2_3 & opcode_0_2=7 & p0 & p1 & Y0_input & Y1_input
+{
+	# TODOs shared with add3 above
+	ADD40(Ab_6, p0 s>> 16);
+	local tmp_flag_c = $(FLAG_C);
+	local tmp_flag_v = $(FLAG_V);
+	ADD40(Ab_6, p1 s>> 16);
+	$(FLAG_C) = $(FLAG_C) | tmp_flag_c;
+	$(FLAG_V) = $(FLAG_V) | tmp_flag_v;
+
+	x0 = MemR01_5;
+	y0 = MemR45_5;
+	x1 = MemR01_5_offsZI_3;
+	y1 = MemR45_5_offsZI_4;
+
+	MULTIPLY(zext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), zext(Y1_input), p1);
+
+	build R01_5_stepII2_3;
+	build R45_5_stepII2_4;
+}
 # 5EA2h TL2 mpysu y0, r6
 op:"mpysu" y0, r6 is opcode_0_15=0x5EA2 & y0 & r6 & Y0_input {
 	x0 = r6;
