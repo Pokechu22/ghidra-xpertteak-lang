@@ -5383,18 +5383,18 @@ op:"tstb" SttMod_0, Imm4bitno_16 is opcode_3_15=(0x0028>>3) & SttMod_0; Imm4bitn
 # 5F45h TL2 vtrclr vtr0         ;vtr0=0           ;for Viterbi decoding...
 op:"vtrclr" vtr0 is opcode_0_15=0x5F45 & vtr0 { vtr0 = 0; }
 # 5F47h TL2 vtrclr vtr0, vtr1   ;vtr0=0, vtr1=0   ;(saved C/C1 carry flags)
-# TODO: C/C1 carry flags?
+# NOTE: the "saved C/C1 carry flags" comment means that vtrclr doesn't touch the carry flags (based on teakra only changing vtr0 and vtr1)
 op:"vtrclr" vtr0, vtr1 is opcode_0_15=0x5F47 & vtr0 & vtr1 { vtr0 = 0; vtr1 = 0; }
 # 5F46h TL2 vtrclr vtr1         ;vtr1=0
 op:"vtrclr" vtr1 is opcode_0_15=0x5F46 & vtr1 { vtr1 = 0; }
 # D383h TL2 vtrmov Axl@4        ;Axl=(vtr1 and FF00h)+(vtr0/100h)
-op:"vtrmov" Axl_4 is opcode_5_15=(0xD38>>1) & Axl_4 & opcode_0_3=3 { Axl_4 = (vtr1 & 0xFF00) | ((vtr0 & 0xFF00) >> 8); }
+op:"vtrmov" Axl_4 is opcode_5_15=(0xD38>>1) & Axl_4 & Ax_4 & opcode_0_3=3 { Ax_4 = zext((vtr1 & 0xFF00) | ((vtr0 & 0xFF00) >> 8)); FLAGS40(Ax_4); } # TODO: saturation
 # D29Ah TL2 vtrmov vtr0, Axl@0  ;Axl=vtr0
-op:"vtrmov" vtr0, Axl_0 is opcode_1_15=(0xD29A>>1) & Axl_0 & vtr0 { Axl_0 = vtr0; }
+op:"vtrmov" vtr0, Axl_0 is opcode_1_15=(0xD29A>>1) & Axl_0 & Ax_0 & vtr0 { Ax_0 = zext(vtr0); FLAGS40(Ax_0); } # TODO: saturation
 # D69Ah TL2 vtrmov vtr1, Axl@0  ;Axl=vtr1
-op:"vtrmov" vtr1, Axl_0 is opcode_1_15=(0xD69A>>1) & Axl_0 & vtr1 { Axl_0 = vtr1; }
+op:"vtrmov" vtr1, Axl_0 is opcode_1_15=(0xD69A>>1) & Axl_0 & Ax_0 & vtr1 { Ax_0 = zext(vtr1); FLAGS40(Ax_0); } # TODO: saturation
 # D781h TL2 vtrshr              ;vtr0=vtr0/2+C*8000h, vtr1=vtr1/2+C1*8000h
-op:"vtrshr" is opcode_0_15=0xD781 unimpl
+op:"vtrshr" is opcode_0_15=0xD781 { VTRSHR(); }
 @endif
 # D4FAh TL  xor  MemImm16@16, Ax@8
 # per teakra's ExtendOperandForAlm + AlmGeneric, xor doesn't experience sign-extension, nor does it experience saturation
