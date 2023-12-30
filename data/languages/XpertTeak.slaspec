@@ -1213,11 +1213,14 @@ macro PRODUCT_SUB_ADD_SV(dest, possibly_rounded_sv, possibly_shifted_p0, possibl
 }
 
 # This would be a mess due to the shift-mode flag and sv and stuff (see teakra ShiftBus40). For now don't implement it.
+define pcodeop shift_carries; # TODO: this probably isn't needed
 define pcodeop shift_overflows; # TODO: this probably isn't needed
 macro SHIFT_OVERFLOW_FLAGS(value, shift) {
 	local value_tmp:5 = value;
 	local shift_tmp:2 = shift;
+	local carries:1 = shift_carries(value_tmp, shift_tmp);
 	local overflows:1 = shift_overflows(value_tmp, shift_tmp);
+	$(FLAG_C) = carries;
 	$(FLAG_V) = overflows;
 	$(FLAG_VL) = $(FLAG_VL) | $(FLAG_V);
 }
@@ -5337,21 +5340,46 @@ op:"tst1" Imm16, r6 is opcode_0_15=0x47BD & r6; Imm16 { $(FLAG_Z) = (Imm16 & ~r6
 # 9478h TL2 tst1 Imm16@16, SttMod@0 Implied Not
 op:"tst1" Imm16, SttMod_0 is opcode_3_15=(0x9478>>3) & SttMod_0; Imm16 { $(FLAG_Z) = (Imm16 & ~SttMod_0) == 0; }
 # 80C1h TL2 tst4b a0l, MemR0425@10 || R0425@10stepII2D2S@8
-op:"tst4b" a0l, MemR0425_10 || R0425_10_stepII2D2S_8 is opcode_12_15=8 & MemR0425_10 & R0425_10_stepII2D2S_8 & opcode_0_7=0xC1 & a0l unimpl
+op:"tst4b" a0l, MemR0425_10 || R0425_10_stepII2D2S_8 is opcode_12_15=8 & MemR0425_10 & R0425_10_stepII2D2S_8 & opcode_0_7=0xC1 & a0l {
+	# TODO: This is a weird operation, since it sets carry and zero but leaves the others unchanged according to teakra
+	local bit:5 = (a0 & 0xf);
+	local bit_result:1 = ((MemR0425_10 >> bit) & 1) != 0;
+
+	$(FLAG_Z) = bit_result;
+	$(FLAG_C) = $(FLAG_Z);
+
+	build R0425_10_stepII2D2S_8;
+}
 # 4780h TL2 tst4b a0l, MemR0425@2, Ax@4 || R0425@2stepII2D2S@0
-op:"tst4b" a0l, MemR0425_2, Ax_4 || R0425_2_stepII2D2S_0 is opcode_5_15=(0x478>>1) & Ax_4 & MemR0425_2 & R0425_2_stepII2D2S_0 & a0l unimpl
+op:"tst4b" a0l, MemR0425_2, Ax_4 || R0425_2_stepII2D2S_0 is opcode_5_15=(0x478>>1) & Ax_4 & MemR0425_2 & R0425_2_stepII2D2S_0 & a0l {
+	# TODO: This also is a weird operation, though teakra makes it a bit more confusing due to use of ShiftBus40 and then manually
+	# restoring a bunch of flags. It setting carry 1 is particularly weird.
+	local bit:5 = (a0 & 0xf);
+	local bit_result:1 = ((MemR0425_2 >> bit) & 1) != 0;
+
+	local value_tmp:5 = a0;
+	local shift_tmp:2 = sv;
+	local temp_carry:1 = shift_carries(value_tmp, shift_tmp);
+	$(FLAG_C1) = temp_carry;
+	Ax_4 = shift_40(value_tmp, shift_tmp);
+
+	$(FLAG_Z) = bit_result;
+	$(FLAG_C) = $(FLAG_Z);
+
+	build R0425_2_stepII2D2S_0;
+}
 @endif
 # F000h TL  tstb NoReverse, Implied Not MemImm8@0, Imm4bitno@8
-op:"tstb" MemImm8_0, Imm4bitno_8 is opcode_12_15=0xF & Imm4bitno_8 & MemImm8_0 unimpl
+op:"tstb" MemImm8_0, Imm4bitno_8 is opcode_12_15=0xF & Imm4bitno_8 & MemImm8_0 { $(FLAG_Z) = (MemImm8_0 & Imm4bitno_8) != 0; }
 # 9020h TL  tstb NoReverse, Implied Not MemRn@0, Imm4bitno@8 || Rn@0stepZIDS@3
-op:"tstb" MemRn_0, Imm4bitno_8 || Rn_0_stepZIDS_3 is opcode_12_15=9 & Imm4bitno_8 & opcode_5_7=(2>>1) & Rn_0_stepZIDS_3 & MemRn_0 unimpl
+op:"tstb" MemRn_0, Imm4bitno_8 || Rn_0_stepZIDS_3 is opcode_12_15=9 & Imm4bitno_8 & opcode_5_7=(2>>1) & Rn_0_stepZIDS_3 & MemRn_0 { $(FLAG_Z) = (MemRn_0 & Imm4bitno_8) != 0; build Rn_0_stepZIDS_3; }
 # 9000h TL  tstb NoReverse, Implied Not Register@0, Imm4bitno@8
-op:"tstb" Register_0_Read_No_Saturate, Imm4bitno_8 is opcode_12_15=9 & Imm4bitno_8 & opcode_5_7=0 & Register_0_Read_No_Saturate unimpl
+op:"tstb" Register_0_Read_No_Saturate, Imm4bitno_8 is opcode_12_15=9 & Imm4bitno_8 & opcode_5_7=0 & Register_0_Read_No_Saturate { $(FLAG_Z) = (Register_0_Read_No_Saturate & Imm4bitno_8) != 0; }
 @ifdef TEAK_LITE_2
 # 9018h TL2 tstb NoReverse, Implied Not r6, Imm4bitno@8  ;override tstb a0,Imm4
-op:"tstb" r6, Imm4bitno_8 is opcode_12_15=9 & Imm4bitno_8 & opcode_0_7=0x18 & r6 unimpl
+op:"tstb" r6, Imm4bitno_8 is opcode_12_15=9 & Imm4bitno_8 & opcode_0_7=0x18 & r6 { $(FLAG_Z) = (r6 & Imm4bitno_8) != 0; }
 # 0028h TL2 tstb NoReverse, Implied Not SttMod@0, Imm4bitno@16, Unused12@20
-op:"tstb" SttMod_0, Imm4bitno_16 is opcode_3_15=(0x0028>>3) & SttMod_0; Imm4bitno_16 & expanded_unused_20_31 unimpl
+op:"tstb" SttMod_0, Imm4bitno_16 is opcode_3_15=(0x0028>>3) & SttMod_0; Imm4bitno_16 & expanded_unused_20_31 { $(FLAG_Z) = (SttMod_0 & Imm4bitno_16) != 0; }
 # 5F45h TL2 vtrclr vtr0         ;vtr0=0           ;for Viterbi decoding...
 op:"vtrclr" vtr0 is opcode_0_15=0x5F45 & vtr0 { vtr0 = 0; }
 # 5F47h TL2 vtrclr vtr0, vtr1   ;vtr0=0, vtr1=0   ;(saved C/C1 carry flags)
