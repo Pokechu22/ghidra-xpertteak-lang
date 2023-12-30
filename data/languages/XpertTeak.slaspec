@@ -4986,36 +4986,98 @@ op:"shl4" Bx_12 is opcode_13_15=(6>>1) & Bx_12 & opcode_4_11=0xF1 & cond_0=0 {
 	FLAGS40(Bx_12);
 }
 # BA00h TL  sqr  MemImm8@0
-op:"sqr" MemImm8_0 is opcode_8_15=0xBA & MemImm8_0 unimpl
+op:"sqr" MemImm8_0 is opcode_8_15=0xBA & MemImm8_0 & Y0_input {
+	x0 = MemImm8_0;
+	y0 = x0;
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+}
 # 9A80h TL  sqr  MemRn@0 || Rn@0stepZIDS@3
-op:"sqr" MemRn_0 || Rn_0_stepZIDS_3 is opcode_5_15=(0x9A8>>1) & Rn_0_stepZIDS_3 & MemRn_0 unimpl
+op:"sqr" MemRn_0 || Rn_0_stepZIDS_3 is opcode_5_15=(0x9A8>>1) & Rn_0_stepZIDS_3 & MemRn_0 & Y0_input {
+	x0 = MemRn_0;
+	y0 = x0;
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	build Rn_0_stepZIDS_3;
+}
 # 9AA0h TL  sqr  Register@0
 # TODO: this is alm but the second parameter is ignored; should this have an Unused@8?
 # TODO: teakra alm indicates special behavior for Register_0 p, a0, and a1
-op:"sqr" Register_0_Read_No_Saturate is opcode_5_15=(0x9AA>>1) & Register_0_Read_No_Saturate unimpl
+op:"sqr" Register_0_Read_No_Saturate is opcode_5_15=(0x9AA>>1) & Register_0_Read_No_Saturate & Y0_input {
+	x0 = Register_0_Read_No_Saturate;
+	y0 = x0;
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+}
 @ifdef TEAK_LITE_2
 # D790h TL2 sqr  Abh@2 || sqr Abl@2 || add3 p0, p1, Ab@0
-op:"sqr" Abh_2 || "sqr" Abl_2 || "add3" p0, p1, Ab_0 is opcode_4_15=0xD79 & Abh_2 & Abl_2 & Ab_0 & p0 & p1 unimpl
+op:"sqr" Abh_2 || "sqr" Abl_2 || "add3" p0, p1, Ab_0 is opcode_4_15=0xD79 & Abh_2 & Abl_2 & Ab_0 & p0 & p1 & Y0_input & Y1_input {
+	PRODUCT_ADD3(Ab_0, p0, p1);
+	x0 = Abh_2;
+	y0 = x0;
+	x1 = Abl_2;
+	y1 = x1;
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(sext(x1), sext(Y1_input), p1);
+}
 # 49C4h TL2 sqr  Abh@4 || mpysu Abh@4, Abl@4 || add3a p0, p1, Ab@0
-op:"sqr" Abh_4 || "mpysu" Abh_4_copy, Abl_4 || "add3a" p0, p1, Ab_0 is opcode_6_15=(0x49C>>2) & Abh_4 & Abh_4_copy & Abl_4 & opcode_2_3=(4>>2) & Ab_0 & p0 & p1 unimpl
+op:"sqr" Abh_4 || "mpysu" Abh_4_copy, Abl_4 || "add3a" p0, p1, Ab_0 is opcode_6_15=(0x49C>>2) & Abh_4 & Abh_4_copy & Abl_4 & opcode_2_3=(4>>2) & Ab_0 & p0 & p1 & Y0_input & Y1_input {
+	PRODUCT_ADD3(Ab_0, p0, p1 s>> 16);
+	x0 = Abh_4;
+	y0 = x0;
+	y1 = x0;
+	x1 = Abl_4;
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(zext(x1), sext(Y1_input), p1);
+}
 # 4B00h TL2 sqr  MemR0425@4 || sqr MemR0425@4offsZIDZ@2 || add3 p0, p1, Ab@0
 #            || R0425@4stepII2D2S@2
 op:"sqr" MemR0425_4 || "sqr" MemR0425_4_offsZIDZ_2 || "add3" p0, p1, Ab_0 || R0425_4_stepII2D2S_2
-	is opcode_6_15=(0x4B0>>2) & MemR0425_4 & MemR0425_4_offsZIDZ_2 & R0425_4_stepII2D2S_2 & Ab_0 & p0 & p1
-unimpl
+	is opcode_6_15=(0x4B0>>2) & MemR0425_4 & MemR0425_4_offsZIDZ_2 & R0425_4_stepII2D2S_2 & Ab_0 & p0 & p1 & Y0_input & Y1_input
+{
+	x0 = MemR0425_4;
+	y0 = x0;
+	x1 = MemR0425_4_offsZIDZ_2;
+	y1 = x1;
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	MULTIPLY(zext(x1), sext(Y1_input), p1);
+	build R0425_4_stepII2D2S_2;
+}
 # 5F41h TL2 sqr  r6
-op:"sqr" r6 is opcode_0_15=0x5F41 & r6 unimpl
+op:"sqr" r6 is opcode_0_15=0x5F41 & r6 & Y0_input {
+	x0 = r6;
+	y0 = x0;
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+}
 @endif
 # BC00h TL  sqra MemImm8@0, Ax@8
-op:"sqra" MemImm8_0, Ax_8 is opcode_9_15=(0xBC>>1) & Ax_8 & MemImm8_0 unimpl
+op:"sqra" MemImm8_0, Ax_8 is opcode_9_15=(0xBC>>1) & Ax_8 & MemImm8_0 & Y0_input {
+	ADD40(Ax_8, p0);
+	x0 = MemImm8_0;
+	y0 = x0;
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+}
 # 9C80h TL  sqra MemRn@0, Ax@8 || Rn@0stepZIDS@3
-op:"sqra" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x9C>>1) & Ax_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 unimpl
+op:"sqra" MemRn_0, Ax_8 || Rn_0_stepZIDS_3 is opcode_9_15=(0x9C>>1) & Ax_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 & Y0_input {
+	ADD40(Ax_8, p0);
+	x0 = MemRn_0;
+	y0 = x0;
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+	build Rn_0_stepZIDS_3;
+}
 # 9CA0h TL  sqra Register@0, Ax@8
 # TODO: teakra alm indicates special behavior for Register_0 p, a0, and a1
-op:"sqra" Register_0_Read_No_Saturate, Ax_8 is opcode_9_15=(0x9C>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0_Read_No_Saturate unimpl
+op:"sqra" Register_0_Read_No_Saturate, Ax_8 is opcode_9_15=(0x9C>>1) & Ax_8 & opcode_5_7=(0xA>>1) & Register_0_Read_No_Saturate & Y0_input {
+	ADD40(Ax_8, p0);
+	x0 = Register_0_Read_No_Saturate;
+	y0 = x0;
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+}
 @ifdef TEAK_LITE_2
 # 9062h TL2 sqra r6, Ax@8, Unused1@0
-op:"sqra" r6, Ax_8 is opcode_9_15=(0x90>>1) & Ax_8 & opcode_1_7=(0x62>>1) & unused_0_0 & r6 unimpl
+op:"sqra" r6, Ax_8 is opcode_9_15=(0x90>>1) & Ax_8 & opcode_1_7=(0x62>>1) & unused_0_0 & r6 & Y0_input {
+	ADD40(Ax_8, p0);
+	x0 = r6;
+	y0 = x0;
+	MULTIPLY(sext(x0), sext(Y0_input), p0);
+}
 @endif
 # D4FFh TL  sub  MemImm16@16, Ax@8
 op:"sub" MemImm16, Ax_8 is opcode_9_15=(0xD4>>1) & Ax_8 & opcode_0_7=0xFF; MemImm16 { SUB40(Ax_8, sext(MemImm16)); }
