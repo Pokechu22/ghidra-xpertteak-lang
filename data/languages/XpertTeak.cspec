@@ -5,7 +5,7 @@
     <range space="code"/>
     <range space="data"/>
   </global>
-  <stackpointer register="sp" space="code" growth="negative"/>
+  <stackpointer register="sp" space="data" growth="negative"/>
   <default_proto>
     <prototype name="__stdcall" extrapop="0" stackshift="0" strategy="register">
       <input>
