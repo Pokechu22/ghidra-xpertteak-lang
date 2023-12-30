@@ -48,6 +48,8 @@ define register offset=0x1e size=2 [ r7b ];
 define register offset=0x20 size=5 [ p0 p1 ];
 # 2 bytes in p0
 define register offset=0x22 size=2 [ p0h ];
+# This is its own hidden state, only used by the codebook search (CBS) opcode
+define register offset=0x2a size=2 [ p0h_cbs ];
 
 # 18-bit PC, not encoding this directly
 define register offset=0x2c size=3 [ pc_full ];
@@ -1820,18 +1822,55 @@ op:"brr" RelCodeAddr7_4, Cond_0 is opcode_11_15=(0x10>>3) & RelCodeAddr7_4 & Con
 }
 op:"brr" RelCodeAddr7_4 is opcode_11_15=(0x10>>3) & RelCodeAddr7_4 & cond_0=0 { call RelCodeAddr7_4; }
 @ifdef TEAK_LITE_2
+# TODO: passing Y0_input and Y1_input as parameters like this is jank... not sure what to do about that
+macro CODEBOOK_SEARCH_IMPL(u, v, y0_input, y1_input) {
+	local old_x0:2 = x0;
+	y0 = u;
+	x0 = u;
+	MULTIPLY(sext(x0), sext(y0_input), p0);
+	p0h_cbs = p0h;
+	y0 = p0h_cbs;
+	x0 = old_x0;
+	y1 = v;
+	MULTIPLY(sext(x0), sext(y0_input), p0);
+	MULTIPLY(sext(x1), sext(y1_input), p1);
+}
+macro CODEBOOK_SEARCH_GE(u, v, r, y0_input, y1_input) {
+	if (!(p0 >= p1)) goto <done>;
+	x1 = p0h_cbs;
+	x0 = y1;
+	mixp = r;
+	<done>
+	CODEBOOK_SEARCH_IMPL(u, v, y0_input, y1_input);
+}
+macro CODEBOOK_SEARCH_GT(u, v, r, y0_input, y1_input) {
+	if (!(p0 > p1)) goto <done>;
+	x1 = p0h_cbs;
+	x0 = y1;
+	mixp = r;
+	<done>
+	CODEBOOK_SEARCH_IMPL(u, v, y0_input, y1_input);
+}
 # 9068h TL2 cbs  Axh@0, Axh@not0, r0, ge
-op:"cbs" Axh_0, Axh_Not0, r0, "ge" is opcode_1_15=(0x9068>>1) & Axh_0 & Axh_Not0 & r0 unimpl
+op:"cbs" Axh_0, Axh_Not0, r0, "ge" is opcode_1_15=(0x9068>>1) & Axh_0 & Axh_Not0 & r0 & Y0_input & Y1_input { CODEBOOK_SEARCH_GE(Axh_0, Axh_Not0, r0, Y0_input, Y1_input); }
 # 9168h TL2 cbs  Axh@0, Axh@not0, r0, gt
-op:"cbs" Axh_0, Axh_Not0, r0, "gt" is opcode_1_15=(0x9168>>1) & Axh_0 & Axh_Not0 & r0 unimpl
+op:"cbs" Axh_0, Axh_Not0, r0, "gt" is opcode_1_15=(0x9168>>1) & Axh_0 & Axh_Not0 & r0 & Y0_input & Y1_input { CODEBOOK_SEARCH_GT(Axh_0, Axh_Not0, r0, Y0_input, Y1_input); }
 # D49Eh TL2 cbs  Axh@8, Bxh@5, r0, ge
-op:"cbs" Axh_8, Bxh_5, r0, "ge" is opcode_9_15=(0xD4>>1) & Axh_8 & opcode_6_7=(0x9>>2) & Bxh_5 & opcode_0_4=(0x1E) & r0 unimpl
+op:"cbs" Axh_8, Bxh_5, r0, "ge" is opcode_9_15=(0xD4>>1) & Axh_8 & opcode_6_7=(0x9>>2) & Bxh_5 & opcode_0_4=(0x1E) & r0 & Y0_input & Y1_input { CODEBOOK_SEARCH_GE(Axh_8, Bxh_5, r0, Y0_input, Y1_input); }
 # D49Fh TL2 cbs  Axh@8, Bxh@5, r0, gt
-op:"cbs" Axh_8, Bxh_5, r0, "gt" is opcode_9_15=(0xD4>>1) & Axh_8 & opcode_6_7=(0x9>>2) & Bxh_5 & opcode_0_4=(0x1F) & r0 unimpl
+op:"cbs" Axh_8, Bxh_5, r0, "gt" is opcode_9_15=(0xD4>>1) & Axh_8 & opcode_6_7=(0x9>>2) & Bxh_5 & opcode_0_4=(0x1F) & r0 & Y0_input & Y1_input { CODEBOOK_SEARCH_GT(Axh_8, Bxh_5, r0, Y0_input, Y1_input); }
 # D5C0h TL2 cbs  MemR01@2, MemR45@2, ge || R01@2stepII2@0, R45@2stepII2@1
-op:"cbs" MemR01_2, MemR45_2, "ge" || R01_2_stepII2_0, R45_2_stepII2_1 is opcode_3_15=(0xD5C0>>3) & MemR01_2 & MemR45_2 & R45_2_stepII2_1 & R01_2_stepII2_0 unimpl
+op:"cbs" MemR01_2, MemR45_2, "ge" || R01_2_stepII2_0, R45_2_stepII2_1 is opcode_3_15=(0xD5C0>>3) & MemR01_2 & MemR45_2 & R01_2 & R45_2_stepII2_1 & R01_2_stepII2_0 & Y0_input & Y1_input {
+	CODEBOOK_SEARCH_GE(MemR01_2, MemR45_2, R01_2, Y0_input, Y1_input);
+	build R01_2_stepII2_0;
+	build R45_2_stepII2_1;
+}
 # D5C8h TL2 cbs  MemR01@2, MemR45@2, gt || R01@2stepII2@0, R45@2stepII2@1
-op:"cbs" MemR01_2, MemR45_2, "gt" || R01_2_stepII2_0, R45_2_stepII2_1 is opcode_3_15=(0xD5C8>>3) & MemR01_2 & MemR45_2 & R45_2_stepII2_1 & R01_2_stepII2_0 unimpl
+op:"cbs" MemR01_2, MemR45_2, "gt" || R01_2_stepII2_0, R45_2_stepII2_1 is opcode_3_15=(0xD5C8>>3) & MemR01_2 & MemR45_2 & R01_2 & R45_2_stepII2_1 & R01_2_stepII2_0 & Y0_input & Y1_input {
+	CODEBOOK_SEARCH_GT(MemR01_2, MemR45_2, R01_2, Y0_input, Y1_input);
+	build R01_2_stepII2_0;
+	build R45_2_stepII2_1;
+}
 @endif
 # E500h TL  chng Imm16@16, MemImm8@0
 macro CHNG(dest, a, b) {
