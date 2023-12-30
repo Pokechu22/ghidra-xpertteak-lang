@@ -1212,6 +1212,25 @@ macro PRODUCT_SUB_ADD_SV(dest, possibly_rounded_sv, possibly_shifted_p0, possibl
 	$(FLAG_V) = $(FLAG_V) ^ tmp_flag_v;
 }
 
+# This would be a mess due to the shift-mode flag and sv and stuff (see teakra ShiftBus40). For now don't implement it.
+define pcodeop shift_overflows; # TODO: this probably isn't needed
+macro SHIFT_OVERFLOW_FLAGS(value, shift) {
+	local value_tmp:5 = value;
+	local shift_tmp:2 = shift;
+	local overflows:1 = shift_overflows(value_tmp, shift_tmp);
+	$(FLAG_V) = overflows;
+	$(FLAG_VL) = $(FLAG_VL) | $(FLAG_V);
+}
+define pcodeop shift_40;
+macro SHIFT_40(dest, value, shift) {
+	SHIFT_OVERFLOW_FLAGS(value, shift);
+	local value_tmp:5 = value;
+	local shift_tmp:2 = shift;
+	dest = shift_40(value_tmp, shift_tmp);
+	# TODO: saturation, only for arithmetic shifts
+	FLAGS40(dest);
+}
+
 # These exist to handle hwm later
 Y0_input:y0 is y0 { export y0; } # hwm = 0
 Y1_input:y1 is y1 { export y1; }
@@ -3167,18 +3186,17 @@ op:"movr" r6, Ax_3 is opcode_4_15=0x896 & Ax_3 & opcode_0_2=1 & r6 {
 @endif
 # 6300h TL  movs Implied sv, MemImm8@0, Ab@11
 # TODO: what does this do and what does sv do?
-op:"movs" MemImm8_0, Ab_11 is opcode_13_15=(6>>1) & Ab_11 & opcode_8_10=3 & MemImm8_0 unimpl # { Ab_11 = zext(MemImm8_0); }
+op:"movs" sv, MemImm8_0, Ab_11 is opcode_13_15=(6>>1) & Ab_11 & opcode_8_10=3 & MemImm8_0 & sv { SHIFT_40(Ab_11, sext(MemImm8_0), sv); }
 # 0180h TL  movs Implied sv, MemRn@0, Ab@5 || Rn@0stepZIDS@3
-op:"movs" MemRn_0, Ab_5 || Rn_0_stepZIDS_3 is opcode_7_15=(0x018>>3) & Ab_5 & Rn_0_stepZIDS_3 & MemRn_0 unimpl # { Ab_5 = zext(MemRn_0); build Rn_0_stepZIDS_3; }
+op:"movs" sv, MemRn_0, Ab_5 || Rn_0_stepZIDS_3 is opcode_7_15=(0x018>>3) & Ab_5 & Rn_0_stepZIDS_3 & MemRn_0 & sv { SHIFT_40(Ab_5, sext(MemRn_0), sv); build Rn_0_stepZIDS_3; }
 # 0100h TL  movs Implied sv, RegisterP0@0, Ab@5
-op:"movs" Register_0_Read_No_Saturate, Ab_5 is opcode_7_15=(0x010>>3) & Ab_5 & Register_0_Read_No_Saturate unimpl # { Ab_5 = zext(Register_0_Read_No_Saturate); }
+op:"movs" sv, Register_0_Read_No_Saturate, Ab_5 is opcode_7_15=(0x010>>3) & Ab_5 & Register_0_Read_No_Saturate & sv { SHIFT_40(Ab_5, sext(Register_0_Read_No_Saturate), sv); }
 @ifdef TEAK_LITE_2
 # 5F42h TL2 movs Implied sv, r6, Ax@0
-op:"movs" r6, Ax_0 is opcode_1_15=(0x5F42>>1) & Ax_0 & r6 unimpl # { Ax_0 = zext(r6); }
+op:"movs" sv, r6, Ax_0 is opcode_1_15=(0x5F42>>1) & Ax_0 & r6 & sv { SHIFT_40(Ax_0, sext(r6), sv); }
 @endif
 # 4080h TL  movsi Implied Imm5s@0, R0123457y0@9, Ab@5, Bogus Imm5s@0
-# TODO: OK, this is trying to indicate a different order or something? But what is it doing? Hardcoding a value for sv?
-op:"movsi" Imm5s_0, R0123457y0_9, Ab_5 is opcode_12_15=4 & R0123457y0_9 & opcode_7_8=(0x08>>3) & Ab_5 & Imm5s_0 unimpl # { Ab_5 = zext(R0123457y0_9); }
+op:"movsi" Imm5s_0, R0123457y0_9, Ab_5 is opcode_12_15=4 & R0123457y0_9 & opcode_7_8=(0x08>>3) & Ab_5 & Imm5s_0 { SHIFT_40(Ab_5, sext(R0123457y0_9), Imm5s_0); }
 # D000h TL  mpy  MemR45@2, MemR0123@0 || R0123@0stepZIDS@3, R45@2stepZIDS@5
 op:"mpy" MemR45_2, MemR0123_0 || R0123_0_stepZIDS_3, R45_2_stepZIDS_5 is opcode_7_15=(0xD00>>3) & R45_2_stepZIDS_5 & R0123_0_stepZIDS_3 & MemR45_2 & MemR0123_0 & Y0_input {
 	y0 = MemR45_2;
@@ -4860,60 +4878,110 @@ op:"set" Imm16, r6 is opcode_0_15=0x47B8 & r6; Imm16 { SET(r6, r6, Imm16); }
 op:"set" Imm16, SttMod_0 is opcode_3_15=(0x43C8>>3) & SttMod_0; Imm16 { SET(SttMod_0, SttMod_0, Imm16); }
 @endif
 # D280h TL  shfc Implied sv, Ab@10, Ab@5, Cond@0
-op:"shfc" Ab_10, Ab_5, Cond_0 is opcode_12_15=0xD & Ab_10 & opcode_7_9=(0x28>>3) & Ab_5 & opcode_4_4=0 & Cond_0 unimpl
-op:"shfc" Ab_10, Ab_5 is opcode_12_15=0xD & Ab_10 & opcode_7_9=(0x28>>3) & Ab_5 & opcode_4_4=0 & cond_0=0 unimpl
+op:"shfc" sv, Ab_10, Ab_5, Cond_0 is opcode_12_15=0xD & Ab_10 & opcode_7_9=(0x28>>3) & Ab_5 & opcode_4_4=0 & Cond_0 & sv {
+	if (!Cond_0) goto inst_next;
+	SHIFT_40(Ab_5, Ab_10, sv);
+}
+op:"shfc" sv, Ab_10, Ab_5 is opcode_12_15=0xD & Ab_10 & opcode_7_9=(0x28>>3) & Ab_5 & opcode_4_4=0 & cond_0=0 & sv { SHIFT_40(Ab_5, Ab_10, sv); }
 # 9240h TL  shfi Implied Imm6s@0, Ab@10, Ab@7, Bogus Imm6s@0
-# TODO: reorder?
-op:"shfi" Ab_10, Ab_7, Imm6s_0 is opcode_12_15=9 & Ab_10 & opcode_9_9=1 & Ab_7 & opcode_6_6=1 & Imm6s_0 unimpl
+op:"shfi" Imm6s_0, Ab_10, Ab_7 is opcode_12_15=9 & Ab_10 & opcode_9_9=1 & Ab_7 & opcode_6_6=1 & Imm6s_0 { SHIFT_40(Ab_7, Ab_10, Imm6s_0); }
 # 6720h TL  shl  Implied Const1,     Ax@12, Cond@0 ;aX=aX*2
 op:"shl" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x72 & Cond_0 {
 	if (!Cond_0) goto inst_next;
+	SHIFT_OVERFLOW_FLAGS(Ax_12, 1);
 	Ax_12 = Ax_12 << 1;
+	FLAGS40(Ax_12);
 }
-op:"shl" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x72 & cond_0=0 { Ax_12 = Ax_12 << 1; }
+op:"shl" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x72 & cond_0=0 {
+	SHIFT_OVERFLOW_FLAGS(Ax_12, 1);
+	Ax_12 = Ax_12 << 1;
+	FLAGS40(Ax_12);
+}
 # 6F20h TL  shl  Implied Const1,     Bx@12, Cond@0 ;bX=bX*2
 op:"shl" Bx_12, Cond_0 is opcode_13_15=(6>>1) & Bx_12 & opcode_4_11=0xF2 & Cond_0 {
 	if (!Cond_0) goto inst_next;
+	SHIFT_OVERFLOW_FLAGS(Bx_12, 1);
 	Bx_12 = Bx_12 << 1;
+	FLAGS40(Bx_12);
 }
-op:"shl" Bx_12 is opcode_13_15=(6>>1) & Bx_12 & opcode_4_11=0xF2 & cond_0=0 { Bx_12 = Bx_12 << 1; }
+op:"shl" Bx_12 is opcode_13_15=(6>>1) & Bx_12 & opcode_4_11=0xF2 & cond_0=0 {
+	SHIFT_OVERFLOW_FLAGS(Bx_12, 1);
+	Bx_12 = Bx_12 << 1;
+	FLAGS40(Bx_12);
+}
 # 6730h TL  shl4 Implied Const4,     Ax@12, Cond@0 ;aX=aX*10h
 op:"shl4" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x73 & Cond_0 {
 	if (!Cond_0) goto inst_next;
+	SHIFT_OVERFLOW_FLAGS(Ax_12, 4);
 	Ax_12 = Ax_12 << 4;
+	FLAGS40(Ax_12);
 }
-op:"shl4" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x73 & cond_0=0 { Ax_12 = Ax_12 << 4; }
+op:"shl4" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x73 & cond_0=0 {
+	SHIFT_OVERFLOW_FLAGS(Ax_12, 4);
+	Ax_12 = Ax_12 << 4;
+	FLAGS40(Ax_12);
+}
 # 6F30h TL  shl4 Implied Const4,     Bx@12, Cond@0 ;bX=bX*10h
 op:"shl4" Bx_12, Cond_0 is opcode_13_15=(6>>1) & Bx_12 & opcode_4_11=0xF3 & Cond_0 {
 	if (!Cond_0) goto inst_next;
+	SHIFT_OVERFLOW_FLAGS(Bx_12, 4);
 	Bx_12 = Bx_12 << 4;
+	FLAGS40(Bx_12);
 }
-op:"shl4" Bx_12 is opcode_13_15=(6>>1) & Bx_12 & opcode_4_11=0xF3 & cond_0=0 { Bx_12 = Bx_12 << 4; }
+op:"shl4" Bx_12 is opcode_13_15=(6>>1) & Bx_12 & opcode_4_11=0xF3 & cond_0=0 {
+	SHIFT_OVERFLOW_FLAGS(Bx_12, 4);
+	Bx_12 = Bx_12 << 4;
+	FLAGS40(Bx_12);
+}
 # 6700h TL  shr  Implied Const1,     Ax@12, Cond@0 ;aX=aX/2
-# TODO: signed vs unsigned shift?
+# TODO: handle signed vs unsigned shift based on s flag
 op:"shr" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x70 & Cond_0 {
 	if (!Cond_0) goto inst_next;
+	SHIFT_OVERFLOW_FLAGS(Ax_12, -1);
 	Ax_12 = Ax_12 >> 1;
+	FLAGS40(Ax_12);
 }
-op:"shl" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x70 & cond_0=0 { Ax_12 = Ax_12 >> 1; }
+op:"shl" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x70 & cond_0=0 {
+	SHIFT_OVERFLOW_FLAGS(Ax_12, -1);
+	Ax_12 = Ax_12 >> 1;
+	FLAGS40(Ax_12);
+}
 # 6F00h TL  shr  Implied Const1,     Bx@12, Cond@0 ;bX=bX/2
 op:"shl" Bx_12, Cond_0 is opcode_13_15=(6>>1) & Bx_12 & opcode_4_11=0xF0 & Cond_0 {
 	if (!Cond_0) goto inst_next;
+	SHIFT_OVERFLOW_FLAGS(Bx_12, -1);
 	Bx_12 = Bx_12 >> 1;
+	FLAGS40(Bx_12);
 }
-op:"shl" Bx_12 is opcode_13_15=(6>>1) & Bx_12 & opcode_4_11=0xF0 & cond_0=0 { Bx_12 = Bx_12 >> 1; }
+op:"shl" Bx_12 is opcode_13_15=(6>>1) & Bx_12 & opcode_4_11=0xF0 & cond_0=0 {
+	SHIFT_OVERFLOW_FLAGS(Bx_12, -1);
+	Bx_12 = Bx_12 >> 1;
+	FLAGS40(Bx_12);
+}
 # 6710h TL  shr4 Implied Const4,     Ax@12, Cond@0 ;aX=aX/10h
 op:"shl4" Ax_12, Cond_0 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x71 & Cond_0 {
 	if (!Cond_0) goto inst_next;
+	SHIFT_OVERFLOW_FLAGS(Ax_12, -4);
 	Ax_12 = Ax_12 >> 4;
+	FLAGS40(Ax_12);
 }
-op:"shl4" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x71 & cond_0=0 { Ax_12 = Ax_12 >> 4; }
+op:"shl4" Ax_12 is opcode_13_15=(6>>1) & Ax_12 & opcode_4_11=0x71 & cond_0=0 {
+	SHIFT_OVERFLOW_FLAGS(Ax_12, -4);
+	Ax_12 = Ax_12 >> 4;
+	FLAGS40(Ax_12);
+}
 # 6F10h TL  shr4 Implied Const4,     Bx@12, Cond@0 ;bX=bX/10h
 op:"shl4" Bx_12, Cond_0 is opcode_13_15=(6>>1) & Bx_12 & opcode_4_11=0xF1 & Cond_0 {
 	if (!Cond_0) goto inst_next;
+	SHIFT_OVERFLOW_FLAGS(Bx_12, -4);
 	Bx_12 = Bx_12 >> 4;
+	FLAGS40(Bx_12);
 }
-op:"shl4" Bx_12 is opcode_13_15=(6>>1) & Bx_12 & opcode_4_11=0xF1 & cond_0=0 { Bx_12 = Bx_12 >> 4; }
+op:"shl4" Bx_12 is opcode_13_15=(6>>1) & Bx_12 & opcode_4_11=0xF1 & cond_0=0 {
+	SHIFT_OVERFLOW_FLAGS(Bx_12, -4);
+	Bx_12 = Bx_12 >> 4;
+	FLAGS40(Bx_12);
+}
 # BA00h TL  sqr  MemImm8@0
 op:"sqr" MemImm8_0 is opcode_8_15=0xBA & MemImm8_0 unimpl
 # 9A80h TL  sqr  MemRn@0 || Rn@0stepZIDS@3
