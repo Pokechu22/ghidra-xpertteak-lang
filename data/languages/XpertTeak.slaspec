@@ -5294,48 +5294,48 @@ op:"swap" SwapTypes is opcode_4_15=0x498 & SwapTypes { build SwapTypes; }
 define pcodeop software_interrupt;
 op:"trap" is opcode_0_15=0x0020 { software_interrupt(); }
 # A800h TL  tst0 Axl@8, MemImm8@0
-op:"tst0" is opcode_9_15=(0xA8>>1) & Axl_8 & MemImm8_0 unimpl
+op:"tst0" is opcode_9_15=(0xA8>>1) & Axl_8 & MemImm8_0 { $(FLAG_Z) = (Axl_8 & MemImm8_0) == 0; }
 # 8880h TL  tst0 Axl@8, MemRn@0 || Rn@0stepZIDS@3
-op:"tst0" Axl_8, MemRn_0 || Rn_0_stepZIDS_3 is opcode_9_15=(0x88>>1) & Axl_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 unimpl
+op:"tst0" Axl_8, MemRn_0 || Rn_0_stepZIDS_3 is opcode_9_15=(0x88>>1) & Axl_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 { $(FLAG_Z) = (Axl_8 & MemRn_0) == 0; build Rn_0_stepZIDS_3; }
 # 88A0h TL  tst0 Axl@8, Register@0
 # TODO: teakra alm indicates special behavior for Register_0 p, a0, and a1
-op:"tst0" Axl_8, Register_0_Read_No_Saturate is opcode_9_15=(0x88>>1) & Axl_8 & opcode_5_7=(0xA>>1) & Register_0_Read_No_Saturate unimpl
+op:"tst0" Axl_8, Register_0_Read_No_Saturate is opcode_9_15=(0x88>>1) & Axl_8 & opcode_5_7=(0xA>>1) & Register_0_Read_No_Saturate { $(FLAG_Z) = (Axl_8 & Register_0_Read_No_Saturate) == 0; }
 # E900h TL  tst0 Imm16@16, MemImm8@0
-op:"tst0" Imm16, MemImm8_0 is opcode_8_15=0xE9 & MemImm8_0; Imm16 unimpl
+op:"tst0" Imm16, MemImm8_0 is opcode_8_15=0xE9 & MemImm8_0; Imm16 { $(FLAG_Z) = (Imm16 & MemImm8_0) == 0; }
 # 88E0h TL  tst0 Imm16@16, MemRn@0 || Rn@0stepZIDS@3
-op:"tst0" Imm16, MemRn_0 || Rn_0_stepZIDS_3 is opcode_5_15=(0x88E>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 unimpl
+op:"tst0" Imm16, MemRn_0 || Rn_0_stepZIDS_3 is opcode_5_15=(0x88E>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 { $(FLAG_Z) = (Imm16 & MemRn_0) == 0; build Rn_0_stepZIDS_3; }
 # 89E0h TL  tst0 Imm16@16, Register@0
-# TODO: teakra alb indicates special behavior for Register_0 p, a0, and a1 AND also weird behavior for writing to [ab][01][lh], not currently implemented
-op:"tst0" Imm16, Register_0_Write is opcode_5_15=(0x89E>>1) & Register_0_Read_No_Saturate & Register_0_Write & Register_0_Write_After; Imm16 unimpl
+# TODO: teakra alb indicates special behavior for Register_0 p, a0, and a1 (tst0 does not write, so that behavior does not apply)
+op:"tst0" Imm16, Register_0_Read_No_Saturate is opcode_5_15=(0x89E>>1) & Register_0_Read_No_Saturate; Imm16 { $(FLAG_Z) = (Imm16 & Register_0_Read_No_Saturate) == 0; }
 @ifdef TEAK_LITE_2
 # D38Ch TL2 tst0 Axl@4, r6
-op:"tst0" Axl_4, r6 is opcode_5_15=(0xD38>>1) & Axl_4 & opcode_0_3=0xC & r6; Imm16 unimpl
+op:"tst0" Axl_4, r6 is opcode_5_15=(0xD38>>1) & Axl_4 & opcode_0_3=0xC & r6 { $(FLAG_Z) = (Axl_4 & r6) == 0; }
 # 47BCh TL2 tst0 Imm16@16, r6
-op:"tst0" Imm16, r6 is opcode_0_15=0x47BC & r6; Imm16 unimpl
+op:"tst0" Imm16, r6 is opcode_0_15=0x47BC & r6; Imm16 { $(FLAG_Z) = (Imm16 & r6) == 0; }
 # 9470h TL2 tst0 Imm16@16, SttMod@0
-op:"tst0" Imm16, SttMod_0 is opcode_3_15=(0x9470>>3) & SttMod_0; Imm16 unimpl
+op:"tst0" Imm16, SttMod_0 is opcode_3_15=(0x9470>>3) & SttMod_0; Imm16 { $(FLAG_Z) = (Imm16 & SttMod_0) == 0; }
 @endif
 # AA00h TL  tst1 Axl@8, MemImm8@0 Implied Not
-op:"tst1" is opcode_9_15=(0xAA>>1) & Axl_8 & MemImm8_0 unimpl
+op:"tst1" is opcode_9_15=(0xAA>>1) & Axl_8 & MemImm8_0 { $(FLAG_Z) = (Axl_8 & ~MemImm8_0) == 0; }
 # 8A80h TL  tst1 Axl@8, MemRn@0 Implied Not || Rn@0stepZIDS@3
-op:"tst1" Axl_8, MemRn_0 || Rn_0_stepZIDS_3 is opcode_9_15=(0x8A>>1) & Axl_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 unimpl
+op:"tst1" Axl_8, MemRn_0 || Rn_0_stepZIDS_3 is opcode_9_15=(0x8A>>1) & Axl_8 & opcode_5_7=(0x8>>1) & Rn_0_stepZIDS_3 & MemRn_0 { $(FLAG_Z) = (Axl_8 & ~MemRn_0) == 0; build Rn_0_stepZIDS_3; }
 # 8AA0h TL  tst1 Axl@8, Register@0 Implied Not
 # TODO: teakra alm indicates special behavior for Register_0 p, a0, and a1
-op:"tst1" Axl_8, Register_0_Read_No_Saturate is opcode_9_15=(0x8A>>1) & Axl_8 & opcode_5_7=(0xA>>1) & Register_0_Read_No_Saturate unimpl
+op:"tst1" Axl_8, Register_0_Read_No_Saturate is opcode_9_15=(0x8A>>1) & Axl_8 & opcode_5_7=(0xA>>1) & Register_0_Read_No_Saturate { $(FLAG_Z) = (Axl_8 & ~Register_0_Read_No_Saturate) == 0; }
 # EB00h TL  tst1 Imm16@16, MemImm8@0 Implied Not
-op:"tst1" Imm16, MemImm8_0 is opcode_8_15=0xEB & MemImm8_0; Imm16 unimpl
+op:"tst1" Imm16, MemImm8_0 is opcode_8_15=0xEB & MemImm8_0; Imm16 { $(FLAG_Z) = (Imm16 & ~MemImm8_0) == 0; }
 # 8AE0h TL  tst1 Imm16@16, MemRn@0 Implied Not || Rn@0stepZIDS@3
-op:"tst1" Imm16, MemRn_0 || Rn_0_stepZIDS_3 is opcode_5_15=(0x8AE>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 unimpl
+op:"tst1" Imm16, MemRn_0 || Rn_0_stepZIDS_3 is opcode_5_15=(0x8AE>>1) & Rn_0_stepZIDS_3 & MemRn_0; Imm16 { $(FLAG_Z) = (Imm16 & ~MemRn_0) == 0; build Rn_0_stepZIDS_3; }
 # 8BE0h TL  tst1 Imm16@16, Register@0 Implied Not
-# TODO: teakra alb indicates special behavior for Register_0 p, a0, and a1 AND also weird behavior for writing to [ab][01][lh], not currently implemented
-op:"tst1" Imm16, Register_0_Write is opcode_5_15=(0x8BE>>1) & Register_0_Read_No_Saturate & Register_0_Write & Register_0_Write_After; Imm16 unimpl
+# TODO: teakra alb indicates special behavior for Register_0 p, a0, and a1 (tst1 does not write, so that behavior does not apply)
+op:"tst1" Imm16, Register_0_Read_No_Saturate is opcode_5_15=(0x8BE>>1) & Register_0_Read_No_Saturate; Imm16 { $(FLAG_Z) = (Imm16 & ~Register_0_Read_No_Saturate) == 0; }
 @ifdef TEAK_LITE_2
 # D38Dh TL2 tst1 Axl@4, r6 Implied Not
-op:"tst1" Axl_4, r6 is opcode_5_15=(0xD38>>1) & Axl_4 & opcode_0_3=0xD & r6; Imm16 unimpl
+op:"tst1" Axl_4, r6 is opcode_5_15=(0xD38>>1) & Axl_4 & opcode_0_3=0xD & r6 { $(FLAG_Z) = (Axl_4 & ~r6) == 0; }
 # 47BDh TL2 tst1 Imm16@16, r6 Implied Not
-op:"tst1" Imm16, r6 is opcode_0_15=0x47BD & r6; Imm16 unimpl
+op:"tst1" Imm16, r6 is opcode_0_15=0x47BD & r6; Imm16 { $(FLAG_Z) = (Imm16 & ~r6) == 0; }
 # 9478h TL2 tst1 Imm16@16, SttMod@0 Implied Not
-op:"tst1" Imm16, SttMod_0 is opcode_3_15=(0x9478>>3) & SttMod_0; Imm16 unimpl
+op:"tst1" Imm16, SttMod_0 is opcode_3_15=(0x9478>>3) & SttMod_0; Imm16 { $(FLAG_Z) = (Imm16 & ~SttMod_0) == 0; }
 # 80C1h TL2 tst4b a0l, MemR0425@10 || R0425@10stepII2D2S@8
 op:"tst4b" a0l, MemR0425_10 || R0425_10_stepII2D2S_8 is opcode_12_15=8 & MemR0425_10 & R0425_10_stepII2D2S_8 & opcode_0_7=0xC1 & a0l unimpl
 # 4780h TL2 tst4b a0l, MemR0425@2, Ax@4 || R0425@2stepII2D2S@0
