@@ -1816,11 +1816,11 @@ op:"calla" Ax_4 is opcode_5_15=(0xD38>>1) & Ax_4 & opcode_0_3=1 {
 }
 @endif
 # 1000h TL  callr RelAddr7@4, Cond@0
-op:"brr" RelCodeAddr7_4, Cond_0 is opcode_11_15=(0x10>>3) & RelCodeAddr7_4 & Cond_0 {
+op:"callr" RelCodeAddr7_4, Cond_0 is opcode_11_15=(0x10>>3) & RelCodeAddr7_4 & Cond_0 {
 	if (!Cond_0) goto inst_next;
 	call RelCodeAddr7_4;
 }
-op:"brr" RelCodeAddr7_4 is opcode_11_15=(0x10>>3) & RelCodeAddr7_4 & cond_0=0 { call RelCodeAddr7_4; }
+op:"callr" RelCodeAddr7_4 is opcode_11_15=(0x10>>3) & RelCodeAddr7_4 & cond_0=0 { call RelCodeAddr7_4; }
 @ifdef TEAK_LITE_2
 # TODO: passing Y0_input and Y1_input as parameters like this is jank... not sure what to do about that
 macro CODEBOOK_SEARCH_IMPL(u, v, y0_input, y1_input) {
